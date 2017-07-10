@@ -319,6 +319,7 @@ extern void initprims(void);
 
 extern void startsplit(const char *sep, Boolean coalesce);
 extern void splitstring(char *in, size_t len, Boolean endword);
+extern char *splitstring_r(char *in, size_t len, Boolean endword);
 extern List *endsplit(void);
 extern List *fsplit(const char *sep, List *list, Boolean coalesce);
 

@@ -36,8 +36,51 @@ extern void startsplit(const char *sep, Boolean coalescef) {
 	}
 }
 
+// Re-entrant version of splitstring.  Returns a pointer to the next
+// substring, or NULL if the end of string has been found.
+extern char *splitstring_r(char *in, size_t len, Boolean endword) {
+    Buffer *buf = buffer;
+    unsigned char *s = (unsigned char *) in, *inend = s + len;
+
+    if (splitchars) {
+        assert(buf == NULL);
+        Boolean end = *(s + 1) == '\0';
+
+        Term *term = mkstr(gcndup((char *) s, 1));
+        value = mklist(term, value);
+
+        if (end) return NULL;
+        return (char *) ++s;
+    }
+
+    if (!coalesce && buf == NULL)
+        buf = openbuffer(0);
+
+    while (s < inend) {
+        int c = *s++;
+        if (buf != NULL)
+            if (isifs[c]) {
+                Term *term = mkstr(sealcountedbuffer(buf));
+                value = mklist(term, value);
+                buf = coalesce ? NULL : openbuffer(0);
+                return (char *) s;
+            } else
+                buf = bufputc(buf, c);
+        else if (!isifs[c])
+            buf = bufputc(openbuffer(0), c);
+    }
+
+    if (endword && buf != NULL) {
+        Term *term = mkstr(sealcountedbuffer(buf));
+        value = mklist(term, value);
+        buf = NULL;
+    }
+    buffer = buf;
+    return NULL;
+}
+
 extern void splitstring(char *in, size_t len, Boolean endword) {
-	Buffer *buf = buffer;
+    Buffer *buf = buffer;
 	unsigned char *s = (unsigned char *) in, *inend = s + len;
 
 	if (splitchars) {
@@ -45,7 +88,7 @@ extern void splitstring(char *in, size_t len, Boolean endword) {
 		while (s < inend) {
 			Term *term = mkstr(gcndup((char *) s++, 1));
 			value = mklist(term, value);
-		}
+    	}
 		return;
 	}
 
@@ -59,7 +102,7 @@ extern void splitstring(char *in, size_t len, Boolean endword) {
 				Term *term = mkstr(sealcountedbuffer(buf));
 				value = mklist(term, value);
 				buf = coalesce ? NULL : openbuffer(0);
-			} else
+       		} else
 				buf = bufputc(buf, c);
 		else if (!isifs[c])
 			buf = bufputc(openbuffer(0), c);
@@ -90,8 +133,14 @@ extern List *fsplit(const char *sep, List *list, Boolean coalesce) {
 	Ref(List *, lp, list);
 	startsplit(sep, coalesce);
 	for (; lp != NULL; lp = lp->next) {
-		char *s = getstr(lp->term);
-		splitstring(s, strlen(s), TRUE);
+        char *bs = getstr(lp->term), *s = bs;
+        do {
+            // It seems like there's a better way to go about this?
+            char *ns = getstr(lp->term);
+            s = ns + (s - bs);
+            bs = ns;
+		    s = splitstring_r(s, strlen(s), TRUE);
+        } while (s != NULL);
 	}
 	RefEnd(lp);
 	return endsplit();

@@ -13,9 +13,9 @@ struct Space {
 	Space *next;
 };
 
-#define	SPACESIZE(sp)	(((sp)->top - (sp)->bot))
-#define	SPACEFREE(sp)	(((sp)->top - (sp)->current))
-#define	SPACEUSED(sp)	(((sp)->current - (sp)->bot))
+#define	SPACESIZE(sp)	((size_t)((sp)->top - (sp)->bot))
+#define	SPACEFREE(sp)	((size_t)((sp)->top - (sp)->current))
+#define	SPACEUSED(sp)	((size_t)((sp)->current - (sp)->bot))
 #define	INSPACE(p, sp)	((sp)->bot <= (char *) (p) && (char *) (p) < (sp)->top)
 
 #define	MIN_minspace	10000
@@ -386,7 +386,7 @@ extern void gcdisable(void) {
 
 /* gcreserve -- provoke a collection if there's not a certain amount of space around */
 extern void gcreserve(size_t minfree) {
-	if (SPACEFREE(new) < (int)minfree) {
+	if (SPACEFREE(new) < minfree) {
 		if (minspace < minfree)
 			minspace = minfree;
 		gc();
