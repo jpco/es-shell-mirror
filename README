@@ -13,15 +13,29 @@ from the 'canonical' es:
    is to have variants on 'fork' for non-blocking semantics, and
    'subshell' for blocking semantics.
 
-Still to do:
+ - The precedence of '$$foo(1)' is no longer equivalent to '$($a(1))'.
 
- - Change the precedence of '$$a(1)' to be dissimilar from '$($a(1))'
+ - Two new primitives, $&add and $&negate, and two new functions, %+ and
+   %-, for basic arithmetic.
+
+ - 'a | b | c' now executes 'c' in the local shell, rather than a subshell.
+   This is a bit awkward in terms of return values, since a pipeline of n
+   commands now returns a list of length potentially more than n, but that's
+   the price you pay, I guess.
+
+Still to do:
 
  - Programmable tab completion (iff readline is linked in).
 
- - More robust '=' parsing.
+ - Even more robust '=' parsing.
 
  - A proper unit- and regression-testing suite.
+
+ - Interactive features, potentially?
+
+ - Proper tail recursion (or more general tail call optimization).
+
+ - First-class environments. (equivalent to associative arrays? awkward)
 
 README
 ------
