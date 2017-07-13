@@ -135,12 +135,9 @@ extern List *fsplit(const char *sep, List *list, Boolean coalesce) {
 	for (; lp != NULL; lp = lp->next) {
         char *bs = getstr(lp->term), *s = bs;
         do {
-            // It seems like there's a better way to go about this?
             char *ns = getstr(lp->term);
-            s = ns + (s - bs);
-            bs = ns;
-		    s = splitstring_r(s, strlen(s), TRUE);
-        } while (s != NULL);
+            s = ns + (s - bs), bs = ns;
+        } while ((s = splitstring_r(s, strlen(s), TRUE)) != NULL);
 	}
 	RefEnd(lp);
 	return endsplit();

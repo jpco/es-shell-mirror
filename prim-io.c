@@ -424,7 +424,7 @@ PRIM(read) {
 		freebuffer(buffer);
 	buffer = openbuffer(0);
 
-	while ((c = read1(fd)) != EOF && c != '\n')
+	while ((c = read1(fd)) != EOF && c != '\n' && c != '\0')
 		buffer = bufputc(buffer, c);
 
 	if (c == EOF && buffer->current == 0) {
