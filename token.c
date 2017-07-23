@@ -155,6 +155,13 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
 	return TRUE;
 }
 
+static Boolean skip(Boolean skipeq, int c) {
+    if (!skipeq || c != '=') return FALSE;
+    Boolean res = ((c = GETC()) != '>');
+    UNGETC(c);
+    return res;
+}
+
 extern int yylex(void) {
 	static Boolean dollar = FALSE;
 	int c;
@@ -192,7 +199,7 @@ top:
 			buf[i++] = c;
 			if (i >= bufsize)
 				buf = tokenbuf = erealloc(buf, bufsize *= 2);
-		} while ((c = GETC()) != EOF && (!meta[(unsigned char) c] || (skipequals && c == '=')));
+		} while ((c = GETC()) != EOF && (!meta[(unsigned char) c] || skip(skipequals, c)));
 		UNGETC(c);
 		buf[i] = '\0';
 		w = KW;

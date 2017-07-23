@@ -29,7 +29,6 @@ from the 'canonical' es:
 Still to do:
 
  - Related to 'pass':
-    - Fix parsing of 'a b=>c d'
     - Do not append '$pass' if '$pass' is already present
 
  - Programmable tab completion (iff readline is linked in).
