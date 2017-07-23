@@ -1710,7 +1710,7 @@ rather than executing them.
 .Ds
 .ft \*(Cf
 ! \fIcmd\fP	%not {\fIcmd\fP}
-\fIcmd\fP &	%background {\fIcmd\fP}
+\fIcmd\fP &	%fork {\fIcmd\fP}
 \fIcmd1\fP ; \fIcmd2\fP	%seq {\fIcmd1\fP} {\fIcmd2\fP}
 \fIcmd1\fP && \fIcmd2\fP	%and {\fIcmd1\fP} {\fIcmd2\fP}
 \fIcmd1\fP || \fIcmd2\fP	%or {\fIcmd1\fP} {\fIcmd2\fP}
@@ -1916,24 +1916,6 @@ loop except that
 .Cr forever
 does not catch any exceptions, including
 .Cr break .
-.TP
-.Cr "fork \fIcmd\fP"
-Runs a command in a subshell.
-This insulates the parent shell from the effects
-of state changing operations such as
-.Cr cd
-and variable assignments.
-For example:
-.Ds
-.Cr "fork {cd ..; make}"
-.De
-.TP
-\&
-runs
-.IR make (1)
-in the parent directory
-.Rc ( .. ),
-but leaves the shell in the current directory.
 .TP
 .Cr "if \fR[\fP\fItest then\fR]\fP ... \fR[\fPelse\fR]\fP"
 Evaluates the command
@@ -2164,7 +2146,7 @@ Runs the command with file descriptor
 set up to append to the
 .IR file .
 .TP
-.Cr "%background \fIcmd\fP"
+.Cr "%fork \fIcmd\fP"
 Runs the command in the background.
 The shell variable
 .Cr apid
@@ -2547,7 +2529,7 @@ builtin functions with the same names:
 .Ds
 .ft \*(Cf
 access	forever	throw
-catch	fork	umask
+catch	fork    umask
 echo	if	wait
 exec	newpgrp	
 exit	result	
@@ -2602,9 +2584,9 @@ batchloop	exitonfalse	isinteractive
 .De
 .PP
 The
-.Cr background
+.Cr fork
 primitive is used to implement the
-.Cr %background
+.Cr %fork
 hook function, but does not print the process ID of the
 background process or set
 .Cr $apid .

@@ -16,6 +16,7 @@
 %left	ANDAND OROR NL
 %left	'!'
 %left	PIPE
+%left   PASS
 %right  VWORD
 %left	SUB
 %right	'$'
@@ -71,6 +72,7 @@ cmd	:		%prec LET		{ $$ = NULL; }
 	| cmd ANDAND nl cmd			{ $$ = mkseq("%and", $1, $4); }
 	| cmd OROR nl cmd			{ $$ = mkseq("%or", $1, $4); }
  	| cmd PIPE nl cmd			{ $$ = mkpipe($1, $2->u[0].i, $2->u[1].i, $4); }
+    | cmd PASS nl cmd           { $$ = mkpass($1, $4); }
 	| '!' caret cmd				{ $$ = prefix("%not", mk(nList, thunkify($3), NULL)); }
 	| '~' word words			{ $$ = mk(nMatch, $2, $3); }
 	| EXTRACT word words			{ $$ = mk(nExtract, $2, $3); }
@@ -86,8 +88,10 @@ bindings: binding			{ $$ = treecons2($1, NULL); }
 	| bindings ';' binding		{ $$ = treeconsend2($1, $3); }
 	| bindings NL binding		{ $$ = treeconsend2($1, $3); }
 
+/* TODO: fix this '{' '}' nonsense */
 binding	:				{ $$ = NULL; }
 	| fn				{ $$ = $1; }
+    | '{' body '}' PASS nl word  { $$ = mk(nAssign, $6, mk(nCall, thunkify($2))); }
 	| word assign			{ $$ = mk(nAssign, $1, $2); }
 
 assign	: caret '=' caret words		{ $$ = $4; }

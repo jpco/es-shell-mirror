@@ -348,9 +348,17 @@ top:
     case ')':
     case '}':
 	case '^':
+        w = NW;
+        return c;
 	case '=':
         w = NW;
-		return c;
+        c = GETC();
+        if (c == '>') {
+            unsetskip();
+            return PASS;
+        }
+        UNGETC(c);
+		return '=';
 	case '&':
 		w = NW;
         unsetskip();

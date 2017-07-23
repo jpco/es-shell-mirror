@@ -23,7 +23,14 @@ from the 'canonical' es:
    commands now returns a list of length potentially more than n, but that's
    the price you pay, I guess.
 
+ - Added '%pass' and syntax 'a => b', equivalent to 'b <={a}'.
+   This is a warm-up to CPS and (eventually) tail call optimization.
+
 Still to do:
+
+ - Related to 'pass':
+    - Fix parsing of 'a b=>c d'
+    - Do not append '$pass' if '$pass' is already present
 
  - Programmable tab completion (iff readline is linked in).
 

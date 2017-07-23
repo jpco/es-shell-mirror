@@ -140,6 +140,35 @@ extern Tree *mkpipe(Tree *t1, int outfd, int infd, Tree *t2) {
 	return prefix("%pipe", treecons(t1, tail));
 }
 
+/* mkpass -- assemble a pass from the commands that make it up (destructive) */
+extern Tree *mkpass(Tree *t1, Tree *t2) {
+    Tree *tail;
+    Boolean passtail;
+
+    passtail = firstis(t2, "%pass");
+
+    if (passtail) {
+        tail = t2->CDR;
+    } else {
+        Tree *nv = mk(nVar, mk(nWord, "pass"));
+        if (t2->kind == nAssign) {
+            t2->u[1].p = treeconsend2(t2->u[1].p, nv);
+        } else {
+            t2 = treeconsend2(t2, nv);
+        }
+        tail = treecons(thunkify(t2), NULL);
+    }
+    if (firstis(t1, "%pass"))
+        return treeappend(t1, tail);
+
+    t1 = thunkify(t1);
+    if (passtail) {
+        t2->CDR = treecons(t1, tail);
+        return t2;
+    }
+    return prefix("%pass", treecons(t1, tail));
+}
+
 /*
  * redirections -- these involve queueing up redirection in the prefix of a
  *	tree and then rewriting the tree to include the appropriate commands

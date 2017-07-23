@@ -112,13 +112,13 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 	}
 	let (exception = ) {
 		let (
-			result = <={
-				catch @ e {
-					exception = caught $e
-				} {
-					$body
-				}
-			}
+      {
+        catch @ e {
+          exception = caught $e
+        } {
+          $body
+        }
+      } => result
 		) {
 			$cleanup
 			if {~ $exception(1) caught} {
@@ -132,7 +132,7 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 # $&fork has been a primitive: here, we reimplement the function in terms of other
 # primitives.  Presume this will not break anything.
 
-fn-subshell = @ cmd {$&wait <={$&fork {$cmd}}}
+fn-subshell = @ cmd {$&fork {$cmd} => $&wait}
 
 
 #	These builtins are not provided on all systems, so we check
@@ -158,7 +158,7 @@ fn-%whatis	= $&whatis
 #	users don't have to type the infamous <= (nee <>) operator.
 #	Whatis also protects the used from exceptions raised by %whatis.
 
-fn var		{ for (i = $*) echo <={%var $i} }
+fn var		{for (i = $*) %var $i => echo}
 
 fn whatis {
 	let (result = ) {
@@ -170,7 +170,7 @@ fn whatis {
 				echo >[1=2] $message
 				result = $result 1
 			} {
-				echo <={%whatis $i}
+				%whatis $i => echo
 				result = $result 0
 			}
 		}
@@ -189,12 +189,12 @@ fn-while = $&noreturn @ cond body {
 		}
 		result $value
 	} {
-		let (result = <=true)
+		let ({true} => result)
 			forever {
 				if {!$cond} {
 					throw break $result
 				} {
-					result = <=$body
+					$body => result=
 				}
 			}
 	}
@@ -210,13 +210,11 @@ fn cd dir {
 		$&cd $dir
 	} {~ $#dir 0} {
 		if {!~ $#home 1} {
-			throw error cd <={
-				if {~ $#home 0} {
-					result 'cd: no home directory'
-				} {
-					result 'cd: home directory must be one word'
-				}
-			}
+      if {~ $#home 0} {
+        result 'cd: no home directory'
+      } {
+        result 'cd: home directory must be one word'
+      } => throw error cd
 		}
 		$&cd $home
 	} {
@@ -275,19 +273,19 @@ fn vars {
 			dovar = @ var {
 				# print functions and/or settor vars
 				if {if {~ $var fn-*} $fns {~ $var set-*} $sets $vars} {
-					echo <={%var $var}
+					%var $var => echo
 				}
 			}
 		) {
 			if {$export || $priv} {
-				for (var = <= $&vars)
+				for ({$&vars} => var)
 					# if not exported but in priv
 					if {if {~ $var $noexport} $priv $export} {
 						$dovar $var
 					}
 			}
 			if {$intern} {
-				for (var = <= $&internals)
+				for ({$&internals} => var)
 					$dovar $var
 			}
 		}
@@ -324,7 +322,7 @@ fn-%flatten	= $&flatten
 #	puts that value in $bqstatus.
 
 fn %backquote {
-	let ((status output) = <={ $&backquote $* }) {
+	let ({$&backquote $*} => (status output)) {
 		bqstatus = $status
 		result $output
 	}
@@ -348,12 +346,23 @@ fn %backquote {
 
 fn-%seq		= $&seq
 
+fn-%pass = $&noreturn @ first rest {
+  # because => within a binding gets rewritten internally, this is OK
+  local ({$first} => pass) {
+    if {~ $#rest 0} {
+      result $pass
+    } {
+      %pass $rest
+    }
+  }
+}
+
 fn-%not = $&noreturn @ cmd {
 	if {$cmd} {false} {true}
 }
 
 fn-%and = $&noreturn @ first rest {
-	let (result = <={$first}) {
+	let ({$first} => result) {
 		if {~ $#rest 0} {
 			result $result
 		} {result $result} {
@@ -368,7 +377,7 @@ fn-%or = $&noreturn @ first rest {
 	if {~ $#first 0} {
 		false
 	} {
-		let (result = <={$first}) {
+		let ({$first} => result) {
 			if {~ $#rest 0} {
 				result $result
 			} {!result $result} {
@@ -387,7 +396,7 @@ fn-%or = $&noreturn @ first rest {
 #		cmd &			%fork {cmd}
 
 fn %fork cmd {
-	let (pid = <={$&fork $cmd}) {
+	let ({$&fork $cmd} => pid) {
 		if {%is-interactive} {
 			echo >[1=2] $pid
 		}
@@ -424,13 +433,11 @@ fn-%open-append	= %openfile a+		# >>< file, <>> file
 
 fn %one {
 	if {!~ $#* 1} {
-		throw error %one <={
-			if {~ $#* 0} {
-				result 'null filename in redirection'
-			} {
-				result 'too many files in redirection: ' $*
-			}
-		}
+    if {~ $#* 0} {
+      result 'null filename in redirection'
+    } {
+      result 'too many files in redirection: ' $*
+    } => throw error %one
 	}
 	result $*
 }
@@ -634,7 +641,7 @@ fn-%batch-loop	= $&batchloop
 fn-%is-interactive = $&isinteractive
 
 fn %interactive-loop {
-	let (result = <=true) {
+	let ({true} => result) {
 		catch @ e type msg {
 			if {~ $e eof} {
 				return $result
@@ -658,9 +665,9 @@ fn %interactive-loop {
             echo 'caught error in %prompt: '^$e
           } {%prompt}
 				}
-				let (code = <={%parse $prompt}) {
+				let ({%parse $prompt} => code) {
 					if {!~ $#code 0} {
-						result = <={$fn-%dispatch $code}
+						$fn-%dispatch $code => result=
 					}
 				}
 			}
@@ -705,8 +712,8 @@ fn-%exit-on-false = $&exitonfalse		        # -e
 set-home = @ { local (set-HOME = ) HOME = $*; result $* }
 set-HOME = @ { local (set-home = ) home = $*; result $* }
 
-set-path = @ { local (set-PATH = ) PATH = <={%flatten : $*}; result $* }
-set-PATH = @ { local (set-path = ) path = <={%fsplit  : $*}; result $* }
+set-path = @ { local (set-PATH = ) %flatten : $* => PATH=; result $* }
+set-PATH = @ { local (set-path = ) %fsplit  : $* => path=; result $* }
 
 #	These settor functions call primitives to set data structures used
 #	inside of es.
@@ -735,7 +742,7 @@ if {~ <=$&primitives add && ~ <=$&primitives negate} {
     if {~ $#* 1} {
       $&negate $*
     } {
-      $&add $*(1) <={$&negate $*(2 ...)}
+      $&negate $*(2 ...) => $&add $*(1)
     }
   }
 }

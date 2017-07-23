@@ -168,7 +168,7 @@ top:
 		return FALSE;
 
 	default:
-		panic("bad node kind: %d", n->kind);
+		panic("conv: bad node kind: %d", n->kind);
 
 	}
 	NOTREACHED;
