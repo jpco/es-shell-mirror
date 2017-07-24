@@ -16,18 +16,21 @@ static State w = NW;
 static Boolean newline = FALSE;
 static Boolean goterror = FALSE;
 static Boolean skipequals = FALSE;
+static Boolean skipdual = FALSE;
 static size_t bufsize = 0;
 static char *tokenbuf = NULL;
 
 #define	InsertFreeCaret()	STMT(if (w != NW) { w = NW; UNGETC(c); return '^'; })
 
 
-extern void setskip(void) {
+extern void setskip(Boolean dual) {
     skipequals = TRUE;
+    if (dual) skipdual = TRUE;
 }
 
 extern void unsetskip(void) {
     skipequals = FALSE;
+    skipdual = FALSE;
 }
 
 /*
@@ -155,7 +158,8 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
 	return TRUE;
 }
 
-static Boolean skip(Boolean skipeq, int c) {
+static Boolean skip(Boolean dual, int c) {
+    Boolean skipeq = dual ? skipdual : skipequals;
     if (!skipeq || c != '=') return FALSE;
     Boolean res = ((c = GETC()) != '>');
     UNGETC(c);
@@ -191,7 +195,7 @@ top:
 	if (c == EOF)
 		return ENDFILE;
 
-	if (!meta[(unsigned char) c]) {	/* it's a word or keyword. */
+	if (!meta[(unsigned char) c] || skip(TRUE, c)) {	/* it's a word or keyword. */
 		InsertFreeCaret();
 		w = RW;
 		i = 0;
@@ -199,11 +203,11 @@ top:
 			buf[i++] = c;
 			if (i >= bufsize)
 				buf = tokenbuf = erealloc(buf, bufsize *= 2);
-		} while ((c = GETC()) != EOF && (!meta[(unsigned char) c] || skip(skipequals, c)));
+		} while ((c = GETC()) != EOF && (!meta[(unsigned char) c] || skip(FALSE, c)));
 		UNGETC(c);
 		buf[i] = '\0';
 		w = KW;
-        setskip();
+        setskip(FALSE);
 		if (buf[1] == '\0') {
 			int k = *buf;
 			if (k == '@' || k == '~')
@@ -263,7 +267,7 @@ top:
 		}
 		UNGETC(c);
 		buf[i] = '\0';
-        setskip();
+        setskip(FALSE);
 		y->str = gcdup(buf);
 		return QWORD;
 	case '\\':
@@ -327,7 +331,7 @@ top:
 		}
 		buf[1] = 0;
 		y->str = gcdup(buf);
-        setskip();
+        setskip(FALSE);
 		return QWORD;
 	case '#':
 		while ((c = GETC()) != '\n') /* skip comment until newline */
@@ -365,6 +369,7 @@ top:
             return PASS;
         }
         UNGETC(c);
+        setskip(TRUE);
 		return '=';
 	case '&':
 		w = NW;
