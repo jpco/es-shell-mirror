@@ -18,7 +18,7 @@ let (cd = $fn-cd) fn cd dir {
 		$cd
 		cwd = ~
     } {
-		let (current = <={
+		let ({
 			if {~ $dir /*} {
 				result
 			} {
@@ -27,8 +27,8 @@ let (cd = $fn-cd) fn cd dir {
 				}
 				%split / $cwd
 			}
-		}) {
-			for (name = <={%split / $dir}) {
+		} => current) {
+			for ({%split / $dir} => name) {
 				if {~ $name ..} {
 					if {!~ $#current 0} {
 						let (x = 1 $current) current = $x(2 ... $#current)
@@ -42,5 +42,5 @@ let (cd = $fn-cd) fn cd dir {
 				cwd = $path
 			}
 		}
-    }
+  }
 }

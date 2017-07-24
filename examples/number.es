@@ -25,7 +25,7 @@ fn number \
 
   # Strips excess spaces and commas, and puts each digit into a separate
   # slot in the array.
-  * = <={ %fsplit '' <={%flatten '' <={%fsplit ', ' $^* } } }
+  %fsplit ', ' $^* => %flatten '' => %fsplit '' => *=
 
   let (ones = one two three four five six seven eight nine;
        tens = ten twenty thirty forty fifty sixty seventy eighty ninety;
