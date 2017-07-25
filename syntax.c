@@ -150,13 +150,19 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     if (passtail) {
         tail = t2->CDR;
     } else {
-        Tree *nv = mk(nVar, mk(nWord, "pass"));
-        if (t2->kind == nAssign) {
-            t2->u[1].p = treeconsend2(t2->u[1].p, nv);
-        } else {
-            t2 = treeconsend2(t2, nv);
+        if (t2->CAR->kind != nThunk) {
+            Tree *nv = mk(nVar, mk(nWord, "pass"));
+            if (t2->kind == nAssign) {
+                t2->CDR = treeconsend2(t2->u[1].p, nv);
+            } else {
+                t2 = treeconsend2(t2, nv);
+            }
         }
-        tail = treecons(thunkify(t2), NULL);
+        if (t2->CAR->kind == nThunk && t2->CDR == NULL) {
+            tail = t2;
+        } else {
+            tail = treecons(thunkify(t2), NULL);
+        }
     }
     if (firstis(t1, "%pass"))
         return treeappend(t1, tail);

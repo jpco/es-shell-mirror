@@ -129,8 +129,8 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 	}
 }
 
-# $&fork has been a primitive: here, we reimplement the function in terms of other
-# primitives.  Presume this will not break anything.
+# $&fork has historically been a primitive: here, we reimplement the function (renamed)
+# in terms of other primitives.  Presume this will not break anything :)
 
 fn-subshell = @ cmd {$&fork {$cmd} => $&wait}
 
@@ -347,14 +347,8 @@ fn %backquote {
 fn-%seq		= $&seq
 
 fn-%pass = $&noreturn @ first rest {
-  # because => within a binding gets rewritten internally, this is OK
-  local ({$first} => pass) {
-    if {~ $#rest 0} {
-      result $pass
-    } {
-      %pass $rest
-    }
-  }
+  local ({$first} => pass)
+    for (cmd = $rest) pass = <=$cmd
 }
 
 fn-%not = $&noreturn @ cmd {
