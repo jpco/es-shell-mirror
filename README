@@ -31,9 +31,10 @@ Still to do:
  - Related to 'pass':
     - Do not append '$pass' if '$pass' is already present
 
- - Programmable tab completion (iff readline is linked in).
+ - `echo a b | {cat | rev}` echoes the correct output, but also echoes
+   `wait: <PID> is not a child of this shell`
 
- - Even more robust '=' parsing.
+ - Programmable tab completion (iff readline is linked in).
 
  - A proper unit- and regression-testing suite.
 

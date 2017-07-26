@@ -11,37 +11,33 @@
  * hashing
  */
 
-/* strhash2 -- the (probably too slow) haahr hash function */
+/* a hash-two-strings function basically equivalent to djb2 */
 static unsigned long strhash2(const char *str1, const char *str2) {
 
-#define	ADVANCE() { \
-		if ((c = *s++) == '\0') { \
-			if (str2 == NULL) \
-				break; \
-			else { \
-				s = (unsigned char *) str2; \
-				str2 = NULL; \
-				if ((c = *s++) == '\0') \
-					break; \
-			} \
-		} \
-	}
+#define ADVANCE() { \
+        if ((c = *s++) == '\0') { \
+            if (str2 == NULL) \
+                break; \
+            else { \
+                s = (unsigned char *) str2; \
+                str2 = NULL; \
+                if ((c = *s++) == '\0') \
+                    break; \
+            } \
+        } \
+    }
 
-	int c;
-	unsigned long n = 0;
-	unsigned char *s = (unsigned char *) str1;
-	assert(str1 != NULL);
-	while (1) {
-		ADVANCE();
-		n += (c << 17) ^ (c << 11) ^ (c << 5) ^ (c >> 1);
-		ADVANCE();
-		n ^= (c << 14) + (c << 7) + (c << 4) + c;
-		ADVANCE();
-		n ^= (~c << 11) | ((c << 3) ^ (c >> 1));
-		ADVANCE();
-		n -= (c << 16) | (c << 9) | (c << 2) | (c & 3);
-	}
-	return n;
+    unsigned long h = 5381;
+    unsigned char *s = (unsigned char *) str1;
+    int c;
+    assert(str1 != NULL);
+
+    while (1) {
+        ADVANCE();
+        h = ((h << 5) + h) + c;  // 33!
+    }
+
+    return h;
 }
 
 /* strhash -- hash a single string */
