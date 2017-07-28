@@ -69,7 +69,8 @@ static Binding *extract(Tree *tree, Binding *bindings) {
 				Tree *word = defn->u[0].p;
 				NodeKind k = word->kind;
 				assert(defn->kind == nList);
-				assert(k == nWord || k == nQword || k == nPrim);
+                // TODO: make this understand other types as well
+                assert(k == nWord || k == nQword || k == nPrim);
 				if (k == nPrim) {
 					char *prim = word->u[0].s;
 					if (streq(prim, "nestedbinding")) {
