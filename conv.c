@@ -32,17 +32,17 @@ static int treecount(Tree *tree) {
 static void binding(Format *f, char *keyword, Tree *tree) {
 	Tree *np;
 	char *sep = "";
-	fmtprint(f, "%s(", keyword);
+	fmtprint(f, "%s (", keyword);
 	for (np = tree->u[0].p; np != NULL; np = np->u[1].p) {
 		Tree *binding;
 		assert(np->kind == nList);
 		binding = np->u[0].p;
 		assert(binding != NULL);
 		assert(binding->kind == nAssign);
-		fmtprint(f, "%s%#T=%T", sep, binding->u[0].p, binding->u[1].p);
-		sep = ";";
+		fmtprint(f, "%s%#T = %T", sep, binding->u[0].p, binding->u[1].p);
+		sep = "; ";
 	}
-	fmtprint(f, ")");
+	fmtprint(f, ") ");
 }
 
 /* %T -- print a tree */
@@ -76,7 +76,7 @@ top:
 		return FALSE;
 
 	case nAssign:
-		fmtprint(f, "%#T=", n->u[0].p);
+		fmtprint(f, "%#T = ", n->u[0].p);
 		tailcall(n->u[1].p, FALSE);
 
 	case nConcat:
@@ -137,10 +137,10 @@ top:
 	case nLambda:
 		fmtprint(f, "@ ");
 		if (n->u[0].p == NULL)
-			fmtprint(f, "* ");
+			fmtprint(f, "*");
 		else
 			fmtprint(f, "%T", n->u[0].p);
-		fmtprint(f, "{%T}", n->u[1].p);
+		fmtprint(f, " {%T}", n->u[1].p);
 		return FALSE;
 
 	case nList:
@@ -178,8 +178,8 @@ top:
 static void enclose(Format *f, Binding *binding, const char *sep) {
 	if (binding != NULL) {
 		Binding *next = binding->next;
-		enclose(f, next, ";");
-		fmtprint(f, "%S=%#L%s", binding->name, binding->defn, " ", sep);
+		enclose(f, next, "; ");
+		fmtprint(f, "%S = %L%s", binding->name, binding->defn, " ", sep);
 	}
 }
 
@@ -219,9 +219,9 @@ static Boolean Cconv(Format *f) {
 		fmtprint(f, "%S", str("%C", closure));
 	else {
 		if (binding != NULL) {
-			fmtprint(f, "%%closure(");
+			fmtprint(f, "%%closure (");
 			enclose(f, binding, "");
-			fmtprint(f, ")");
+			fmtprint(f, ") ");
 		}
 		fmtprint(f, "%T", tree);
 	}
