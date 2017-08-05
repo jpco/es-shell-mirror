@@ -29,12 +29,13 @@ char *prompt, *prompt2;
 Boolean disablehistory = FALSE;
 Boolean resetterminal = FALSE;
 static char *history;
-static int historyfd = -1;
 
 #if READLINE
 int rl_meta_chars;	/* for editline; ignored for gnu readline */
 extern char *readline(char *);
 extern void add_history(char *);
+extern int read_history(const char *);
+extern int append_history(int, const char *);
 extern void rl_reset_terminal(char *);
 extern char *rl_basic_word_break_characters;
 extern char *rl_completer_quote_characters;
@@ -44,6 +45,8 @@ static char *stdgetenv(const char *);
 static char *esgetenv(const char *);
 static char *(*realgetenv)(const char *) = stdgetenv;
 #endif
+#else /* !READLINE */
+static int historyfd = -1;
 #endif
 
 
@@ -83,6 +86,16 @@ static void warn(char *s) {
 
 /* loghistory -- write the last command out to a file */
 static void loghistory(const char *cmd, size_t len) {
+#if READLINE
+    int err;
+    if (history == NULL || disablehistory)
+        return;
+    if ((err = append_history(1, history))) {
+        eprint("history(%s): %s\n", history, esstrerror(errno));
+        vardef("history", NULL, NULL);
+        return;
+    }
+#else
 	const char *s, *end;
 	if (history == NULL || disablehistory)
 		return;
@@ -109,14 +122,26 @@ static void loghistory(const char *cmd, size_t len) {
 	 * most only one input line at a time.
 	 */
 	ewrite(historyfd, cmd, len);
+#endif
 }
 
 /* sethistory -- change the file for the history log */
 extern void sethistory(char *file) {
-	if (historyfd != -1) {
+#if READLINE
+    if (file != NULL) {
+        int err;
+        if ((err = read_history(file))) {
+            eprint("sethistory(%s): %s\n", file, esstrerror(errno));
+            vardef("history", NULL, NULL);
+            return;
+        }
+    }
+#else
+    if (historyfd != -1) {
 		close(historyfd);
 		historyfd = -1;
 	}
+#endif
 	history = file;
 }
 
@@ -585,8 +610,10 @@ extern void initinput(void) {
 	globalroot(&prompt);		/* main prompt */
 	globalroot(&prompt2);		/* secondary prompt */
 
+#if !READLINE
 	/* mark the historyfd as a file descriptor to hold back from forked children */
 	registerfd(&historyfd, TRUE);
+#endif
 
 	/* call the parser's initialization */
 	initparse();
