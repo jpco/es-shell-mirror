@@ -80,40 +80,12 @@ extern char *splitstring_r(char *in, size_t len, Boolean endword) {
 }
 
 extern void splitstring(char *in, size_t len, Boolean endword) {
-    Buffer *buf = buffer;
-	unsigned char *s = (unsigned char *) in, *inend = s + len;
-
-	if (splitchars) {
-		assert(buf == NULL);
-		while (s < inend) {
-			Term *term = mkstr(gcndup((char *) s++, 1));
-			value = mklist(term, value);
-    	}
-		return;
-	}
-
-	if (!coalesce && buf == NULL)
-		buf = openbuffer(0);
-
-	while (s < inend) {
-		int c = *s++;
-		if (buf != NULL)
-			if (isifs[c]) {
-				Term *term = mkstr(sealcountedbuffer(buf));
-				value = mklist(term, value);
-				buf = coalesce ? NULL : openbuffer(0);
-       		} else
-				buf = bufputc(buf, c);
-		else if (!isifs[c])
-			buf = bufputc(openbuffer(0), c);
-	}
-
-	if (endword && buf != NULL) {
-		Term *term = mkstr(sealcountedbuffer(buf));
-		value = mklist(term, value);
-		buf = NULL;
-	}
-	buffer = buf;
+    size_t remainder;
+    char *s = in;
+    do {
+        remainder = len - (s - in);
+        s = splitstring_r(s, remainder, TRUE);
+    } while (s != NULL);
 }
 
 extern List *endsplit(void) {
