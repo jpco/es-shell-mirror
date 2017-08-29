@@ -142,14 +142,14 @@ extern Tree *mkpipe(Tree *t1, int outfd, int infd, Tree *t2) {
 
 /* mkpass -- assemble a pass from the commands that make it up (destructive) */
 extern Tree *mkpass(Tree *t1, Tree *t2) {
-    Tree *tail;
+    Tree *tail = NULL;
     Boolean passtail;
 
     passtail = firstis(t2, "%pass");
 
     if (passtail) {
         tail = t2->CDR;
-    } else {
+    } else if (t2 != NULL) {
         if (t2->CAR->kind != nThunk) {
             Tree *nv = mk(nVar, mk(nWord, "pass"));
             if (t2->kind == nAssign) {
