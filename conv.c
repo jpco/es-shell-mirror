@@ -2,7 +2,7 @@
 
 #include "es.h"
 #include "print.h"
-
+#include "term.h"
 
 /* %L -- print a list */
 static Boolean Lconv(Format *f) {
@@ -179,8 +179,11 @@ static void enclose(Format *f, Binding *binding, const char *sep) {
 	if (binding != NULL) {
 		Binding *next = binding->next;
 		enclose(f, next, "; ");
-		fmtprint(f, "%S = %#L%s", binding->name, binding->defn, " ", sep);
-	}
+        char *fmtstr = (binding->defn->term->closure
+                        && binding->defn->term->closure->binding)
+                        ? "%S = {%L}%s" : "%S = %L%s";
+        fmtprint(f, fmtstr, binding->name, binding->defn, " ", sep);
+    }
 }
 
 #if 0
