@@ -42,8 +42,7 @@ PRIM(newpgrp) {
 	return true;
 }
 
-/* This used to be called 'background' */
-PRIM(fork) {
+PRIM(background) {
 	int pid = efork(TRUE, TRUE);
 	if (pid == 0) {
 #if JOB_PROTECT
@@ -445,7 +444,7 @@ PRIM(execfailure) {
 
 extern Dict *initprims_sys(Dict *primdict) {
 	X(newpgrp);
-	X(fork);
+	X(background);
 	X(umask);
 	X(cd);
 	// X(fork);

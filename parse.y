@@ -50,7 +50,7 @@ body	: cmd			{ $$ = $1; }
 	| cmdsan body		{ $$ = mkseq("%seq", $1, $2); }
 
 cmdsa	: cmd ';'		{ $$ = $1; }
-	| cmd '&'		{ $$ = prefix("%fork", mk(nList, thunkify($1), NULL)); }
+	| cmd '&'		{ $$ = prefix("%background", mk(nList, thunkify($1), NULL)); }
 
 cmdsan	: cmdsa			{ $$ = $1; }
 	| cmd NL		{ $$ = $1; if (!readheredocs(FALSE)) YYABORT; }

@@ -129,10 +129,11 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 	}
 }
 
-# $&fork has historically been a primitive: here, we reimplement the function (renamed)
+# $&fork has historically been a primitive: here, we reimplement the function
 # in terms of other primitives.  Presume this will not break anything :)
+# TODO: make this function multi-fork friendly!
 
-fn-subshell = @ cmd {$&fork {$cmd} => $&wait}
+fn-fork = @ cmd {$&background {$cmd} => $&wait}
 
 
 #	These builtins are not provided on all systems, so we check
@@ -383,14 +384,14 @@ fn-%or = $&noreturn @ first rest {
 	}
 }
 
-#	Background commands could use the $&fork primitive directly,
+#	Background commands could use the $&background primitive directly,
 #	but some of the user-friendly semantics ($apid, printing of the
 #	child process id) were easier to write in es.
 #
-#		cmd &			%fork {cmd}
+#		cmd &			%background {cmd}
 
-fn %fork cmd {
-	let ({$&fork $cmd} => pid) {
+fn %background cmd {
+	let (pid = <={$&background $cmd}) {
 		if {%is-interactive} {
 			echo >[1=2] $pid
 		}
@@ -537,7 +538,7 @@ if {~ <=$&primitives writeto} {
 #	local ($var = /tmp/es.$var.$pid) {
 #		unwind-protect {
 #			/etc/mknod $$var p
-#			$&fork {$cmd > $$var; exit}
+#			$&background {$cmd > $$var; exit}
 #			$body
 #		} {
 #			rm -f $$var
@@ -549,7 +550,7 @@ if {~ <=$&primitives writeto} {
 #	local ($var = /tmp/es.$var.$pid) {
 #		unwind-protect {
 #			/etc/mknod $$var p
-#			$&fork {$cmd < $$var; exit}
+#			$&background {$cmd < $$var; exit}
 #			$body
 #		} {
 #			rm -f $$var
