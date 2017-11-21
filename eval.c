@@ -357,6 +357,7 @@ extern List *pathsearch(Term *term) {
 
 /* eval -- evaluate a list, producing a list */
 extern List *eval(List *list0, Binding *binding0, int flags) {
+
 	Closure *volatile cp;
 	List *fn;
 

@@ -88,11 +88,10 @@ bindings: binding			{ $$ = treecons2($1, NULL); }
 	| bindings ';' binding		{ $$ = treeconsend2($1, $3); }
 	| bindings NL binding		{ $$ = treeconsend2($1, $3); }
 
-/* TODO: fix this '{' '}' nonsense */
 binding	:				{ $$ = NULL; }
 	| fn				{ $$ = $1; }
-    | '{' body '}' PASS nl word  { $$ = mk(nAssign, $6, mk(nCall, thunkify($2))); }
 	| word assign			{ $$ = mk(nAssign, $1, $2); }
+	| word 				{ $$ = mk(nAssign, $1, NULL); }
 
 assign	: caret '=' caret words		{ $$ = $4; }
 

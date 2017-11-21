@@ -112,13 +112,13 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 	}
 	let (exception = ) {
 		let (
-      {
-        catch @ e {
-          exception = caught $e
-        } {
-          $body
-        }
-      } => result
+          result = <={
+            catch @ e {
+              exception = caught $e
+            } {
+              $body
+            }
+          }
 		) {
 			$cleanup
 			if {~ $exception(1) caught} {
@@ -195,7 +195,7 @@ fn-while = $&noreturn @ cond body {
 		}
 		result $value
 	} {
-		let ({true} => result)
+		let (result = <=true)
 			forever {
 				if {!$cond} {
 					throw break $result
@@ -284,14 +284,14 @@ fn vars {
 			}
 		) {
 			if {$export || $priv} {
-				for ({$&vars} => var)
+				for (var = <=$&vars)
 					# if not exported but in priv
 					if {if {~ $var $noexport} $priv $export} {
 						$dovar $var
 					}
 			}
 			if {$intern} {
-				for ({$&internals} => var)
+				for (var = <=$&internals)
 					$dovar $var
 			}
 		}
@@ -328,7 +328,7 @@ fn-%flatten	= $&flatten
 #	puts that value in $bqstatus.
 
 fn %backquote {
-	let ({$&backquote $*} => (status output)) {
+	let ((status output) = <={$&backquote $*}) {
 		bqstatus = $status
 		result $output
 	}
@@ -353,7 +353,7 @@ fn %backquote {
 fn-%seq		= $&seq
 
 fn-%pass = $&noreturn @ first rest {
-  local ({$first} => pass)
+  local (pass = <={$first})
     for (cmd = $rest) pass = <=$cmd
 }
 
@@ -362,7 +362,7 @@ fn-%not = $&noreturn @ cmd {
 }
 
 fn-%and = $&noreturn @ first rest {
-	let ({$first} => result) {
+	let (result = <={$first}) {
 		if {~ $#rest 0} {
 			result $result
 		} {result $result} {
@@ -377,7 +377,7 @@ fn-%or = $&noreturn @ first rest {
 	if {~ $#first 0} {
 		false
 	} {
-		let ({$first} => result) {
+		let (result = <={$first}) {
 			if {~ $#rest 0} {
 				result $result
 			} {!result $result} {
@@ -396,7 +396,7 @@ fn-%or = $&noreturn @ first rest {
 #		cmd &			%background {cmd}
 
 fn %background cmd {
-	let (pid = <={$&background $cmd}) {
+        let (pid = <={local (ppid = $pid) {$&background $cmd}}) {
 		if {%is-interactive} {
 			echo >[1=2] $pid
 		}
@@ -641,7 +641,7 @@ fn-%batch-loop	= $&batchloop
 fn-%is-interactive = $&isinteractive
 
 fn %interactive-loop {
-	let ({true} => result) {
+	let (result = <=true) {
 		catch @ e type msg {
 			if {~ $e eof} {
 				return $result
@@ -665,7 +665,7 @@ fn %interactive-loop {
             echo 'caught error in %prompt: '^$e
           } {%prompt}
 				}
-				let ({%parse $prompt} => code) {
+				let (code = <={%parse $prompt}) {
 					if {!~ $#code 0} {
 						status = <={$fn-%dispatch $code}
 					}
