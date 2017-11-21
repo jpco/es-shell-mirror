@@ -323,7 +323,6 @@ static int fdfill(Input *in) {
 	if (in->runflags & run_interactive && in->fd == 0) {
 		char *rlinebuf = callreadline(prompt);
 		if (rlinebuf == NULL)
-
 			nread = 0;
 		else {
 			if (*rlinebuf != '\0')

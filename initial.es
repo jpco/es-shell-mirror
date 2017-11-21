@@ -661,7 +661,7 @@ fn %interactive-loop {
 				}
 				let ({%parse $prompt} => code) {
 					if {!~ $#code 0} {
-						$fn-%dispatch $code => result=
+						status = <={$fn-%dispatch $code}
 					}
 				}
 			}
@@ -765,7 +765,7 @@ max-eval-depth	= 640
 #	is does.  fn-%dispatch is really only important to the current
 #	interpreter loop.
 
-noexport = noexport pid signals apid bqstatus fn-%dispatch path home
+noexport = noexport pid signals apid status bqstatus fn-%dispatch path home
 
 
 #

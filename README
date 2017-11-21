@@ -24,7 +24,7 @@ from the 'canonical' es:
    the price you pay, I guess.
 
  - Added '%pass' and syntax 'a => b', equivalent to 'b <={a}'.
-   This is a warm-up to CPS and (eventually) tail call optimization.
+   This is a warm-up to CPS and tail call optimization.
 
 Still to do:
 
