@@ -131,9 +131,14 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 
 # $&fork has historically been a primitive: here, we reimplement the function
 # in terms of other primitives.  Presume this will not break anything :)
-# TODO: make this function multi-fork friendly!
 
-fn-fork = @ cmd {$&background {$cmd} => $&wait}
+fn-fork = @ cmds {
+  let (res = (); pids = ()) {
+    for (cmd = $cmds)
+      pids = $pids <={$&background {$cmd}}
+    for (cpid = $pids) res = $res <={$&wait $cpid}
+  }
+}
 
 
 #	These builtins are not provided on all systems, so we check
