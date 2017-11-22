@@ -12,28 +12,28 @@ static Boolean ifsvalid = FALSE;
 static char ifs[10], isifs[256];
 
 extern void startsplit(const char *sep, Boolean coalescef) {
-	static Boolean initialized = FALSE;
-	if (!initialized) {
-		initialized = TRUE;
-		globalroot(&value);
-	}
+    static Boolean initialized = FALSE;
+    if (!initialized) {
+        initialized = TRUE;
+        globalroot(&value);
+    }
 
-	value = NULL;
-	buffer = NULL;
-	coalesce = coalescef;
-	splitchars = !coalesce && *sep == '\0';
+    value = NULL;
+    buffer = NULL;
+    coalesce = coalescef;
+    splitchars = !coalesce && *sep == '\0';
 
-	if (!ifsvalid || !streq(sep, ifs)) {
-		int c;
-		if (strlen(sep) + 1 < sizeof ifs) {
-			strcpy(ifs, sep);
-			ifsvalid = TRUE;
-		} else
-			ifsvalid = FALSE;
-		memzero(isifs, sizeof isifs);
-		for (isifs['\0'] = TRUE; (c = (*(unsigned const char *)sep)) != '\0'; sep++)
-			isifs[c] = TRUE;
-	}
+    if (!ifsvalid || !streq(sep, ifs)) {
+        int c;
+        if (strlen(sep) + 1 < sizeof ifs) {
+            strcpy(ifs, sep);
+            ifsvalid = TRUE;
+        } else
+            ifsvalid = FALSE;
+        memzero(isifs, sizeof isifs);
+        for (isifs['\0'] = TRUE; (c = (*(unsigned const char *)sep)) != '\0'; sep++)
+            isifs[c] = TRUE;
+    }
 }
 
 // Re-entrant version of splitstring.  Returns a pointer to the next
@@ -89,28 +89,28 @@ extern void splitstring(char *in, size_t len, Boolean endword) {
 }
 
 extern List *endsplit(void) {
-	List *result;
+    List *result;
 
-	if (buffer != NULL) {
-		Term *term = mkstr(sealcountedbuffer(buffer));
-		value = mklist(term, value);
-		buffer = NULL;
-	}
-	result = reverse(value);
-	value = NULL;
-	return result;
+    if (buffer != NULL) {
+        Term *term = mkstr(sealcountedbuffer(buffer));
+        value = mklist(term, value);
+        buffer = NULL;
+    }
+    result = reverse(value);
+    value = NULL;
+    return result;
 }
 
 extern List *fsplit(const char *sep, List *list, Boolean coalesce) {
-	Ref(List *, lp, list);
-	startsplit(sep, coalesce);
-	for (; lp != NULL; lp = lp->next) {
+    Ref(List *, lp, list);
+    startsplit(sep, coalesce);
+    for (; lp != NULL; lp = lp->next) {
         char *bs = getstr(lp->term), *s = bs;
         do {
             char *ns = getstr(lp->term);
             s = ns + (s - bs), bs = ns;
         } while ((s = splitstring_r(s, strlen(s), TRUE)) != NULL);
-	}
-	RefEnd(lp);
-	return endsplit();
+    }
+    RefEnd(lp);
+    return endsplit();
 }

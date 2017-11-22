@@ -97,8 +97,8 @@ extern noreturn exit(int);
 extern noreturn abort(void);
 extern long strtol(const char *num, char **end, int base);
 extern void *qsort(
-	void *base, size_t nmemb, size_t size,
-	int (*compar)(const void *, const void *)
+    void *base, size_t nmemb, size_t size,
+    int (*compar)(const void *, const void *)
 );
 #endif /* !STDC_HEADERS */
 
@@ -109,12 +109,12 @@ extern void *qsort(
  * things that should be defined by header files but might not have been
  */
 
-#ifndef	offsetof
-#define	offsetof(t, m)	((size_t) (((char *) &((t *) 0)->m) - (char *)0))
+#ifndef offsetof
+#define offsetof(t, m)  ((size_t) (((char *) &((t *) 0)->m) - (char *)0))
 #endif
 
-#ifndef	EOF
-#define	EOF	(-1)
+#ifndef EOF
+#define EOF (-1)
 #endif
 
 /* setjmp */
@@ -136,27 +136,27 @@ extern void *qsort(
  * macros
  */
 
-#define	streq(s, t)		(strcmp(s, t) == 0)
-#define	strneq(s, t, n)		(strncmp(s, t, n) == 0)
-#define	hasprefix(s, p)		strneq(s, p, (sizeof p) - 1)
-#define	arraysize(a)		((int) (sizeof (a) / sizeof (*a)))
-#define	memzero(dest, count)	memset(dest, 0, count)
-#define	atoi(s)			strtol(s, NULL, 0)
+#define streq(s, t)     (strcmp(s, t) == 0)
+#define strneq(s, t, n)     (strncmp(s, t, n) == 0)
+#define hasprefix(s, p)     strneq(s, p, (sizeof p) - 1)
+#define arraysize(a)        ((int) (sizeof (a) / sizeof (*a)))
+#define memzero(dest, count)    memset(dest, 0, count)
+#define atoi(s)         strtol(s, NULL, 0)
 
 #if SOLARIS
-#define	STMT(stmt)		if (1) { stmt; } else
-#define	NOP			if (1) ; else
+#define STMT(stmt)      if (1) { stmt; } else
+#define NOP         if (1) ; else
 #else
-#define	STMT(stmt)		do { stmt; } while (0)
-#define	NOP			do {} while (0)
+#define STMT(stmt)      do { stmt; } while (0)
+#define NOP         do {} while (0)
 #endif
 
 #if REISER_CPP
-#define CONCAT(a,b)	a/**/b
-#define STRING(s)	"s"
+#define CONCAT(a,b) a/**/b
+#define STRING(s)   "s"
 #else
-#define CONCAT(a,b)	a ## b
-#define STRING(s)	#s
+#define CONCAT(a,b) a ## b
+#define STRING(s)   #s
 #endif
 
 
@@ -177,10 +177,10 @@ typedef volatile int Atomic;
 
 #if VOID_SIGNALS
 typedef void Sigresult;
-#define	SIGRESULT
+#define SIGRESULT
 #else
 typedef int Sigresult;
-#define	SIGRESULT	0
+#define SIGRESULT   0
 #endif
 
 typedef GETGROUPS_T gidset_t;
@@ -192,17 +192,17 @@ typedef GETGROUPS_T gidset_t;
 
 #if HAVE_STDARG_H
 
-#define	VARARGS				, ...
-#define	VARARGS1(t1, v1)		(t1 v1, ...)
-#define	VARARGS2(t1, v1, t2, v2)	(t1 v1, t2 v2, ...)
-#define	VA_START(ap, v)			va_start(ap, v)
+#define VARARGS             , ...
+#define VARARGS1(t1, v1)        (t1 v1, ...)
+#define VARARGS2(t1, v1, t2, v2)    (t1 v1, t2 v2, ...)
+#define VA_START(ap, v)         va_start(ap, v)
 
-#else	/* !HAVE_STDARG_H */
+#else   /* !HAVE_STDARG_H */
 
-#define	VARARGS
-#define	VARARGS1(t1, v1)		(v1, va_alist) t1 v1; va_dcl
-#define	VARARGS2(t1, v1, t2, v2)	(v1, v2, va_alist) t1 v1; t2 v2; va_dcl
-#define	VA_START(ap, var)		va_start(ap)
+#define VARARGS
+#define VARARGS1(t1, v1)        (v1, va_alist) t1 v1; va_dcl
+#define VARARGS2(t1, v1, t2, v2)    (v1, v2, va_alist) t1 v1; t2 v2; va_dcl
+#define VA_START(ap, var)       va_start(ap)
 
 #endif
 
@@ -212,22 +212,22 @@ typedef GETGROUPS_T gidset_t;
  */
 
 #if ASSERTIONS
-#define	assert(expr) \
-	STMT( \
-		if (!(expr)) { \
-			eprint("%s:%d: assertion failed (%s)\n", \
-				__FILE__, __LINE__, STRING(expr)); \
-			abort(); \
-		} \
-	)
+#define assert(expr) \
+    STMT( \
+        if (!(expr)) { \
+            eprint("%s:%d: assertion failed (%s)\n", \
+                __FILE__, __LINE__, STRING(expr)); \
+            abort(); \
+        } \
+    )
 #else
-#define	assert(ignore)	NOP
+#define assert(ignore)  NOP
 #endif
 
 enum { UNREACHABLE = 0 };
 
 
-#define	NOTREACHED	STMT(assert(UNREACHABLE))
+#define NOTREACHED  STMT(assert(UNREACHABLE))
 
 /*
  * system calls -- can we get these from some standard header uniformly?
@@ -261,7 +261,7 @@ extern int stat(const char *, struct stat *);
 #ifdef NGROUPS
 extern int getgroups(int, int *);
 #endif
-#endif	/* !HAVE_UNISTD_H */
+#endif  /* !HAVE_UNISTD_H */
 
 
 /*
@@ -269,41 +269,41 @@ extern int getgroups(int, int *);
  */
 
 #ifdef HAVE_SETSID
-# define setpgrp(a, b)	setsid()
+# define setpgrp(a, b)  setsid()
 #else
 #if defined(linux) || defined(__GLIBC__)
 #include "unistd.h"
-#define setpgrp(a, b)	setpgid(a, b)
+#define setpgrp(a, b)   setpgid(a, b)
 #endif
 
 #if sgi
-#define	setpgrp(a, b)	BSDsetpgrp(a,b)
+#define setpgrp(a, b)   BSDsetpgrp(a,b)
 #endif
 
 #if HPUX
-#define	setpgrp(a, b)	setpgrp()
+#define setpgrp(a, b)   setpgrp()
 #endif
 #endif
 
 #if !HAVE_LSTAT
-#define	lstat	stat
+#define lstat   stat
 #endif
 
 
 
 /*
  * macros for picking apart statuses
- *	we should be able to use the W* forms from <sys/wait.h> but on
- *	some machines they take a union wait (what a bad idea!) and on
- *	others an integer.  we just renamed the first letter to s and
- *	let things be.  on some systems these could just be defined in
- *	terms of the W* forms.
+ *  we should be able to use the W* forms from <sys/wait.h> but on
+ *  some machines they take a union wait (what a bad idea!) and on
+ *  others an integer.  we just renamed the first letter to s and
+ *  let things be.  on some systems these could just be defined in
+ *  terms of the W* forms.
  */
 
-#define	SIFSIGNALED(status)	(((status) & 0xff) != 0)
-#define	STERMSIG(status)	((status) & 0x7f)
-#define	SCOREDUMP(status)	((status) & 0x80)
-#define	SIFEXITED(status)	(!SIFSIGNALED(status))
-#define	SEXITSTATUS(status)	(((status) >> 8) & 0xff)
+#define SIFSIGNALED(status) (((status) & 0xff) != 0)
+#define STERMSIG(status)    ((status) & 0x7f)
+#define SCOREDUMP(status)   ((status) & 0x80)
+#define SIFEXITED(status)   (!SIFSIGNALED(status))
+#define SEXITSTATUS(status) (((status) >> 8) & 0xff)
 
 

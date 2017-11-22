@@ -1,7 +1,7 @@
 /* syntax.h -- abstract syntax tree interface ($Revision: 1.1.1.1 $) */
 
-#define	CAR	u[0].p
-#define	CDR	u[1].p
+#define CAR u[0].p
+#define CDR u[1].p
 
 
 /* syntax.c */
