@@ -39,7 +39,10 @@ static void binding(Format *f, char *keyword, Tree *tree) {
         binding = np->u[0].p;
         assert(binding != NULL);
         assert(binding->kind == nAssign);
-        fmtprint(f, "%s%#T = %T", sep, binding->u[0].p, binding->u[1].p);
+        if (binding->u[1].p == NULL)
+            fmtprint(f, "%s%#T", sep, binding->u[0].p);
+        else
+            fmtprint(f, "%s%#T = %T", sep, binding->u[0].p, binding->u[1].p);
         sep = "; ";
     }
     fmtprint(f, ") ");
