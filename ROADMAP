@@ -1,0 +1,47 @@
+# es roadmap
+
+## URGENT
+`%closure (a = {%closure (b)})` doesn't work -- it breaks calling functions defined within the closures (i.e., `{@ * {echo $*}} foo` doesn't actually echo `foo`)
+ - BLOCKER: `%closure (fn-a = %closure (a = b) @ * {echo $a}) {a}` is a syntax error and shouldn't be
+ - or maybe... get `a = let (b = c) {d}` to work in general?
+
+## general
+re-read mailing list
+re-host paper and mailing list on site
+learn to profile performance (how's the GC looking these days?)
+fix known crashes/bugs
+revert useless changes, properly log changes from "base" es so they don't get lost
+fix up code formatting (tabs? spaces? ??)
+
+## interactivity
+handle multi-line commands correctly (like bash)
+readline tab completion
+ - functions
+ - binaries on `$path`
+ - variable names
+ - programmability, really
+
+## language
+### completed
+ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (may not work with FCEs)
+583c03 - try to do `%closure (a = {%closure (b)})` instead of `%closure (a = '%closure (b)')`
+
+### upcoming
+`=>` should be parsed ... better
+loops should catch `continue` exceptions and handle them as expected
+finish making `=` work correctly
+(XS port) switch
+(XS port) `@ $args {$body}` should work
+ - finally make `fn fn = @ name ...` work
+(XS port) `$li(3 ... 1)` should be equivalent to `$li(3) $li(2) $li(1)`
+(XS port) math expressions? seems useful... and the syntax currently isn't used for anything else useful...
+ - this implies removing `$&add` and `$&negate` and the silly functions around them
+`$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
+
+## long-term
+first class bindings (FCBs)
+ - `let` as a function+primitive
+ - `local` as a function+primitive
+ - `for` as a function+primitive
+ - closure sharing
+continuation-passing style and tail-call recursion
