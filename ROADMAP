@@ -23,6 +23,7 @@ readline tab completion
 ### completed
 ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (may not work with FCEs)
 583c03 - try to do `%closure (a = {%closure (b)})` instead of `%closure (a = '%closure (b)')`
+85b88a - (XS port) `$li(3 ... 1)` should be equivalent to `$li(3) $li(2) $li(1)`
 
 ### upcoming
 `=>` should be parsed ... better
@@ -32,8 +33,8 @@ finish making `=` work correctly
 (XS port) switch
 (XS port) `@ $args {$body}` should work
  - finally make `fn fn = @ name ...` work
-(XS port) `$li(3 ... 1)` should be equivalent to `$li(3) $li(2) $li(1)`
 (XS port) math expressions? seems useful... and the syntax currently isn't used for anything else useful...
+(XS port) `$&noreturn` => `fn-escape` (if it doesn't need to be a primitive, don't make it one!)
  - this implies removing `$&add` and `$&negate` and the silly functions around them
 `$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
 
@@ -42,5 +43,5 @@ first class bindings (FCBs)
  - `let` as a function+primitive
  - `local` as a function+primitive
  - `for` as a function+primitive
- - closure sharing
+ - closure sharing (essentially, closures saved as variables would act as the proposed "tagging" system)
 continuation-passing style and tail-call recursion
