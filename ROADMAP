@@ -12,6 +12,7 @@ learn to profile performance (how's the GC looking these days?)
 fix known crashes/bugs
  - pathsearch?
  - {=>>x} != {=>{>x}}
+ - ctrl-c in a catch/retry loop exits the shell, which seems like wrong behavior
 
 ## interactivity
 handle multi-line commands correctly (like bash)

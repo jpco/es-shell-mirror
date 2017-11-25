@@ -184,52 +184,40 @@ fn whatis {
   }
 }
 
-# The while function is implemented with the forever looping primitive.
-# While uses $&noreturn to indicate that, while it is a lambda, it
-# does not catch the return exception.  It does, however, catch break.
+# The escaped-by function is a shorthand which allows various
+# defined-in-shell a simple syntax for 'break'-like escape mechanisms.
+# Anything which uses escaped-by is automatically $&noreturn.
 
-fn-while = $&noreturn @ cond body {
+fn-escaped-by = $&noreturn @ ex body {
+  local (fn-$ex = throw $ex)
   catch @ e value {
-    if {!~ $e break} {
-      throw $e $value
-    }
-    result $value
-  } {
-    let (result = <=true)
-      forever {
-        if {!$cond} {
-          throw break $result
-        } {
-          $body => result=
-        }
-      }
+    if {~ $e $ex} {result $value} {throw $e $value}
+  } {$&noreturn $body}
+}
+
+# The while function is implemented with the forever looping primitive.
+# It uses escaped-by to catch break.
+
+fn-while = escaped-by break @ cond body {
+  let (result = <=true)
+  forever {
+    if {!$cond} {break $result}
+    $body => result=
   }
 }
 
 # The switch function, ported from XS, is a convenience wrapper to test
-# a variable against multiple possible values.  It also uses $&noreturn,
-# and does not catch break (it only runs the first action for which
-# {~ $value $cond}.  Within actions, the user can also use 'switch-break'
-# to manually jump out of the switch.
-
-fn-switch = $&noreturn @ value args {
+# a variable against multiple possible values.  It uses `escaped-by` to
+# catch switch-break.
+fn-switch = escaped-by switch-break @ value args {
   if {~ $#args 0} {
     throw error switch 'usage: switch value [case1 action1] [case2 action2] ... default'
   }
-  local (fn-switch-break = @ {throw switch-break $*})
-  catch @ e res {
-    if {~ $e switch-break} {
-      result $res
-    } {
-      throw $e $res
-    }
-  } {
-    for ((cond action) = $args) {
-      if (
-        {~ $#action 0}   {$cond}  # this is the default action
-        {~ $value $cond} {switch-break <=$action}
-      )
-    }
+  for ((cond action) = $args) {
+    if (
+      {~ $value $cond} {switch-break <=$action}
+      {~ $#action 0}   {$cond}  # this is the default action
+    )
   }
 }
 
