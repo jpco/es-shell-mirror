@@ -209,16 +209,16 @@ fn-while = $&noreturn @ cond body {
 # The switch function, ported from XS, is a convenience wrapper to test
 # a variable against multiple possible values.  It also uses $&noreturn,
 # and does not catch break (it only runs the first action for which
-# {~ $value $cond}.  Within actions, the user can also use 'switchbreak'
+# {~ $value $cond}.  Within actions, the user can also use 'switch-break'
 # to manually jump out of the switch.
 
 fn-switch = $&noreturn @ value args {
   if {~ $#args 0} {
     throw error switch 'usage: switch value [case1 action1] [case2 action2] ... default'
   }
-  let (fn-switchbreak = @ {throw switchbreak $*})
+  local (fn-switch-break = @ {throw switch-break $*})
   catch @ e res {
-    if {~ $e switchbreak} {
+    if {~ $e switch-break} {
       result $res
     } {
       throw $e $res
@@ -227,7 +227,7 @@ fn-switch = $&noreturn @ value args {
     for ((cond action) = $args) {
       if (
         {~ $#action 0}   {$cond}  # this is the default action
-        {~ $value $cond} {switchbreak <=$action}
+        {~ $value $cond} {switch-break <=$action}
       )
     }
   }
