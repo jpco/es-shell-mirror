@@ -10,6 +10,8 @@ re-read mailing list
 re-host paper and mailing list on site
 learn to profile performance (how's the GC looking these days?)
 fix known crashes/bugs
+ - pathsearch?
+ - {=>>x} != {=>{>x}}
 
 ## interactivity
 handle multi-line commands correctly (like bash)
@@ -24,17 +26,17 @@ readline tab completion
 ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (may not work with FCEs)
 583c03 - try to do `%closure (a = {%closure (b)})` instead of `%closure (a = '%closure (b)')`
 85b88a - (XS port) `$li(3 ... 1)` should be equivalent to `$li(3) $li(2) $li(1)`
+bd2d73 - (XS port) switch
 
 ### upcoming
 `=>` should be parsed ... better
 loops should catch `continue` exceptions and handle them as expected
 `a = let (b = c) d` should actually do what it looks like it does (and not explode :))
 finish making `=` work correctly
-(XS port) switch
 (XS port) `@ $args {$body}` should work
- - finally make `fn fn = @ name ...` work
-(XS port) math expressions? seems useful... and the syntax currently isn't used for anything else useful...
+ - finally make `fn-fn = @ name ...` work
 (XS port) `$&noreturn` => `fn-escape` (if it doesn't need to be a primitive, don't make it one!)
+(XS port) math expressions? seems useful... and the syntax currently isn't used for anything else useful...
  - this implies removing `$&add` and `$&negate` and the silly functions around them
 `$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
 

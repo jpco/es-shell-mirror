@@ -152,9 +152,11 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     } else if (t2 != NULL) {
         if (t2->CAR->kind != nThunk) {
             Tree *nv = mk(nVar, mk(nWord, "pass"));
-            if (t2->kind == nAssign) {
+            switch (t2->kind) {
+            case nAssign: case nLet: case nLocal: case nClosure:
                 t2->CDR = treeconsend2(t2->u[1].p, nv);
-            } else {
+                break;
+            default:
                 t2 = treeconsend2(t2, nv);
             }
         }
