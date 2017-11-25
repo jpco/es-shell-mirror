@@ -84,10 +84,10 @@ static List *qconcat(List *list1, List *list2, StrList *ql1, StrList *ql2, StrLi
 }
 
 /* subscript -- variable subscripting */
-// TODO: this will need extended to make reversable ranges
 static List *subscript(List *list, List *subs) {
     int lo, hi, len, counter;
     List *result, **prevp, *current;
+    int rev;
 
     gcdisable();
 
@@ -96,6 +96,7 @@ static List *subscript(List *list, List *subs) {
     len = length(list);
     current = list;
     counter = 1;
+    rev = 0;
 
     if (subs != NULL && streq(getstr(subs->term), "...")) {
         lo = 1;
@@ -136,11 +137,21 @@ static List *subscript(List *list, List *subs) {
             current = list;
             counter = 1;
         }
+        if (lo > hi) {rev = 1; int t = lo; lo = hi; hi = t; }
+        List **spp = prevp;
         for (; counter < lo; counter++, current = current->next)
             ;
         for (; counter <= hi; counter++, current = current->next) {
             *prevp = mklist(current->term, NULL);
             prevp = &(*prevp)->next;
+        }
+        if (rev) {
+            *spp = reverse(*spp);
+            List *f = *spp;
+            while (f) {
+                prevp = &(f->next);
+                f = f->next;
+            }
         }
     }
 

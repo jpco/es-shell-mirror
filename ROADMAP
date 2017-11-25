@@ -1,17 +1,15 @@
 # es roadmap
 
-## URGENT
-`%closure (a = {%closure (b)})` doesn't work -- it breaks calling functions defined within the closures (i.e., `{@ * {echo $*}} foo` doesn't actually echo `foo`)
- - BLOCKER: `%closure (fn-a = %closure (a = b) @ * {echo $a}) {a}` is a syntax error and shouldn't be
- - or maybe... get `a = let (b = c) {d}` to work in general?
-
 ## general
+### completed
+c042ab - fix up code formatting (tabs? spaces? ??)
+bd4309 - revert useless changes, properly log changes from "base" es so they don't get lost
+
+### remaining
 re-read mailing list
 re-host paper and mailing list on site
 learn to profile performance (how's the GC looking these days?)
 fix known crashes/bugs
-revert useless changes, properly log changes from "base" es so they don't get lost
-fix up code formatting (tabs? spaces? ??)
 
 ## interactivity
 handle multi-line commands correctly (like bash)
@@ -29,6 +27,7 @@ ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (
 ### upcoming
 `=>` should be parsed ... better
 loops should catch `continue` exceptions and handle them as expected
+`a = let (b = c) d` should actually do what it looks like it does (and not explode :))
 finish making `=` work correctly
 (XS port) switch
 (XS port) `@ $args {$body}` should work
