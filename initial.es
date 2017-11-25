@@ -65,7 +65,6 @@
 
 fn-.    = $&dot
 fn-access = $&access
-fn-break  = $&break
 fn-catch  = $&catch
 fn-echo   = $&echo
 fn-exec   = $&exec
@@ -97,9 +96,10 @@ fn-false  = result 1
 # return.  The interpreter main() routine (and nothing else)
 # catches the exit exception.
 
-fn-break  = throw break
-fn-exit   = throw exit
-fn-return = throw return
+fn-break    = throw break
+fn-continue = throw continue
+fn-exit     = throw exit
+fn-return   = throw return
 
 # unwind-protect is a simple wrapper around catch that is used
 # to ensure that some cleanup code is run after running a code
@@ -202,7 +202,7 @@ fn-while = escaped-by break @ cond body {
   let (result = <=true)
   forever {
     if {!$cond} {break $result}
-    $body => result=
+    escaped-by continue @ {$body} => result=
   }
 }
 

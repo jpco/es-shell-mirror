@@ -190,9 +190,11 @@ static List *forloop(Tree *defn0, Tree *body0,
     looping = reversebindings(looping);
     RefEnd(defn);
 
-    ExceptionHandler
+    Boolean cont = TRUE;
+    while (cont) {
 
-        for (;;) {
+        ExceptionHandler
+
             Boolean allnull = TRUE;
             Ref(Binding *, bp, outer);
             Ref(Binding *, lp, looping);
@@ -214,20 +216,27 @@ static List *forloop(Tree *defn0, Tree *body0,
             RefEnd2(sequence, lp);
             if (allnull) {
                 RefPop(bp);
-                break;
+                cont = FALSE;
+                goto end;
             }
             result = walk(body, bp, evalflags & eval_exitonfalse);
             RefEnd(bp);
             SIGCHK();
-        }
 
-    CatchException (e)
+end:
+        CatchException (e)
 
-        if (!termeq(e->term, "break"))
-            throw(e);
-        result = e->next;
+            if (termeq(e->term, "break")) {
+                cont = FALSE;
+                result = e->next;
+            } else if (termeq(e->term, "continue")) {
+                result = e->next;
+            } else {
+                throw(e);
+            }
 
-    EndExceptionHandler
+        EndExceptionHandler
+    }
 
     RefEnd3(body, looping, outer);
     RefReturn(result);

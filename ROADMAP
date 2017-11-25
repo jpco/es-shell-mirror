@@ -28,6 +28,7 @@ ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (
 583c03 - try to do `%closure (a = {%closure (b)})` instead of `%closure (a = '%closure (b)')`
 85b88a - (XS port) `$li(3 ... 1)` should be equivalent to `$li(3) $li(2) $li(1)`
 bd2d73 - (XS port) switch
+7176c8 - (XS port) `$&noreturn` => `fn-escape` (if it doesn't need to be a primitive, don't make it one!)
 
 ### upcoming
 `=>` should be parsed ... better
@@ -36,7 +37,6 @@ loops should catch `continue` exceptions and handle them as expected
 finish making `=` work correctly
 (XS port) `@ $args {$body}` should work
  - finally make `fn-fn = @ name ...` work
-(XS port) `$&noreturn` => `fn-escape` (if it doesn't need to be a primitive, don't make it one!)
 (XS port) math expressions? seems useful... and the syntax currently isn't used for anything else useful...
  - this implies removing `$&add` and `$&negate` and the silly functions around them
 `$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
