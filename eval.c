@@ -81,7 +81,7 @@ static List *assign(Tree *varform, Tree *valueform0, Binding *binding0) {
 
 /* letbindings -- create a new Binding containing let-bound variables */
 static Binding *letbindings(Tree *defn0, Binding *outer0,
-                Binding *context0, int evalflags) {
+                Binding *context0) {
     Ref(Binding *, binding, outer0);
     Ref(Binding *, context, context0);
     Ref(Tree *, defn, defn0);
@@ -150,7 +150,7 @@ static List *local(Tree *defn, Tree *body0,
     Ref(Tree *, body, body0);
     Ref(Binding *, bindings, bindings0);
     Ref(Binding *, dynamic,
-        reversebindings(letbindings(defn, NULL, bindings, evalflags)));
+        reversebindings(letbindings(defn, NULL, bindings)));
 
     result = localbind(dynamic, bindings, body, evalflags);
 
@@ -276,39 +276,39 @@ top:
 
     switch (tree->kind) {
 
-        case nConcat: case nList: case nQword: case nVar: case nVarsub:
-        case nWord: case nThunk: case nLambda: case nCall: case nPrim: {
+    case nConcat: case nList: case nQword: case nVar: case nVarsub:
+    case nWord: case nThunk: case nLambda: case nCall: case nPrim: {
         List *list;
         Ref(Binding *, bp, binding);
         list = glom(tree, binding, TRUE);
         binding = bp;
         RefEnd(bp);
         return eval(list, binding, flags);
-        }
+    }
 
-        case nAssign:
+    case nAssign:
         return assign(tree->u[0].p, tree->u[1].p, binding);
 
-        case nLet: case nClosure:
+    case nLet: case nClosure:
         Ref(Tree *, body, tree->u[1].p);
-        binding = letbindings(tree->u[0].p, binding, binding, flags);
+        binding = letbindings(tree->u[0].p, binding, binding);
         tree = body;
         RefEnd(body);
         goto top;
 
-        case nLocal:
+    case nLocal:
         return local(tree->u[0].p, tree->u[1].p, binding, flags);
 
-        case nFor:
+    case nFor:
         return forloop(tree->u[0].p, tree->u[1].p, binding, flags);
     
-        case nMatch:
+    case nMatch:
         return matchpattern(tree->u[0].p, tree->u[1].p, binding);
 
-        case nExtract:
+    case nExtract:
         return extractpattern(tree->u[0].p, tree->u[1].p, binding);
 
-        default:
+    default:
         panic("walk: bad node kind %d", tree->kind);
 
     }
@@ -378,14 +378,14 @@ restart:
 
     if ((cp = getclosure(list->term)) != NULL) {
         switch (cp->tree->kind) {
-            case nPrim:
+        case nPrim:
             assert(cp->binding == NULL);
             list = prim(cp->tree->u[0].s, list->next, binding, flags);
             break;
-            case nThunk:
+        case nThunk:
             list = walk(cp->tree->u[0].p, cp->binding, flags);
             break;
-            case nLambda:
+        case nLambda:
             ExceptionHandler
 
                 Push p;
@@ -414,15 +414,15 @@ restart:
 
             EndExceptionHandler
             break;
-            case nList: {
+        case nList: {
             list = glom(cp->tree, cp->binding, TRUE);
             list = append(list, list->next);
             goto restart;
-            }
-            default:
+        }
+        default:
             panic("eval: bad closure node kind %d",
                   cp->tree->kind);
-            }
+        }
         goto done;
     }
 

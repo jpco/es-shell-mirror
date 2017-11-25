@@ -185,7 +185,7 @@ static void enclose(Format *f, Binding *binding, const char *sep) {
         char *fmtstr = (binding->defn
                         && binding->defn->term->closure
                         && binding->defn->term->closure->binding)
-                        ? "%S = {%L}%s" : "%S = %L%s";
+                        ? "%S = %#L%s" : "%S = %L%s";
         fmtprint(f, fmtstr, binding->name, binding->defn, " ", sep);
     }
 }
@@ -446,7 +446,7 @@ static Boolean Bconv(Format *f) {
         fmtprint(f, "(match %B %B)", n->u[0].p, n->u[1].p);
         break;
 
-    case nMatch:
+    case nExtract:
         fmtprint(f, "(extract %B %B)", n->u[0].p, n->u[1].p);
         break;
 

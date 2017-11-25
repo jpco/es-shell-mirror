@@ -84,6 +84,7 @@ static List *qconcat(List *list1, List *list2, StrList *ql1, StrList *ql2, StrLi
 }
 
 /* subscript -- variable subscripting */
+// TODO: this will need extended to make reversable ranges
 static List *subscript(List *list, List *subs) {
     int lo, hi, len, counter;
     List *result, **prevp, *current;

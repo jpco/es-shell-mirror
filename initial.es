@@ -110,7 +110,7 @@ fn-unwind-protect = $&noreturn @ body cleanup {
   if {!~ $#cleanup 1} {
     throw error unwind-protect 'unwind-protect body cleanup'
   }
-  let (exception = ) {
+  let (exception) {
     let (
           result = <={
             catch @ e {
@@ -133,7 +133,7 @@ fn-unwind-protect = $&noreturn @ body cleanup {
 # in terms of other primitives.  Presume this will not break anything :)
 
 fn-fork = @ cmds {
-  let (res = (); pids = ()) {
+  let (res; pids) {
     for (cmd = $cmds)
       pids = $pids <={$&background {$cmd}}
     for (cpid = $pids) res = $res <={$&wait $cpid}
@@ -167,7 +167,7 @@ fn-%whatis  = $&whatis
 fn var    {for (i = $*) %var $i => echo}
 
 fn whatis {
-  let (result = ) {
+  let (result) {
     for (i = $*) {
       catch @ e from message {
         if {!~ $e error} {
