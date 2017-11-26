@@ -140,6 +140,34 @@ extern Tree *mkpipe(Tree *t1, int outfd, int infd, Tree *t2) {
     return prefix("%pipe", treecons(t1, tail));
 }
 
+static Tree *injectpass(Tree *tree) {
+    Tree *nv = mk(nVar, mk(nWord, "pass"));
+    switch (tree->kind) {
+    case nLet: case nLocal: case nClosure:
+    case nAssign:
+        tree->CDR = treeconsend2(tree->CDR, nv);
+        break;
+    default:
+        // FIXME: This is heinous garbage
+        if (firstis(tree, "%open") || firstis(tree, "%create")
+                || firstis(tree, "%append") || firstis(tree, "%open-write")
+                || firstis(tree, "%open-append") || firstis(tree, "%open-create")
+                || firstis(tree, "%openfile")) {
+            Tree *body = tree;
+            int i;
+            for (i = 0; i < 5; i++) {
+                assert(body != NULL && (body->kind == nList || body->kind == nThunk));
+                // Artisinally crafted for the peculiar syntax of redirections
+                body = body->u[i < 3].p;
+            }
+            body = treeconsend2(body, nv);
+        } else {
+            return treeconsend2(tree, nv);
+        }
+    }
+    return tree;
+}
+
 /* mkpass -- assemble a pass from the commands that make it up (destructive) */
 extern Tree *mkpass(Tree *t1, Tree *t2) {
     Tree *tail = NULL;
@@ -150,16 +178,9 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     if (passtail) {
         tail = t2->CDR;
     } else if (t2 != NULL) {
-        if (t2->CAR->kind != nThunk) {
-            Tree *nv = mk(nVar, mk(nWord, "pass"));
-            switch (t2->kind) {
-            case nAssign: case nLet: case nLocal: case nClosure:
-                t2->CDR = treeconsend2(t2->u[1].p, nv);
-                break;
-            default:
-                t2 = treeconsend2(t2, nv);
-            }
-        }
+        if (t2->CAR->kind != nThunk)
+            t2 = injectpass(t2);
+
         if (t2->CAR->kind == nThunk && t2->CDR == NULL) {
             tail = t2;
         } else {
