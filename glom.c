@@ -160,6 +160,153 @@ static List *subscript(List *list, List *subs) {
     RefReturn(r);
 }
 
+static double todouble(char *s) {
+    char *end;
+    double res = strtod(s, &end);
+
+    if (*end != '\0')
+        fail("es:arith", "failed to fully convert input string to number");
+
+    return res;
+}
+
+static int parse_int_or_float(char *str, double *dptr) {
+    // This duplicates logic in token.c :/
+    Boolean isfloat = FALSE;
+    Boolean radix   = FALSE;
+    int rdepth      = 0;
+    Boolean digits  = FALSE;
+
+    char c;
+    char *buf = str;
+    double result = 0;
+
+    for (; c = *buf, isdigit(c) || (!radix && c == '.'); ++buf) {
+        if (c == '.') {
+            radix  = TRUE;
+        } else {
+            digits = TRUE;
+            if (radix) rdepth++;
+            result = (result * 10.0) + ((double)(c - '0'));
+        }
+    }
+
+    if (*buf != '\0')
+        goto fail;
+
+    {
+        int i;
+        for (i = rdepth; i > 0; i--) result /= 10.0;
+    }
+
+    if (radix && digits) isfloat = TRUE;
+    if (!isfloat && !digits)
+        goto fail;
+
+    *dptr = result;
+    return (isfloat ? nFloat : nInt);
+
+fail:
+    fail("es:arith", "token cannot be parsed as number");
+    NOTREACHED;
+    return 0;
+}
+
+static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
+    if (expr == NULL) {
+        *dptr = 0;
+        return nInt;
+    }
+
+    switch (expr->kind) {
+    case nInt: case nFloat:
+        *dptr = todouble(expr->u[0].s);
+        return expr->kind;
+    case nVar: {
+        List *var = glom(expr->u[0].p, binding, FALSE);
+        List *value = varlookup(getstr(var->term), binding);
+        if (value == NULL) {
+            *dptr = 0.0;
+            return nInt;
+        }
+        if (value->next != NULL) {
+            fail("es:arith", "multi-term variable in arithmetic statement");
+        }
+        return parse_int_or_float(getstr(value->term), dptr);
+    }
+    case nOp: {
+        char optype = *(expr->u[0].s);
+
+        double accum;
+        int accumtype;
+
+        Ref(Tree *, lp, expr->u[1].p);
+
+        accumtype = arithmefy_inner(lp->u[0].p, binding, &accum);
+
+        for (lp = lp->u[1].p; lp != NULL; lp = lp->u[1].p) {
+            assert(lp->kind == nList);
+
+            double curr;
+            accumtype = (arithmefy_inner(lp->u[0].p, binding, &curr) == nFloat)
+                ? nFloat : accumtype;
+
+#define DOOWOP(OP) \
+            ((accumtype == nFloat) ? \
+             accum OP curr : (double)((int)accum OP (int)curr))
+
+            switch (optype) {
+            case '+':
+                accum = DOOWOP(+);
+                break;
+            case '-':
+                accum = DOOWOP(-);
+                break;
+            case '*':
+                accum = DOOWOP(*);
+                break;
+            case '/':
+                if (curr == 0.0 || (accumtype == nInt && (int)curr == 0))
+                    fail("es:arith", "divide by zero");
+                accum = DOOWOP(/);
+                break;
+            case '%':
+                if ((double)((int)accum) != accum)
+                    fail("es:arith", "left-hand side of %% is not int-valued");
+                if ((double)((int)curr) != curr)
+                    fail("es:arith", "right-hand side of %% is not int-valued");
+
+                accum = (double)((int)accum % (int)curr);
+            }
+        }
+
+        RefEnd(lp);
+        *dptr = accum;
+        return accumtype;
+    }
+    default:
+        fail("es:arith", "bad expr kind %d", expr->kind);
+    }
+
+    NOTREACHED;
+    return 0;
+}
+
+static List *arithmefy(Tree *expr, Binding *binding) {
+    double result;
+    switch (arithmefy_inner(expr, binding, &result)) {
+    case nInt:
+        return mklist(mkstr(str("%d", (int)result)), NULL);
+    case nFloat:
+        return mklist(mkstr(str("%f", result)), NULL);
+    default:
+        fail("es:arith", "bad expr kind %d", expr->kind);
+    }
+
+    NOTREACHED;
+    return NULL;
+}
+
 /* glom1 -- glom when we don't need to produce a quote list */
 static List *glom1(Tree *tree, Binding *binding) {
     Ref(List *, result, NULL);
@@ -219,6 +366,10 @@ static List *glom1(Tree *tree, Binding *binding) {
             tp = NULL;
             list = subscript(list, sub);
             RefEnd2(sub, name);
+            break;
+        case nArith:
+            list = arithmefy(tp->u[0].p, binding);
+            tp = NULL;
             break;
         case nCall:
             list = listcopy(walk(tp->u[0].p, bp, 0));

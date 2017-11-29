@@ -65,37 +65,11 @@ static Binding *extract(Tree *tree, Binding *bindings) {
             assert(name->kind == nWord || name->kind == nQword);
             defn = revtree(defn->u[1].p);
             for (; defn != NULL; defn = defn->u[1].p) {
-                Term *term;
+                Term *term = NULL;
                 Tree *word = defn->u[0].p;
                 NodeKind k = word->kind;
                 assert(defn->kind == nList);
-                char *prim;
                 switch (k) {
-                case nPrim:
-                    prim = word->u[0].s;
-                    if (streq(prim, "nestedbinding")) {
-                        int i, count;
-                        Chain *cp;
-                        if (
-                            (defn = defn->u[1].p) == NULL
-                             || defn->u[0].p->kind != nWord
-                             || (count = (atoi(defn->u[0].p->u[0].s))) < 0
-                        ) {
-                            fail("$&parse", "improper use of $&nestedbinding");
-                            NOTREACHED;
-                        }
-                        for (cp = chain, i = 0;; cp = cp->next, i++) {
-                            if (cp == NULL) {
-                                fail("$&parse", "bad count in $&nestedbinding: %d", count);
-                                NOTREACHED;
-                            }
-                            if (i == count)
-                                break;
-                        }
-                        term = mkterm(NULL, cp->closure);
-                        break;
-                    }
-                    // fallthrough
                 case nThunk:
                 case nLambda:
                 case nList:

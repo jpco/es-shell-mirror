@@ -14,29 +14,35 @@ extern Tree *mk VARARGS1(NodeKind, t) {
     gcdisable();
     VA_START(ap, t);
     switch (t) {
-        default:
+    default:
         panic("mk: bad node kind %d", t);
-        case nWord: case nQword: case nPrim:
+    case nWord: case nQword: case nPrim:
+    case nInt: case nFloat:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].s = va_arg(ap, char *);
         break;
-        case nCall: case nThunk: case nVar:
+    case nCall: case nThunk: case nVar: case nArith:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].p = va_arg(ap, Tree *);
         break;
-        case nAssign:  case nConcat: case nClosure: case nFor:
-        case nLambda: case nLet: case nList:  case nLocal:
-        case nVarsub: case nMatch: case nExtract:
+    case nOp:
+        n = gcalloc(offsetof(Tree, u[2]), &Tree2Tag);
+        n->u[0].s = va_arg(ap, char *);
+        n->u[1].p = va_arg(ap, Tree *);
+        break;
+    case nAssign:  case nConcat: case nClosure: case nFor:
+    case nLambda: case nLet: case nList:  case nLocal:
+    case nVarsub: case nMatch: case nExtract:
         n = gcalloc(offsetof(Tree, u[2]), &Tree2Tag);
         n->u[0].p = va_arg(ap, Tree *);
         n->u[1].p = va_arg(ap, Tree *);
         break;
-        case nRedir:
+    case nRedir:
         n = gcalloc(offsetof(Tree, u[2]), NULL);
         n->u[0].p = va_arg(ap, Tree *);
         n->u[1].p = va_arg(ap, Tree *);
         break;
-        case nPipe:
+    case nPipe:
         n = gcalloc(offsetof(Tree, u[2]), NULL);
         n->u[0].i = va_arg(ap, int);
         n->u[1].i = va_arg(ap, int);
@@ -72,12 +78,13 @@ static void *Tree2Copy(void *op) {
 static size_t Tree1Scan(void *p) {
     Tree *n = p;
     switch (n->kind) {
-        default:
+    default:
         panic("Tree1Scan: bad node kind %d", n->kind);
-        case nPrim: case nWord: case nQword:
+    case nPrim: case nWord: case nQword:
+    case nInt: case nFloat:
         n->u[0].s = forward(n->u[0].s);
         break;
-        case nCall: case nThunk: case nVar:
+    case nCall: case nThunk: case nVar: case nArith:
         n->u[0].p = forward(n->u[0].p);
         break;
     } 
@@ -87,13 +94,14 @@ static size_t Tree1Scan(void *p) {
 static size_t Tree2Scan(void *p) {
     Tree *n = p;
     switch (n->kind) {
-        case nAssign:  case nConcat: case nClosure: case nFor:
-        case nLambda: case nLet: case nList:  case nLocal:
-        case nVarsub: case nMatch: case nExtract:
+    case nAssign:  case nConcat: case nClosure: case nFor:
+    case nLambda: case nLet: case nList:  case nLocal:
+    case nVarsub: case nMatch: case nExtract:
+    case nOp:
         n->u[0].p = forward(n->u[0].p);
         n->u[1].p = forward(n->u[1].p);
         break;
-        default:
+    default:
         panic("Tree2Scan: bad node kind %d", n->kind);
     } 
     return offsetof(Tree, u[2]);

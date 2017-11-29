@@ -102,7 +102,6 @@ top:
         fmtprint(f, "$%#T(%T)", n->u[0].p, n->u[1].p);
         return FALSE;
 
-
     case nLocal:
         binding(f, "local", n);
         tailcall(n->u[1].p, FALSE);
@@ -170,11 +169,47 @@ top:
         }
         return FALSE;
 
+    case nArith:
+        fmtprint(f, "`(%T)", n->u[0].p);
+        return FALSE;
+
+    case nOp: {
+        char *op = n->u[0].s;
+        Boolean first = TRUE;
+        Tree *operand = n->u[1].p;
+        Tree *curr;
+        for (; operand->u[1].p != NULL; operand = operand->u[1].p) {
+            curr = operand->u[0].p;
+            if (first && *op == '-' && curr->kind == nInt 
+                    && *curr->u[0].s == '0' && (curr->u[0].s)[1] == '\0')
+                fmtprint(f, "-");
+            else if (curr->kind == nOp)
+                fmtprint(f, "(%T)%s", curr, op);
+            else
+                fmtprint(f, "%T%s", curr, op);
+
+            first = FALSE;
+        }
+
+        curr = operand->u[0].p;
+        if (curr->kind == nOp)
+            fmtprint(f, "(%T)", curr, op);
+        else
+            fmtprint(f, "%T", curr, op);
+
+        return FALSE;
+    }
+    case nInt: case nFloat:
+        fmtprint(f, "%s", n->u[0].s);
+        return FALSE;
+
     default:
         panic("conv: bad node kind: %d", n->kind);
 
     }
+
     NOTREACHED;
+    return FALSE;
 }
 
 /* enclose -- build up a closure */
@@ -398,6 +433,14 @@ static Boolean Bconv(Format *f) {
         fmtprint(f, "(qword \"%s\")", n->u[0].s);
         break;
 
+    case nInt:
+        fmtprint(f, "(int \"%s\")", n->u[0].s);
+        break;
+
+    case nFloat:
+        fmtprint(f, "(float \"%s\")", n->u[0].s);
+        break;
+
     case nPrim:
         fmtprint(f, "(prim %s)", n->u[0].s);
         break;
@@ -408,6 +451,14 @@ static Boolean Bconv(Format *f) {
 
     case nThunk:
         fmtprint(f, "(thunk %B)", n->u[0].p);
+        break;
+
+    case nArith:
+        fmtprint(f, "(arith %B)", n->u[0].p);
+        break;
+
+    case nOp:
+        fmtprint(f, "(op \"%s\" %B)", n->u[0].s, n->u[1].p);
         break;
 
     case nVar:

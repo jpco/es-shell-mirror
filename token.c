@@ -79,6 +79,25 @@ const char dnw[] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 240 - 255 */
 };
 
+/* Non-words for arithmetic variables */
+const char adnw[] = {
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*   0 -  15 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*  16 -  32 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* ' ' - '/' */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,		/* '0' - '?' */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* 'P' - '_' */
+	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '`' - 'o' */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,		/* 'p' - DEL */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 128 - 143 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 144 - 159 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 160 - 175 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 176 - 191 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 192 - 207 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 208 - 223 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 224 - 239 */
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 240 - 255 */
+};
 
 /* print_prompt2 -- called before all continuation lines */
 extern void print_prompt2(void) {
@@ -166,7 +185,36 @@ static Boolean skip(Boolean dual, int c) {
     return res;
 }
 
+static inline void bufput(char **buf, int pos, char val) {
+    while ((unsigned long)pos >= bufsize) {
+        *buf = tokenbuf = erealloc(tokenbuf, bufsize *= 2);
+    }
+    (*buf)[pos] = val;
+}
+
+static int yylex_arithmetic();
+static int yylex_normal();
+
+static int (*fn_yylex)() = yylex_normal;
+
 extern int yylex(void) {
+    if (goterror) {
+        goterror = FALSE;
+        return NL;
+    }
+
+    if (newline) {
+        --input->lineno; /* slight space optimization; print_prompt2() always increments lineno */
+        print_prompt2();
+        newline = FALSE;
+    }
+
+    int result = fn_yylex();
+    if (result == ERROR) fn_yylex = yylex_normal;
+    return result;
+}
+
+static int yylex_normal(void) {
     static Boolean dollar = FALSE;
     int c;
     size_t i;           /* The purpose of all these local assignments is to */
@@ -174,19 +222,9 @@ extern int yylex(void) {
     char *buf = tokenbuf;       /* values into registers. On a sparc this is a      */
     YYSTYPE *y = &yylval;       /* win, in code size *and* execution time       */
 
-    if (goterror) {
-        goterror = FALSE;
-        return NL;
-    }
-
     /* rc variable-names may contain only alnum, '*' and '_', so use dnw if we are scanning one. */
     meta = (dollar ? dnw : nw);
     dollar = FALSE;
-    if (newline) {
-        --input->lineno; /* slight space optimization; print_prompt2() always increments lineno */
-        print_prompt2();
-        newline = FALSE;
-    }
 
 top:
     while ((c = GETC()) == ' ' || c == '\t')
@@ -200,12 +238,10 @@ top:
         w = RW;
         i = 0;
         do {
-            buf[i++] = c;
-            if (i >= bufsize)
-                buf = tokenbuf = erealloc(buf, bufsize *= 2);
+            bufput(&buf, i++, c);
         } while ((c = GETC()) != EOF && (!meta[(unsigned char) c] || skip(FALSE, c)));
         UNGETC(c);
-        buf[i] = '\0';
+        bufput(&buf, i, '\0');
         w = KW;
         setskip(FALSE);
         if (buf[1] == '\0') {
@@ -240,6 +276,10 @@ top:
         c = GETC();
         if (c == '`')
             return BACKBACK;
+        else if (c == '(') {
+            fn_yylex = yylex_arithmetic;
+            return ARITH_BEGIN;
+        }
         UNGETC(c);
         return '`';
     case '$':
@@ -254,7 +294,7 @@ top:
         w = RW;
         i = 0;
         while ((c = GETC()) != '\'' || (c = GETC()) == '\'') {
-            buf[i++] = c;
+            bufput(&buf, i++, c);
             if (c == '\n')
                 print_prompt2();
             if (c == EOF) {
@@ -262,11 +302,9 @@ top:
                 scanerror("eof in quoted string");
                 return ERROR;
             }
-            if (i >= bufsize)
-                buf = tokenbuf = erealloc(buf, bufsize *= 2);
         }
         UNGETC(c);
-        buf[i] = '\0';
+        bufput(&buf, i, '\0');
         setskip(FALSE);
         y->str = gcdup(buf);
         return QWORD;
@@ -451,6 +489,70 @@ top:
         assert(c != '\0');
         w = NW;
         return c; /* don't know what it is, let yacc barf on it */
+    }
+}
+
+static int yylex_arithmetic(void) {
+    static int pdepth = 1;
+    int c;
+    char *buf = tokenbuf;
+    YYSTYPE *y = &yylval;
+
+    while (c = GETC(), c == ' ' || c == '\t' || c == '\n')
+        if (c == '\n') print_prompt2();
+
+    if (isdigit(c) || c == '.') {
+        Boolean isfloat = FALSE;
+        Boolean radix   = FALSE;
+        Boolean digits  = FALSE;
+        size_t i = 0;
+
+        do {
+            if (c == '.') radix = TRUE;
+            if (isdigit(c)) digits = TRUE;
+            bufput(&buf, i++, c);
+        } while (c = GETC(), isdigit(c) || (!radix && c == '.'));
+        UNGETC(c);
+        bufput(&buf, i, '\0');
+        if (radix && digits) isfloat = TRUE;
+        if (!isfloat && !digits) {
+            scanerror("invalid arithmetic token");
+            return ERROR;
+        }
+
+        y->str = gcdup(buf);
+        return isfloat ? FLOAT : INT;
+    }
+    switch (c) {
+    case '(':
+        ++pdepth;
+        /* fallthrough */
+    case '+': case '-': case '/': case '*': case '%':
+        return c;
+    case ')':
+        if (--pdepth == 0) {
+            pdepth = 1;
+            fn_yylex = yylex_normal;
+        }
+        return c;
+    case '$': {
+        size_t i = 0;
+        while (c = GETC(), c != EOF && !adnw[c])
+            bufput(&buf, i++, c);
+        UNGETC(c);
+        if (i == 0) {
+            scanerror("empty variable in arithmetic expression");
+            return ERROR;
+        }
+
+        bufput(&buf, i, '\0');
+        y->str = gcdup(buf);
+        return ARITH_VAR;
+    }
+
+    default:
+        assert (c != '\0');
+        return c;  /* shrug; let yacc fail on it, I guess */
     }
 }
 

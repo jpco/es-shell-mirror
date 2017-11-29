@@ -321,7 +321,9 @@ top:
         panic("walk: bad node kind %d", tree->kind);
 
     }
+
     NOTREACHED;
+    return NULL;
 }
 
 /* bindargs -- bind an argument list to the parameters of a lambda */

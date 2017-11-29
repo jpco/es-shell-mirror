@@ -11,6 +11,7 @@
 %token  LOCAL LET FOR CLOSURE FN
 %token  ANDAND BACKBACK EXTRACT CALL COUNT DUP FLAT OROR PRIM REDIR SUB
 %token  NL ENDFILE ERROR
+%token  INT FLOAT ARITH_BEGIN ARITH_VAR
 
 %left   LOCAL LET FOR CLOSURE ')'
 %left   ANDAND OROR NL
@@ -21,6 +22,10 @@
 %left   SUB
 %right  '$'
 
+%left   '+' '-'
+%left   '*' '/' '%'
+%precedence NEG
+
 %union {
         Tree *tree;
         char *str;
@@ -28,9 +33,11 @@
 }
 
 %type <str>     WORD QWORD keyword
+                ARITH_VAR INT FLOAT
 %type <tree>    REDIR PIPE DUP
                 body cmd cmdsa cmdsan comword first fn line word param assign
                 binding bindings params nlwords words simple redir sword vword vsword
+                arith
 %type <kind>    binder
 
 %start es
@@ -117,12 +124,13 @@ word    : sword                         { $$ = $1; }
 vsword  : vword                         { $$ = $1; }
         | keyword                       { $$ = mk(nWord, $1); }
 
-/* a 'vword' is a comword that can't contain subscripting */
+/* a 'vword' is a word which can appear in a variable */
 vword   : param                         { $$ = $1; }
         | '(' nlwords ')'               { $$ = $2; }
         | '{' body '}'                  { $$ = thunkify($2); }
         | '@' params '{' body '}'       { $$ = mklambda($2, $4); }
-        | '$' vsword                    { $$ = mk(nVar, $2); }
+        | '$' vsword      %prec VWORD   { $$ = mk(nVar, $2); }
+        | ARITH_BEGIN arith ')'         { $$ = mk(nArith, $2); }
         | CALL sword                    { $$ = mk(nCall, $2); }
         | COUNT sword                   { $$ = mk(nCall, prefix("%count", treecons(mk(nVar, $2), NULL))); }
         | FLAT sword                    { $$ = flatten(mk(nVar, $2), " "); }
@@ -130,18 +138,9 @@ vword   : param                         { $$ = $1; }
         | '`' vsword                    { $$ = backquote(mk(nVar, mk(nWord, "ifs")), $2); }
         | BACKBACK word sword           { $$ = backquote($2, $3); }
 
-comword : param                         { $$ = $1; }
-        | '(' nlwords ')'               { $$ = $2; }
-        | '{' body '}'                  { $$ = thunkify($2); }
-        | '@' params '{' body '}'       { $$ = mklambda($2, $4); }
-        | '$' vsword     %prec VWORD    { $$ = mk(nVar, $2); }
+/* a 'comword' is a usual command word */
+comword : vword                         { $$ = $1; }
         | '$' vsword SUB words ')'      { $$ = mk(nVarsub, $2, $4); }
-        | CALL sword                    { $$ = mk(nCall, $2); }
-        | COUNT sword                   { $$ = mk(nCall, prefix("%count", treecons(mk(nVar, $2), NULL))); }
-        | FLAT sword                    { $$ = flatten(mk(nVar, $2), " "); }
-        | PRIM WORD                     { $$ = mk(nPrim, $2); }
-        | '`' sword                     { $$ = backquote(mk(nVar, mk(nWord, "ifs")), $2); }
-        | BACKBACK word sword           { $$ = backquote($2, $3); }
 
 /* a 'param' is essentially a 'unit non-special word'. */
 param   : WORD                          { $$ = mk(nWord, $1); }
@@ -181,3 +180,14 @@ keyword : '!'           { $$ = "!"; }
         | FOR           { $$ = "for"; }
         | FN            { $$ = "fn"; }
         | CLOSURE       { $$ = "%closure"; }
+
+arith   : arith '-' arith      { $$ = mkop("-", $1, $3); }
+        | arith '+' arith      { $$ = mkop("+", $1, $3); }
+        | arith '*' arith      { $$ = mkop("*", $1, $3); }
+        | arith '/' arith      { $$ = mkop("/", $1, $3); }
+        | arith '%' arith      { $$ = mkop("%", $1, $3); }
+        | '-' arith  %prec NEG { $$ = mkop("-", mk(nInt, "0"), $2); }
+        | '(' arith ')'        { $$ = $2; }
+        | ARITH_VAR            { $$ = mk(nVar, mk(nWord, $1)); }
+        | INT                  { $$ = mk(nInt, $1); }
+        | FLOAT                { $$ = mk(nFloat, $1); }

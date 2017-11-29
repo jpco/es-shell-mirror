@@ -747,21 +747,6 @@ if {~ <=$&primitives resetterminal} {
   set-TERMCAP = @ { $&resetterminal; result $* }
 }
 
-# If the $&add and $&negate primitives are defined (i.e., if es has been
-# compiled with ARITHMETIC_PRIMITIVES set), then define %+ and %- in terms
-# of those builtins.
-
-if {~ <=$&primitives add && ~ <=$&primitives negate} {
-  fn-%+ = $&add
-  fn-%- = @ {
-    if {~ $#* 1} {
-      $&negate $*
-    } {
-      $&negate $*(2 ...) => $&add $*(1)
-    }
-  }
-}
-
 #
 # Variables
 #

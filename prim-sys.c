@@ -97,7 +97,9 @@ PRIM(umask) {
         return true;
     }
     fail("$&umask", "usage: umask [mask]");
+
     NOTREACHED;
+    return NULL;
 }
 
 PRIM(cd) {

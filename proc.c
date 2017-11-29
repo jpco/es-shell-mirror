@@ -168,7 +168,9 @@ top:
         goto top;
     }
     fail("es:ewait", "wait: %d is not a child of this shell", pid);
+
     NOTREACHED;
+    return 0;
 }
 
 #include "prim.h"
@@ -198,6 +200,7 @@ PRIM(wait) {
     } else {
         fail("$&wait", "usage: wait [pid]");
         NOTREACHED;
+        return NULL;
     }
     return mklist(mkstr(mkstatus(ewait(pid, TRUE, NULL))), NULL);
 }

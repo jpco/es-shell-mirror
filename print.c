@@ -63,6 +63,11 @@ static Boolean sconv(Format *format) {
     return FALSE;
 }
 
+static char * chartable[] = {
+    "0123456789abcdefghijklmnopqrstuvwxyz",
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+};
+
 static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) {
     if (u >= radix) {
         t = es_utoa(u / radix, t, radix, digit);
@@ -72,11 +77,39 @@ static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) 
     return t;
 }
 
+static Boolean fconv(Format *format) {
+    double f = va_arg(format->args, double);
+
+    // It might make sense that fconv would respect things
+    // like FMT_leftside.  Interesting how things don't
+    // always happen the sensical way.
+
+    if (f < 0) {
+        fmtputc(format, '-');
+        f = -f;
+    }
+
+#define PRECISION 100000
+
+    unsigned int whole = (unsigned int)f;
+    unsigned int dec   = ((unsigned int)(f * PRECISION) % PRECISION);
+    while (dec != 0 && dec % 10 == 0) dec /= 10;
+
+    char num[32];
+    char *end = es_utoa(whole, num, 10, chartable[0]);
+    *end = '\0';
+    fmtcat(format, num);
+
+    fmtputc(format, '.');
+
+    end = es_utoa(dec, num, 10, chartable[0]);
+    *end = '\0';
+    fmtcat(format, num);
+
+    return FALSE;
+}
+
 static void intconv(Format *format, unsigned int radix, int upper, char *altform) {
-    static char * table[] = {
-        "0123456789abcdefghijklmnopqrstuvwxyz",
-        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    };
     char padchar;
     size_t len, pre, zeroes, padding, width;
     long n, flags;
@@ -104,7 +137,7 @@ static void intconv(Format *format, unsigned int radix, int upper, char *altform
         while (*altform != '\0')
             prefix[pre++] = *altform++;
 
-    len = es_utoa(u, number, radix, table[upper]) - number;
+    len = es_utoa(u, number, radix, chartable[upper]) - number;
     if ((flags & FMT_f2set) && (size_t) format->f2 > len)
         zeroes = format->f2 - len;
     else
@@ -181,6 +214,7 @@ static void inittab(void) {
     fmttab['s'] = sconv;
     fmttab['c'] = cconv;
     fmttab['d'] = dconv;
+    fmttab['f'] = fconv;
     fmttab['o'] = oconv;
     fmttab['x'] = xconv;
     fmttab['%'] = pctconv;
