@@ -1,0 +1,20 @@
+The es shell supports doing literate programming (aha,
+for some defintions of "literate" and "programming").
+
+For instance, this is implemented in the following file:
+
+; less -e literat.es
+
+Multiple lines are executed as a chunk:
+
+; fn rev3 a b c {
+;   echo $c $b $a
+; }
+; rev3 one two three
+
+Also
+
+; let (a = b)
+;   echo $a
+
+Nice.
