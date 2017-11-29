@@ -4,23 +4,25 @@
 ### completed
 c042ab - fix up code formatting (tabs? spaces? ??)
 bd4309 - revert useless changes, properly log changes from "base" es so they don't get lost
+c36efd - {=>>x} != {=>{>x}}
 
 ### remaining
 re-read mailing list
 re-host paper and mailing list on site
 learn to profile performance (how's the GC looking these days?)
 fix known crashes/bugs
- - pathsearch?
- - {=>>x} != {=>{>x}}
+ - path cache?
  - ctrl-c in a catch/retry loop exits the shell, which seems like wrong behavior
+add fuzzing/proper testing
 
 ## interactivity
 handle multi-line commands correctly (like bash)
 readline tab completion
- - functions
- - binaries on `$path`
- - variable names
- - programmability, really
+ - correct behavior with quotes
+ - complete functions
+ - complete binaries on `$path`
+ - complete variable names?
+ - completion programmability
 
 ## language
 ### completed
@@ -30,6 +32,7 @@ ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (
 bd2d73 - (XS port) switch
 7176c8 - (XS port) `$&noreturn` => `fn-escape` (if it doesn't need to be a primitive, don't make it one!)
 2eaefd - loops should catch `continue` exceptions and handle them as expected
+012b31 - (XS port) math expressions
 
 ### upcoming
 `=>` should be parsed ... better
@@ -37,8 +40,6 @@ bd2d73 - (XS port) switch
 finish making `=` work correctly
 (XS port) `@ $args {$body}` should work
  - finally make `fn-fn = @ name ...` work
-(XS port) math expressions? seems useful... and the syntax currently isn't used for anything else useful...
- - this implies removing `$&add` and `$&negate` and the silly functions around them
 `$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
 
 ## long-term
@@ -48,3 +49,5 @@ first class bindings (FCBs)
  - `for` as a function+primitive
  - closure sharing (essentially, closures saved as variables would act as the proposed "tagging" system)
 continuation-passing style and tail-call recursion
+decouple "core language" parsing (parse.y) from the "extension syntax"
+ - (syntax to remove: !, `, ``, $#, $^, &&, ||, ;, &, |, =>, heredocs?, redirections)
