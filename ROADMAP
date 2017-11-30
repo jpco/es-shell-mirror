@@ -13,7 +13,9 @@ learn to profile performance (how's the GC looking these days?)
 fix known crashes/bugs
  - path cache?
  - ctrl-c in a catch/retry loop exits the shell, which seems like wrong behavior
+ - exceptions with GCDEBUG defined cause a segfault
 add fuzzing/proper testing
+stop ./configure from adding '-g -O2' to CFLAGS by default?
 
 ## interactivity
 handle multi-line commands correctly (like bash)

@@ -44,9 +44,13 @@ MKDIR_P = @MKDIR_P@
 # YACC = @YACC@
 
 OPT = 0
-OPTFLAGS = -ggdb
+OPTFLAGS = -ggdb -DASSERTIONS=1 -DLISPTREES
 ifeq (${OPT},1)
-	OPTFLAGS = -g -O3
+	OPTFLAGS = -g -O3 -UASSERTIONS -ULISPTREES
+else
+	ifeq (${OPT},0)
+		OPTFLAGS = $(OPTFLAGS) -DGCDEBUG
+	endif
 endif
 CFLAGS	= $(ADDCFLAGS) -I. -I$(srcdir) -W -Wall -Wno-missing-field-initializers -Wno-unused-parameter -Wno-clobbered -Wno-implicit-fallthrough @CFLAGS@ ${OPTFLAGS}
 LDFLAGS	= $(ADDLDFLAGS) @LDFLAGS@
