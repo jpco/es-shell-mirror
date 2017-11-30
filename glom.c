@@ -175,11 +175,17 @@ static int parse_int_or_float(char *str, double *dptr) {
     Boolean isfloat = FALSE;
     Boolean radix   = FALSE;
     int rdepth      = 0;
+    int mul         = 1;
     Boolean digits  = FALSE;
 
     char c;
     char *buf = str;
     double result = 0;
+
+    if (*buf == '-') {
+        ++buf;
+        mul = -1;
+    }
 
     for (; c = *buf, isdigit(c) || (!radix && c == '.'); ++buf) {
         if (c == '.') {
@@ -194,10 +200,8 @@ static int parse_int_or_float(char *str, double *dptr) {
     if (*buf != '\0')
         goto fail;
 
-    {
-        int i;
-        for (i = rdepth; i > 0; i--) result /= 10.0;
-    }
+    result *= mul;
+    for (; rdepth > 0; rdepth--) result /= 10.0;
 
     if (radix && digits) isfloat = TRUE;
     if (!isfloat && !digits)
