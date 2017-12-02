@@ -44,15 +44,19 @@ MKDIR_P = @MKDIR_P@
 # YACC = @YACC@
 
 OPT = 0
-OPTFLAGS = -ggdb -DASSERTIONS=1 -DLISPTREES
-ifeq (${OPT},1)
-	OPTFLAGS = -g -O3 -UASSERTIONS -ULISPTREES
+OPTFLAGS = @CFLAGS@
+ifeq (${OPT},release)
+	OPTFLAGS = -O3 -DASSERTIONS=0
 else
-	ifeq (${OPT},0)
-		OPTFLAGS = $(OPTFLAGS) -DGCDEBUG
-	endif
+ifeq (${OPT},debug)
+ifeq (${CC},gcc)
+	OPTFLAGS = -ggdb -DGCDEBUG=1 -DLISPTREES=1
+else
+	OPTFLAGS = -g -DGCDEBUG=1 -DLISPTREES=1
 endif
-CFLAGS	= $(ADDCFLAGS) -I. -I$(srcdir) -W -Wall -Wno-missing-field-initializers -Wno-unused-parameter -Wno-clobbered -Wno-implicit-fallthrough @CFLAGS@ ${OPTFLAGS}
+endif
+endif
+CFLAGS	= $(ADDCFLAGS) -I. -I$(srcdir) -W -Wall -Wno-missing-field-initializers -Wno-unused-parameter -Wno-clobbered -Wno-implicit-fallthrough ${OPTFLAGS}
 LDFLAGS	= $(ADDLDFLAGS) @LDFLAGS@
 LIBS	= $(ADDLIBS) @LIBS@
 
