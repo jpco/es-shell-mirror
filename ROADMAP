@@ -16,6 +16,7 @@ fix known crashes/bugs
  - exceptions with GCDEBUG defined cause a segfault
 add fuzzing/proper testing
 stop ./configure from adding '-g -O2' to CFLAGS by default?
+fix esdebug
 
 ## interactivity
 handle multi-line commands correctly (like bash)

@@ -62,7 +62,7 @@ extern char *splitstring_r(char *in, size_t len, Boolean endword) {
             if (isifs[c]) {
                 Term *term = mkstr(sealcountedbuffer(buf));
                 value = mklist(term, value);
-                buf = coalesce ? NULL : openbuffer(0);
+                buffer = buf = coalesce ? NULL : openbuffer(0);
                 return (char *) s;
             } else
                 buf = bufputc(buf, c);
@@ -84,7 +84,7 @@ extern void splitstring(char *in, size_t len, Boolean endword) {
     char *s = in;
     do {
         remainder = len - (s - in);
-        s = splitstring_r(s, remainder, TRUE);
+        s = splitstring_r(s, remainder, endword);
     } while (s != NULL);
 }
 
