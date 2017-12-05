@@ -228,6 +228,13 @@ extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
         return mk(nOp, op, treeconsend2(t1, t2));
 }
 
+extern Tree *mkcmp(char *cmp, Tree *t1, Tree *t2) {
+    // TODO: enable chained comparisons! `($a < $b <= $c)
+    if (t2->kind != nList)
+        t2 = treecons(t2, NULL);
+    return mk(nCmp, cmp, treecons(t1, t2));
+}
+
 /*
  * redirections -- these involve queueing up redirection in the prefix of a
  *  tree and then rewriting the tree to include the appropriate commands

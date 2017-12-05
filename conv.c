@@ -199,6 +199,11 @@ top:
 
         return FALSE;
     }
+
+    case nCmp:
+        fmtprint(f, "%T%s%T", n->u[1].p->u[0].p, n->u[0].s, n->u[1].p->u[1].p->u[0].p);
+        return FALSE;
+
     case nInt: case nFloat:
         fmtprint(f, "%s", n->u[0].s);
         return FALSE;
@@ -463,6 +468,9 @@ static Boolean Bconv(Format *f) {
     case nOp:
         fmtprint(f, "(op \"%s\" %B)", n->u[0].s, n->u[1].p);
         break;
+
+    case nCmp:
+        fmtprint(f, "(cmp \"%s\" %B)", n->u[0].s, n->u[1].p);
 
     case nVar:
         fmtprint(f, "(var %B)", n->u[0].p);

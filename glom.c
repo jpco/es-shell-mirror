@@ -238,6 +238,31 @@ static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
         }
         return parse_int_or_float(getstr(value->term), dptr);
     }
+    case nCmp: {
+        char cmptype = (expr->u[0].s)[0];
+        char orequal = (expr->u[0].s)[1];
+
+        double leftval, rightval;
+        arithmefy_inner(expr->u[1].p->u[0].p, binding, &leftval);
+        arithmefy_inner(expr->u[1].p->u[1].p->u[0].p, binding, &rightval);
+
+        switch (cmptype) {
+        case '<':
+            *dptr = orequal ? (leftval <= rightval) : (leftval < rightval);
+            break;
+        case '>':
+            *dptr = orequal ? (leftval >= rightval) : (leftval > rightval);
+            break;
+        case '!':
+            *dptr = leftval != rightval;
+            break;
+        case '=':
+            *dptr = leftval == rightval;
+            break;
+        }
+
+        return nCmp;
+    }
     case nOp: {
         char optype = *(expr->u[0].s);
 
@@ -303,6 +328,8 @@ static List *arithmefy(Tree *expr, Binding *binding) {
         return mklist(mkstr(str("%d", (int)result)), NULL);
     case nFloat:
         return mklist(mkstr(str("%f", result)), NULL);
+    case nCmp:
+        return mklist(mkstr(str(result ? "true" : "false")), NULL);
     default:
         fail("es:arith", "bad expr kind %d", expr->kind);
     }

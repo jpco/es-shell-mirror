@@ -5,6 +5,7 @@
 c042ab - fix up code formatting (tabs? spaces? ??)
 bd4309 - revert useless changes, properly log changes from "base" es so they don't get lost
 c36efd - {=>>x} != {=>{>x}}
+7c6aad - stop ./configure from adding '-g -O2' to CFLAGS by default?
 
 ### remaining
 re-read mailing list
@@ -15,7 +16,6 @@ fix known crashes/bugs
  - ctrl-c in a catch/retry loop exits the shell, which seems like wrong behavior
  - exceptions with GCDEBUG defined cause a segfault
 add fuzzing/proper testing
-stop ./configure from adding '-g -O2' to CFLAGS by default?
 fix esdebug
 
 ## interactivity
@@ -29,7 +29,7 @@ readline tab completion
 
 ## language
 ### completed
-ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (may not work with FCEs)
+ff841e - (XS port) `let (a; b)` is a nice shorthand for `let (a = (); b = ())` (may not work with FCBs)
 583c03 - try to do `%closure (a = {%closure (b)})` instead of `%closure (a = '%closure (b)')`
 85b88a - (XS port) `$li(3 ... 1)` should be equivalent to `$li(3) $li(2) $li(1)`
 bd2d73 - (XS port) switch

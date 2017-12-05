@@ -549,6 +549,31 @@ static int yylex_arithmetic(void) {
         y->str = gcdup(buf);
         return ARITH_VAR;
     }
+    case '=':
+        c = GETC();
+        if (c != '=')
+            UNGETC(c);
+        return EQ;
+
+    case '<':
+        c = GETC();
+        if (c == '=')
+            return LEQ;
+        UNGETC(c);
+        return LESS;
+
+    case '>':
+        c = GETC();
+        if (c == '=')
+            return GEQ;
+        UNGETC(c);
+        return GREATER;
+
+    case '!':
+        c = GETC();
+        if (c == '=')
+            return NEQ;
+        UNGETC(c);
 
     default:
         assert (c != '\0');

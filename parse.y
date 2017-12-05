@@ -12,6 +12,7 @@
 %token  ANDAND BACKBACK EXTRACT CALL COUNT DUP FLAT OROR PRIM REDIR SUB
 %token  NL ENDFILE ERROR
 %token  INT FLOAT ARITH_BEGIN ARITH_VAR
+%token  LEQ GEQ NEQ LESS GREATER EQ
 
 %left   LOCAL LET FOR CLOSURE ')'
 %left   ANDAND OROR NL
@@ -22,9 +23,10 @@
 %left   SUB
 %right  '$'
 
-%left   '+' '-'
-%left   '*' '/' '%'
-%precedence NEG
+%nonassoc   LESS GREATER LEQ GEQ EQ
+%left       '+' '-'
+%left       '*' '/' '%'
+%nonassoc   NEG
 
 %union {
         Tree *tree;
@@ -37,7 +39,7 @@
 %type <tree>    REDIR PIPE DUP
                 body cmd cmdsa cmdsan comword first fn line word param assign
                 binding bindings params nlwords words simple redir sword vword vsword
-                arith
+                arith cmparith
 %type <kind>    binder
 
 %start es
@@ -130,7 +132,7 @@ vword   : param                         { $$ = $1; }
         | '{' body '}'                  { $$ = thunkify($2); }
         | '@' params '{' body '}'       { $$ = mklambda($2, $4); }
         | '$' vsword      %prec VWORD   { $$ = mk(nVar, $2); }
-        | ARITH_BEGIN arith ')'         { $$ = mk(nArith, $2); }
+        | ARITH_BEGIN cmparith ')'      { $$ = mk(nArith, $2); }
         | CALL sword                    { $$ = mk(nCall, $2); }
         | COUNT sword                   { $$ = mk(nCall, prefix("%count", treecons(mk(nVar, $2), NULL))); }
         | FLAT sword                    { $$ = flatten(mk(nVar, $2), " "); }
@@ -191,3 +193,11 @@ arith   : arith '-' arith      { $$ = mkop("-", $1, $3); }
         | ARITH_VAR            { $$ = mk(nVar, mk(nWord, $1)); }
         | INT                  { $$ = mk(nInt, $1); }
         | FLOAT                { $$ = mk(nFloat, $1); }
+
+cmparith    : arith                 { $$ = $1; }
+            | arith LESS arith      { $$ = mkcmp("<", $1, $3); }
+            | arith GREATER arith   { $$ = mkcmp(">", $1, $3); }
+            | arith EQ arith        { $$ = mkcmp("=", $1, $3); }
+            | arith LEQ arith       { $$ = mkcmp("<=", $1, $3); }
+            | arith GEQ arith       { $$ = mkcmp(">=", $1, $3); }
+            | arith NEQ arith       { $$ = mkcmp("!=", $1, $3); }

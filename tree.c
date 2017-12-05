@@ -25,7 +25,7 @@ extern Tree *mk VARARGS1(NodeKind, t) {
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].p = va_arg(ap, Tree *);
         break;
-    case nOp:
+    case nOp: case nCmp:
         n = gcalloc(offsetof(Tree, u[2]), &Tree2Tag);
         n->u[0].s = va_arg(ap, char *);
         n->u[1].p = va_arg(ap, Tree *);
@@ -97,7 +97,7 @@ static size_t Tree2Scan(void *p) {
     case nAssign:  case nConcat: case nClosure: case nFor:
     case nLambda: case nLet: case nList:  case nLocal:
     case nVarsub: case nMatch: case nExtract:
-    case nOp:
+    case nOp: case nCmp:
         n->u[0].p = forward(n->u[0].p);
         n->u[1].p = forward(n->u[1].p);
         break;
