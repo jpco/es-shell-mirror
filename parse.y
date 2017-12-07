@@ -39,7 +39,7 @@
 %type <tree>    REDIR PIPE DUP
                 body cmd cmdsa cmdsan comword first fn line word param assign
                 binding bindings params nlwords words simple redir sword vword vsword
-                arith cmparith
+                arith cmparith cmp
 %type <kind>    binder
 
 %start es
@@ -194,10 +194,17 @@ arith   : arith '-' arith      { $$ = mkop("-", $1, $3); }
         | INT                  { $$ = mk(nInt, $1); }
         | FLOAT                { $$ = mk(nFloat, $1); }
 
+cmp : arith LESS arith      { $$ = mkcmp("<", $1, $3); }
+    | arith GREATER arith   { $$ = mkcmp(">", $1, $3); }
+    | arith EQ arith        { $$ = mkcmp("=", $1, $3); }
+    | arith LEQ arith       { $$ = mkcmp("<=", $1, $3); }
+    | arith GEQ arith       { $$ = mkcmp(">=", $1, $3); }
+    | arith NEQ arith       { $$ = mkcmp("!=", $1, $3); }
+
 cmparith    : arith                 { $$ = $1; }
-            | arith LESS arith      { $$ = mkcmp("<", $1, $3); }
-            | arith GREATER arith   { $$ = mkcmp(">", $1, $3); }
-            | arith EQ arith        { $$ = mkcmp("=", $1, $3); }
-            | arith LEQ arith       { $$ = mkcmp("<=", $1, $3); }
-            | arith GEQ arith       { $$ = mkcmp(">=", $1, $3); }
-            | arith NEQ arith       { $$ = mkcmp("!=", $1, $3); }
+            | cmp                   { $$ = $1; }
+
+/*
+arithlogic  : cmp ANDAND cmp    { $$ = ???; }
+            | cmp OROR cmp      { $$ = ???; }
+*/

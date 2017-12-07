@@ -24,6 +24,10 @@ case '3 - 2.5'      ; want 0.5
 case '-(3 - 1)'     ; want -2
 case '-(3 + 1)'     ; want -4
 case '-3 - 1'       ; want -4
+case '-0'           ; want 0
+
+# precedence
+case '-(3-3) != (-3)-3'   ; want true
 
 # error handling
 case '3.0 % 2.0'    ; want 1.0
@@ -48,3 +52,13 @@ case '1.5 == 3'     ; want false
 
 case '1 != 4'       ; want true
 case '-1.0 != 3-4'  ; want false
+
+# logical operators and (in)equality chaining
+case '1 < 2 < 3'      ; want true
+case '1 < 2 > 1'      ; want true
+case '1 < 2 = 2 < 0'  ; want false
+
+case '1 < 2 && 3 < 2' ; want false
+case '1 > 2 && 3 > 2' ; want false
+case '1 < 2 || 3 < 2' ; want true
+case '3 < 2 || 1 < 2' ; want true
