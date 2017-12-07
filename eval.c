@@ -286,7 +286,8 @@ top:
     switch (tree->kind) {
 
     case nConcat: case nList: case nQword: case nVar: case nVarsub:
-    case nWord: case nThunk: case nLambda: case nCall: case nPrim: {
+    case nWord: case nThunk: case nLambda: case nCall: case nPrim: 
+    case nArith: {
         List *list;
         Ref(Binding *, bp, binding);
         list = glom(tree, binding, TRUE);
