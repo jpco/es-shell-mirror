@@ -335,9 +335,7 @@ static int fdfill(Input *in) {
             }
             memcpy(in->bufbegin, rlinebuf, nread - 1);
             in->bufbegin[nread - 1] = '\n';
-#if LIBREADLINE
             efree(rlinebuf);
-#endif
         }
     } else
 #endif
@@ -620,6 +618,6 @@ extern void initinput(void) {
 #if READLINE
     rl_meta_chars = 0;
     rl_basic_word_break_characters=" \t\n\\'`$><=;|&{()}";
-        rl_completer_quote_characters="'";
+    rl_completer_quote_characters="'";
 #endif
 }
