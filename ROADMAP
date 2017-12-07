@@ -15,6 +15,7 @@ fix known crashes/bugs
  - path cache?
  - ctrl-c in a catch/retry loop exits the shell, which seems like wrong behavior
  - exceptions with GCDEBUG defined cause a segfault
+ - test failures
 add fuzzing/proper testing
 fix esdebug
 
@@ -53,4 +54,4 @@ first class bindings (FCBs)
  - closure sharing (essentially, closures saved as variables would act as the proposed "tagging" system)
 continuation-passing style and tail-call recursion
 decouple "core language" parsing (parse.y) from the "extension syntax"
- - (syntax to remove: !, `, ``, $#, $^, &&, ||, ;, &, |, =>, heredocs?, redirections)
+ - (syntax to remove: !, `, ``, $#, $^, &&, ||, ;, &, |, =>, heredocs?, arithmetic?, redirections)
