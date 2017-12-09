@@ -43,7 +43,9 @@ extern char *splitstring_r(char *in, size_t len, Boolean endword) {
     unsigned char *s = (unsigned char *) in, *inend = s + len;
 
     if (splitchars) {
+        if (*s == '\0') return NULL;
         assert(buf == NULL);
+
         Boolean end = *(s + 1) == '\0';
 
         Term *term = mkstr(gcndup((char *) s, 1));

@@ -11,6 +11,7 @@ c36efd - {=>>x} != {=>{>x}}
 re-read mailing list
 re-host paper and mailing list on site
 learn to profile performance (how's the GC looking these days?)
+ - also learn to profile memory usage
 fix known crashes/bugs
  - path cache?
  - ctrl-c in a catch/retry loop exits the shell, which seems like wrong behavior
@@ -22,11 +23,15 @@ fix esdebug
 ## interactivity
 handle multi-line commands correctly (like bash)
 readline tab completion
+ - msg00039.html -- blargh.
  - correct behavior with quotes
  - complete functions
  - complete binaries on `$path`
  - complete variable names?
  - completion programmability
+user-definable history file
+ - msg00039.html again!
+ - how does this play with "handle multi-line commands correctly"?
 
 ## language
 ### completed
@@ -44,6 +49,7 @@ bd2d73 - (XS port) switch
 finish making `=` work correctly
 (XS port) `@ $args {$body}` should work
  - finally make `fn-fn = @ name ...` work
+    - remember the `@ a b c %closure (a=b) {$body}` problem
 `$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
 
 ## long-term
@@ -51,7 +57,10 @@ first class bindings (FCBs)
  - `let` as a function+primitive
  - `local` as a function+primitive
  - `for` as a function+primitive
+    - msg00196.html -- primitives can't do lexical bindings -- think about this
  - closure sharing (essentially, closures saved as variables would act as the proposed "tagging" system)
 continuation-passing style and tail-call recursion
 decouple "core language" parsing (parse.y) from the "extension syntax"
  - (syntax to remove: !, `, ``, $#, $^, &&, ||, ;, &, |, =>, heredocs?, arithmetic?, redirections)
+ - is this macros? do macros enable lexical-binding "primitives"? do I need to learn scheme?
+    - extend-syntax? msg00198.html
