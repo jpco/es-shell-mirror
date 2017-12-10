@@ -19,6 +19,11 @@ fix known crashes/bugs
  - test failures
 add fuzzing/proper testing
 fix esdebug
+static es is still a fun idea
+we should support *some* level of portability outside of "my personal linuces"
+ - with readline, with editline, or neither
+ - OS's? linux (apt rpm arch gentoo?) (gcc clang), macOS, BSDs?
+ - allow keeping %pass and arithmetic out of the shell
 
 ## interactivity
 handle multi-line commands correctly (like bash)
@@ -32,6 +37,8 @@ readline tab completion
 user-definable history file
  - msg00039.html again!
  - how does this play with "handle multi-line commands correctly"?
+%read should utilize readline/editline in interactive settings when appropriate
+ - can %read use other delimiters besides \n?
 
 ## language
 ### completed
@@ -51,6 +58,12 @@ finish making `=` work correctly
  - finally make `fn-fn = @ name ...` work
     - remember the `@ a b c %closure (a=b) {$body}` problem
 `$&wait` should really be a wait-any. this would unlock some parallelism that currently isn't (I think) possible
+how do we set up "throw exception on non-zero status" in the repl?  I feel like %dispatch needs rethinking
+we want: `echo {let (x) y}` === `echo {let (x=) y}` === `echo {let (x=()) y}`
+potentially $&echo is just `write(1, ...)` and echo does the -- and -n interpretation?
+msg00416.html?
+we need to handle recursive structures better
+  - re current semantics of let: msg00433.html
 
 ## long-term
 first class bindings (FCBs)
