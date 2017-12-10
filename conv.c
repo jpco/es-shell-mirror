@@ -87,12 +87,20 @@ top:
         tailcall(n->u[1].p, TRUE);
 
     case nMatch:
-        fmtprint(f, "~ %#T ", n->u[0].p);
-        tailcall(n->u[1].p, FALSE);
+        fmtprint(f, "~ %#T", n->u[0].p);
+        if (treecount(n->u[1].p) > 0) {
+            fmtprint(f, " ");
+            tailcall(n->u[1].p, FALSE);
+        } else
+            return FALSE;
 
     case nExtract:
-        fmtprint(f, "~~ %#T ", n->u[0].p);
-        tailcall(n->u[1].p, FALSE);
+        fmtprint(f, "~~ %#T", n->u[0].p);
+        if (treecount(n->u[1].p) > 0) {
+            fmtprint(f, " ");
+            tailcall(n->u[1].p, FALSE);
+        } else
+            return FALSE;
 
     case nThunk:
         fmtprint(f, "{%T}", n->u[0].p);
@@ -233,37 +241,12 @@ static void enclose(Format *f, Binding *binding, const char *sep) {
     }
 }
 
-#if 0
-typedef struct Chain Chain;
-struct Chain {
-    Closure *closure;
-    Chain *next;
-};
-static Chain *chain = NULL;
-#endif
-
 /* %C -- print a closure */
 static Boolean Cconv(Format *f) {
     Closure *closure = va_arg(f->args, Closure *);
     Tree *tree = closure->tree;
     Binding *binding = closure->binding;
     Boolean altform = (f->flags & FMT_altform) != 0;
-
-#if 0
-    int i;
-    Chain me, *cp;
-    assert(tree->kind == nThunk || tree->kind == nLambda || tree->kind == nPrim);
-    assert(binding == NULL || tree->kind != nPrim);
-
-    for (cp = chain, i = 0; cp != NULL; cp = cp->next, i++)
-        if (cp->closure == closure) {
-            fmtprint(f, "%d $&nestedbinding", i);
-            return FALSE;
-        }
-    me.closure = closure;
-    me.next = chain;
-    chain = &me;
-#endif
 
     if (altform)
         fmtprint(f, "%S", str("%C", closure));
@@ -276,9 +259,6 @@ static Boolean Cconv(Format *f) {
         fmtprint(f, "%T", tree);
     }
 
-#if 0
-    chain = chain->next;    /* TODO: exception unwinding? */
-#endif
     return FALSE;
 }
 
