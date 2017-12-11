@@ -78,42 +78,6 @@ PRIM(dot) {
     RefReturn(result);
 }
 
-PRIM(flatten) {
-    char *sep;
-    if (list == NULL)
-        fail("$&flatten", "usage: %%flatten separator [args ...]");
-    Ref(List *, lp, list);
-    sep = getstr(lp->term);
-    lp = mklist(mkstr(str("%L", lp->next, sep)), NULL);
-    RefReturn(lp);
-}
-
-PRIM(whatis) {
-    /* the logic in here is duplicated in eval() */
-    if (list == NULL || list->next != NULL)
-        fail("$&whatis", "usage: $&whatis program");
-    Ref(Term *, term, list->term);
-    if (getclosure(term) == NULL) {
-        List *fn;
-        Ref(char *, prog, getstr(term));
-        assert(prog != NULL);
-        fn = varlookup2("fn-", prog, binding);
-        if (fn != NULL)
-            list = fn;
-        else {
-            if (isabsolute(prog)) {
-                char *error = checkexecutable(prog);
-                if (error != NULL)
-                    fail("$&whatis", "%s: %s", prog, error);
-            } else
-                list = pathsearch(term);
-        }
-        RefEnd(prog);
-    }
-    RefEnd(term);
-    return list;
-}
-
 PRIM(split) {
     char *sep;
     if (list == NULL)
@@ -131,30 +95,6 @@ PRIM(fsplit) {
     Ref(List *, lp, list);
     sep = getstr(lp->term);
     lp = fsplit(sep, lp->next, FALSE);
-    RefReturn(lp);
-}
-
-PRIM(var) {
-    Term *term;
-    if (list == NULL)
-        return NULL;
-    Ref(List *, rest, list->next);
-    Ref(char *, name, getstr(list->term));
-    Ref(List *, defn, varlookup(name, NULL));
-    rest = prim_var(rest, NULL, evalflags);
-    term = mkstr(str("%S = %L", name, defn, " "));
-    list = mklist(term, rest);
-    RefEnd3(defn, name, rest);
-    return list;
-}
-
-PRIM(sethistory) {
-    if (list == NULL) {
-        sethistory(NULL);
-        return NULL;
-    }
-    Ref(List *, lp, list);
-    sethistory(getstr(lp->term));
     RefReturn(lp);
 }
 
@@ -187,8 +127,6 @@ PRIM(batchloop) {
     Ref(List *, result, true);
     Ref(List *, dispatch, NULL);
 
-    SIGCHK();
-
     ExceptionHandler
 
         for (;;) {
@@ -197,13 +135,11 @@ PRIM(batchloop) {
             cmd = (parser == NULL)
                     ? prim("parse", NULL, NULL, 0)
                     : eval(parser, NULL, 0);
-            SIGCHK();
             dispatch = varlookup("fn-%dispatch", NULL);
             if (cmd != NULL) {
                 if (dispatch != NULL)
                     cmd = append(dispatch, cmd);
                 result = eval(cmd, NULL, evalflags);
-                SIGCHK();
             }
         }
 
@@ -222,28 +158,6 @@ PRIM(batchloop) {
 PRIM(collect) {
     gc();
     return true;
-}
-
-PRIM(home) {
-    struct passwd *pw;
-    if (list == NULL)
-        return varlookup("home", NULL);
-    if (list->next != NULL)
-        fail("$&home", "usage: %%home [user]");
-    pw = getpwnam(getstr(list->term));
-    return (pw == NULL) ? NULL : mklist(mkstr(gcdup(pw->pw_dir)), NULL);
-}
-
-PRIM(vars) {
-    return listvars(FALSE);
-}
-
-PRIM(internals) {
-    return listvars(TRUE);
-}
-
-PRIM(isinteractive) {
-    return isinteractive() ? true : false;
 }
 
 PRIM(noreturn) {
@@ -279,13 +193,6 @@ PRIM(setmaxevaldepth) {
     RefReturn(lp);
 }
 
-#if READLINE
-PRIM(resetterminal) {
-    resetterminal = TRUE;
-    return true;
-}
-#endif
-
 /*
  * initialization
  */
@@ -296,26 +203,15 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(version);
     X(exec);
     X(dot);
-    X(flatten);
-    X(whatis);
-    X(sethistory);
     X(split);
     X(fsplit);
-    X(var);
     X(parse);
     X(batchloop);
     X(collect);
-    X(home);
     X(setnoexport);
-    X(vars);
-    X(internals);
     X(result);
-    X(isinteractive);
     X(exitonfalse);
     X(noreturn);
     X(setmaxevaldepth);
-#if READLINE
-    X(resetterminal);
-#endif
     return primdict;
 }

@@ -17,35 +17,16 @@ extern Tree *mk VARARGS1(NodeKind, t) {
     default:
         panic("mk: bad node kind %d", t);
     case nWord: case nQword: case nPrim:
-    case nInt: case nFloat:
-        n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
-        n->u[0].s = va_arg(ap, char *);
-        break;
-    case nCall: case nThunk: case nVar: case nArith:
+    case nCall: case nThunk: case nVar:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].p = va_arg(ap, Tree *);
         break;
-    case nOp: case nCmp:
-        n = gcalloc(offsetof(Tree, u[2]), &Tree2Tag);
-        n->u[0].s = va_arg(ap, char *);
-        n->u[1].p = va_arg(ap, Tree *);
-        break;
-    case nAssign:  case nConcat: case nClosure: case nFor:
+    case nAssign:  case nConcat: case nClosure:
     case nLambda: case nLet: case nList:  case nLocal:
     case nVarsub: case nMatch: case nExtract:
         n = gcalloc(offsetof(Tree, u[2]), &Tree2Tag);
         n->u[0].p = va_arg(ap, Tree *);
         n->u[1].p = va_arg(ap, Tree *);
-        break;
-    case nRedir:
-        n = gcalloc(offsetof(Tree, u[2]), NULL);
-        n->u[0].p = va_arg(ap, Tree *);
-        n->u[1].p = va_arg(ap, Tree *);
-        break;
-    case nPipe:
-        n = gcalloc(offsetof(Tree, u[2]), NULL);
-        n->u[0].i = va_arg(ap, int);
-        n->u[1].i = va_arg(ap, int);
         break;
     }
     n->kind = t;
@@ -81,10 +62,9 @@ static size_t Tree1Scan(void *p) {
     default:
         panic("Tree1Scan: bad node kind %d", n->kind);
     case nPrim: case nWord: case nQword:
-    case nInt: case nFloat:
         n->u[0].s = forward(n->u[0].s);
         break;
-    case nCall: case nThunk: case nVar: case nArith:
+    case nCall: case nThunk: case nVar:
         n->u[0].p = forward(n->u[0].p);
         break;
     } 
@@ -94,10 +74,9 @@ static size_t Tree1Scan(void *p) {
 static size_t Tree2Scan(void *p) {
     Tree *n = p;
     switch (n->kind) {
-    case nAssign:  case nConcat: case nClosure: case nFor:
+    case nAssign:  case nConcat: case nClosure:
     case nLambda: case nLet: case nList:  case nLocal:
     case nVarsub: case nMatch: case nExtract:
-    case nOp: case nCmp:
         n->u[0].p = forward(n->u[0].p);
         n->u[1].p = forward(n->u[1].p);
         break;

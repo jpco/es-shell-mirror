@@ -71,9 +71,6 @@ static void catcher(int sig) {
 #if SYSV_SIGNALS /* only do this for unreliable signals */
     signal(sig, catcher);
 #endif
-    if (hasforked)
-        /* exit unconditionally on a signal in a child process */
-        exit(1);
     if (caught[sig] == 0) {
         caught[sig] = TRUE;
         ++sigcount;
@@ -276,9 +273,6 @@ extern void sigchk(void) {
 
     if (sigcount == 0 || blocked)
         return;
-    if (hasforked)
-        /* exit unconditionally on a signal in a child process */
-        exit(1);
 
     for (sig = 0;; sig++) {
         if (caught[sig] != 0) {

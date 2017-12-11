@@ -43,10 +43,8 @@ struct Closure {
  */
 
 typedef enum {
-    nAssign, nCall, nClosure, nConcat, nFor, nLambda, nLet, nList, nLocal,
-    nMatch, nExtract, nPrim, nQword, nThunk, nVar, nVarsub, nWord,
-    nArith, nOp, nCmp, nInt, nFloat,
-    nRedir, nPipe       /* only appear during construction */
+    nAssign, nCall, nClosure, nConcat, nLambda, nLet, nList, nLocal,
+    nMatch, nExtract, nPrim, nQword, nThunk, nVar, nVarsub, nWord
 } NodeKind;
 
 struct Tree {
@@ -168,15 +166,9 @@ extern unsigned long evaldepth, maxevaldepth;
 
 /* glom.c */
 
-extern List *glom(Tree *tree, Binding *binding, Boolean globit);
-extern List *glom2(Tree *tree, Binding *binding, StrList **quotep);
-
-
-/* glob.c */
-
 extern char QUOTED[], UNQUOTED[];
-extern List *glob(List *list, StrList *quote);
-extern Boolean haswild(const char *pattern, const char *quoting);
+extern List *glom(Tree *tree, Binding *binding);
+extern List *glom2(Tree *tree, Binding *binding, StrList **quotep);
 
 
 /* match.c */
@@ -212,19 +204,6 @@ extern Boolean istrue(List *status);
 extern int exitstatus(List *status);
 extern char *mkstatus(int status);
 extern void printstatus(int pid, int status);
-
-
-/* access.c */
-
-extern char *checkexecutable(char *file);
-
-
-/* proc.c */
-
-extern Boolean hasforked;
-extern int efork(Boolean parent, Boolean background);
-extern int ewait(int pid, Boolean interruptible, void *rusage);
-#define ewaitfor(pid)   ewait(pid, FALSE, NULL)
 
 
 /* dict.c */
@@ -324,6 +303,16 @@ extern char *splitstring_r(char *in, size_t len, Boolean endword);
 extern List *endsplit(void);
 extern List *fsplit(const char *sep, List *list, Boolean coalesce);
 
+/* open.c */
+
+typedef enum { oOpen, oCreate, oAppend, oReadWrite, oReadCreate, oReadAppend } OpenKind;
+extern int eopen(char *name, OpenKind k);
+
+
+/* version.c */
+
+extern const char * const version;
+
 
 /* signal.c */
 
@@ -331,9 +320,9 @@ extern int signumber(const char *name);
 extern char *signame(int sig);
 extern char *sigmessage(int sig);
 
-#define SIGCHK() sigchk()
+#define	SIGCHK() sigchk()
 typedef enum {
-    sig_nochange, sig_catch, sig_default, sig_ignore, sig_noop, sig_special
+	sig_nochange, sig_catch, sig_default, sig_ignore, sig_noop, sig_special
 } Sigeffect;
 extern Sigeffect esignal(int sig, Sigeffect effect);
 extern void setsigeffects(const Sigeffect effects[]);
@@ -348,17 +337,6 @@ extern Boolean issilentsignal(List *e);
 extern void setsigdefaults(void);
 extern void blocksignals(void);
 extern void unblocksignals(void);
-
-
-/* open.c */
-
-typedef enum { oOpen, oCreate, oAppend, oReadWrite, oReadCreate, oReadAppend } OpenKind;
-extern int eopen(char *name, OpenKind k);
-
-
-/* version.c */
-
-extern const char * const version;
 
 
 /* gc.c -- see gc.h for more */

@@ -118,10 +118,6 @@ top:
         binding(f, "let", n);
         tailcall(n->u[1].p, FALSE);
 
-    case nFor:
-        binding(f, "for", n);
-        tailcall(n->u[1].p, FALSE);
-
     case nClosure:
         binding(f, "%closure", n);
         tailcall(n->u[1].p, FALSE);
@@ -175,45 +171,6 @@ top:
             }
             fmtputc(f, ')');
         }
-        return FALSE;
-
-    case nArith:
-        fmtprint(f, "`(%T)", n->u[0].p);
-        return FALSE;
-
-    case nOp: {
-        char *op = n->u[0].s;
-        Boolean first = TRUE;
-        Tree *operand = n->u[1].p;
-        Tree *curr;
-        for (; operand->u[1].p != NULL; operand = operand->u[1].p) {
-            curr = operand->u[0].p;
-            if (first && *op == '-' && curr->kind == nInt 
-                    && *curr->u[0].s == '0' && (curr->u[0].s)[1] == '\0')
-                fmtprint(f, "-");
-            else if (curr->kind == nOp)
-                fmtprint(f, "(%T)%s", curr, op);
-            else
-                fmtprint(f, "%T%s", curr, op);
-
-            first = FALSE;
-        }
-
-        curr = operand->u[0].p;
-        if (curr->kind == nOp)
-            fmtprint(f, "(%T)", curr, op);
-        else
-            fmtprint(f, "%T", curr, op);
-
-        return FALSE;
-    }
-
-    case nCmp:
-        fmtprint(f, "%T%s%T", n->u[1].p->u[0].p, n->u[0].s, n->u[1].p->u[1].p->u[0].p);
-        return FALSE;
-
-    case nInt: case nFloat:
-        fmtprint(f, "%s", n->u[0].s);
         return FALSE;
 
     default:
@@ -421,14 +378,6 @@ static Boolean Bconv(Format *f) {
         fmtprint(f, "(qword \"%s\")", n->u[0].s);
         break;
 
-    case nInt:
-        fmtprint(f, "(int \"%s\")", n->u[0].s);
-        break;
-
-    case nFloat:
-        fmtprint(f, "(float \"%s\")", n->u[0].s);
-        break;
-
     case nPrim:
         fmtprint(f, "(prim %s)", n->u[0].s);
         break;
@@ -440,17 +389,6 @@ static Boolean Bconv(Format *f) {
     case nThunk:
         fmtprint(f, "(thunk %B)", n->u[0].p);
         break;
-
-    case nArith:
-        fmtprint(f, "(arith %B)", n->u[0].p);
-        break;
-
-    case nOp:
-        fmtprint(f, "(op \"%s\" %B)", n->u[0].s, n->u[1].p);
-        break;
-
-    case nCmp:
-        fmtprint(f, "(cmp \"%s\" %B)", n->u[0].s, n->u[1].p);
 
     case nVar:
         fmtprint(f, "(var %B)", n->u[0].p);
@@ -466,10 +404,6 @@ static Boolean Bconv(Format *f) {
 
     case nClosure:
         fmtprint(f, "(%%closure %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nFor:
-        fmtprint(f, "(for %B %B)", n->u[0].p, n->u[1].p);
         break;
 
     case nLambda:
@@ -492,16 +426,8 @@ static Boolean Bconv(Format *f) {
         fmtprint(f, "(extract %B %B)", n->u[0].p, n->u[1].p);
         break;
 
-    case nRedir:
-        fmtprint(f, "(redir %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
     case nVarsub:
         fmtprint(f, "(varsub %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nPipe:
-        fmtprint(f, "(pipe %d %d)", n->u[0].i, n->u[1].i);
         break;
 
     case nList: {

@@ -22,6 +22,26 @@ enum { RANGE_FAIL = -1, RANGE_ERROR = -2 };
 #define ISQUOTED(q, n)  ((q) == QUOTED || ((q) != UNQUOTED && (q)[n] == 'q'))
 #define TAILQUOTE(q, n) ((q) == UNQUOTED ? UNQUOTED : ((q) + (n)))
 
+static Boolean haswild(const char *s, const char *q) {
+	if (q == QUOTED)
+		return FALSE;
+	if (q == UNQUOTED)
+		for (;;) {
+			int c = *s++;
+			if (c == '\0')
+				return FALSE;
+			if (c == '*' || c == '?' || c == '[')
+				return TRUE;
+		}
+	for (;;) {
+		int c = *s++, r = *q++;
+		if (c == '\0')
+			return FALSE;
+		if ((c == '*' || c == '?' || c == '[') && (r == 'r'))
+			return TRUE;
+	}
+}
+
 /* rangematch -- match a character against a character class */
 static int rangematch(const char *p, const char *q, char c) {
     const char *orig = p;

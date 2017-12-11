@@ -63,7 +63,7 @@ static void runesrc(void) {
                 eprint("%L\n",
                        e->next == NULL ? NULL : e->next->next,
                        " ");
-            else if (!issilentsignal(e))
+            else
                 eprint("uncaught exception: %L\n", e, " ");
             return;
         EndExceptionHandler
@@ -107,7 +107,6 @@ int main(int argc, char **argv) {
 
     volatile int runflags = 0;      /* -[einvxL] */
     volatile Boolean protected = FALSE; /* -p */
-    volatile Boolean allowquit = FALSE; /* -d */
     volatile Boolean cmd_stdin = FALSE;     /* -s */
     volatile Boolean loginshell = FALSE;    /* -l or $0[0] == '-' */
     Boolean keepclosed = FALSE;     /* -o */
@@ -139,7 +138,6 @@ int main(int argc, char **argv) {
         case 'l':   loginshell = TRUE;      break;
         case 'p':   protected = TRUE;       break;
         case 'o':   keepclosed = TRUE;      break;
-        case 'd':   allowquit = TRUE;       break;
         case 's':   cmd_stdin = TRUE;           goto getopt_done;
 #if GCVERBOSE
         case 'G':   gcverbose = TRUE;       break;
@@ -185,7 +183,6 @@ getopt_done:
     
         initpath();
         initpid();
-        initsignals(runflags & run_interactive, allowquit);
         hidevariables();
         initenv(environ, protected);
     
@@ -218,7 +215,7 @@ getopt_done:
             eprint("%L\n",
                    e->next == NULL ? NULL : e->next->next,
                    " ");
-        else if (!issilentsignal(e))
+        else
             eprint("uncaught exception: %L\n", e, " ");
         return 1;
 

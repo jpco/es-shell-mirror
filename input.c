@@ -26,30 +26,6 @@
 Input *input;
 char *prompt, *prompt2;
 
-Boolean disablehistory = FALSE;
-Boolean resetterminal = FALSE;
-static char *history;
-
-#if READLINE
-int rl_meta_chars;  /* for editline; ignored for gnu readline */
-extern char *readline(char *);
-extern void add_history(char *);
-extern int read_history(const char *);
-extern int append_history(int, const char *);
-extern void rl_reset_terminal(char *);
-extern char *rl_basic_word_break_characters;
-extern char *rl_completer_quote_characters;
-
-#if ABUSED_GETENV
-static char *stdgetenv(const char *);
-static char *esgetenv(const char *);
-static char *(*realgetenv)(const char *) = stdgetenv;
-#endif
-#else /* !READLINE */
-static int historyfd = -1;
-#endif
-
-
 /*
  * errors and warnings
  */
@@ -78,73 +54,6 @@ extern void yyerror(char *s) {
 static void warn(char *s) {
     eprint("warning: %s\n", locate(input, s));
 }
-
-
-/*
- * history
- */
-
-/* loghistory -- write the last command out to a file */
-static void loghistory(const char *cmd, size_t len) {
-#if READLINE
-    int err;
-    if (history == NULL || disablehistory)
-        return;
-    if ((err = append_history(1, history))) {
-        eprint("history(%s): %s\n", history, esstrerror(errno));
-        vardef("history", NULL, NULL);
-        return;
-    }
-#else
-    const char *s, *end;
-    if (history == NULL || disablehistory)
-        return;
-    if (historyfd == -1) {
-        historyfd = eopen(history, oAppend);
-        if (historyfd == -1) {
-            eprint("history(%s): %s\n", history, esstrerror(errno));
-            vardef("history", NULL, NULL);
-            return;
-        }
-    }
-    /* skip empty lines and comments in history */
-    for (s = cmd, end = s + len; s < end; s++)
-        switch (*s) {
-        case '#': case '\n':    return;
-        case ' ': case '\t':    break;
-        default:        goto writeit;
-        }
-    writeit:
-        ;
-    /*
-     * Small unix hack: since read() reads only up to a newline
-     * from a terminal, then presumably this write() will write at
-     * most only one input line at a time.
-     */
-    ewrite(historyfd, cmd, len);
-#endif
-}
-
-/* sethistory -- change the file for the history log */
-extern void sethistory(char *file) {
-#if READLINE
-    if (file != NULL) {
-        int err;
-        if ((err = read_history(file))) {
-            eprint("sethistory(%s): %s\n", file, esstrerror(errno));
-            vardef("history", NULL, NULL);
-            return;
-        }
-    }
-#else
-    if (historyfd != -1) {
-        close(historyfd);
-        historyfd = -1;
-    }
-#endif
-    history = file;
-}
-
 
 /*
  * unget -- character pushback
@@ -219,129 +128,14 @@ static int eoffill(Input *in) {
     return EOF;
 }
 
-#if READLINE
-/* callreadline -- readline wrapper */
-static char *callreadline(char *prompt) {
-    char *r;
-    if (prompt == NULL)
-        prompt = ""; /* bug fix for readline 2.0 */
-    if (resetterminal) {
-        rl_reset_terminal(NULL);
-        resetterminal = FALSE;
-    }
-    interrupted = FALSE;
-    if (!setjmp(slowlabel)) {
-        slow = TRUE;
-        r = interrupted ? NULL : readline(prompt);
-    } else
-        r = NULL;
-    slow = FALSE;
-    if (r == NULL)
-        errno = EINTR;
-    SIGCHK();
-    return r;
-}
-
-#if ABUSED_GETENV
-
-/* getenv -- fake version of getenv for readline (or other libraries) */
-static char *esgetenv(const char *name) {
-    List *value = varlookup(name, NULL);
-    if (value == NULL)
-        return NULL;
-    else { 
-        char *export;
-        static Dict *envdict;
-        static Boolean initialized = FALSE;
-        Ref(char *, string, NULL);
-
-        gcdisable();
-        if (!initialized) {
-            initialized = TRUE;
-            envdict = mkdict();
-            globalroot(&envdict);
-        }
-
-        string = dictget(envdict, name);
-        if (string != NULL)
-            efree(string);
-
-        export = str("%W", value);
-        string = ealloc(strlen(export) + 1);
-        strcpy(string, export);
-        envdict = dictput(envdict, (char *) name, string);
-
-        gcenable();
-        RefReturn(string);
-    }
-}
-
-static char *
-stdgetenv(name)
-    register const char *name;
-{
-    extern char **environ;
-    register int len;
-    register const char *np;
-    register char **p, *c;
-
-    if (name == NULL || environ == NULL)
-        return (NULL);
-    for (np = name; *np && *np != '='; ++np)
-        continue;
-    len = np - name;
-    for (p = environ; (c = *p) != NULL; ++p)
-        if (strncmp(c, name, len) == 0 && c[len] == '=') {
-            return (c + len + 1);
-        }
-    return (NULL);
-}
-
-char *
-getenv(char *name)
-{
-    return realgetenv(name);
-}
-
-extern void
-initgetenv(void)
-{
-    realgetenv = esgetenv;
-}
-
-#endif /* ABUSED_GETENV */
-
-#endif  /* READLINE */
-
 /* fdfill -- fill input buffer by reading from a file descriptor */
 static int fdfill(Input *in) {
     long nread;
     assert(in->buf == in->bufend);
     assert(in->fd >= 0);
 
-#if READLINE
-    if (in->runflags & run_interactive && in->fd == 0) {
-        char *rlinebuf = callreadline(prompt);
-        if (rlinebuf == NULL)
-            nread = 0;
-        else {
-            if (*rlinebuf != '\0')
-                add_history(rlinebuf);
-            nread = strlen(rlinebuf) + 1;
-            if (in->buflen < (unsigned int)nread) {
-                while (in->buflen < (unsigned int)nread)
-                    in->buflen *= 2;
-                in->bufbegin = erealloc(in->bufbegin, in->buflen);
-            }
-            memcpy(in->bufbegin, rlinebuf, nread - 1);
-            in->bufbegin[nread - 1] = '\n';
-            efree(rlinebuf);
-        }
-    } else
-#endif
     do {
         nread = eread(in->fd, (char *) in->bufbegin, in->buflen);
-        SIGCHK();
     } while (nread == -1 && errno == EINTR);
 
     if (nread <= 0) {
@@ -353,9 +147,6 @@ static int fdfill(Input *in) {
             fail("$&parse", "%s: %s", in->name == NULL ? "es" : in->name, esstrerror(errno));
         return EOF;
     }
-
-    if (in->runflags & run_interactive)
-        loghistory((char *) in->bufbegin, nread);
 
     in->buf = in->bufbegin;
     in->bufend = &in->buf[nread];
@@ -373,17 +164,13 @@ extern Tree *parse(char *pr1, char *pr2) {
     assert(error == NULL);
 
     inityy();
-    emptyherequeue();
 
     if (ISEOF(input))
         throw(mklist(mkstr("eof"), NULL));
 
-#if READLINE
-    prompt = (pr1 == NULL) ? "" : pr1;
-#else
     if (pr1 != NULL)
         eprint("%s", pr1);
-#endif
+
     prompt2 = pr2;
 
     gcreserve(300 * sizeof (Tree));
@@ -602,22 +389,10 @@ extern void initinput(void) {
     input = NULL;
 
     /* declare the global roots */
-    globalroot(&history);       /* history file */
     globalroot(&error);     /* parse errors */
     globalroot(&prompt);        /* main prompt */
     globalroot(&prompt2);       /* secondary prompt */
 
-#if !READLINE
-    /* mark the historyfd as a file descriptor to hold back from forked children */
-    registerfd(&historyfd, TRUE);
-#endif
-
     /* call the parser's initialization */
     initparse();
-
-#if READLINE
-    rl_meta_chars = 0;
-    rl_basic_word_break_characters=" \t\n\\'`$><=;|&{()}";
-    rl_completer_quote_characters="'";
-#endif
 }

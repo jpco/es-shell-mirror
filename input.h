@@ -35,8 +35,6 @@ extern void yyerror(char *s);
 
 extern const char dnw[];
 extern int yylex(void);
-extern void setskip(Boolean);
-extern void unsetskip(void);
 extern void inityy(void);
 extern void print_prompt2(void);
 

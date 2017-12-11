@@ -88,7 +88,6 @@ static const char *nodename(NodeKind k) {
     case nCall: return "Call";
     case nClosure:  return "Closure";
     case nConcat:   return "Concat";
-    case nFor:  return "For";
     case nLambda:   return "Lambda";
     case nLet:  return "Let";
     case nList: return "List";
@@ -121,7 +120,7 @@ static char *dumptree(Tree *tree) {
             print("static const Tree_p %s = { n%s, { { (Tree *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumptree(tree->u[0].p));
             break;
-            case nAssign:  case nConcat: case nClosure: case nFor:
+            case nAssign:  case nConcat: case nClosure:
             case nLambda: case nLet: case nList:  case nLocal:
             case nVarsub: case nMatch: case nExtract:
             print("static const Tree_pp %s = { n%s, { { (Tree *) %s }, { (Tree *) %s } } };\n",

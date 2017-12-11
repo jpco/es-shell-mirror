@@ -628,7 +628,6 @@ static char *tree2name(NodeKind k) {
     case nAssign:   return "Assign";
     case nConcat:   return "Concat";
     case nClosure:  return "Closure";
-    case nFor:  return "For";
     case nLambda:   return "Lambda";
     case nLet:  return "Let";
     case nList: return "List";

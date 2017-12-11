@@ -65,21 +65,17 @@ PRIM(catch) {
 
         CatchException (frombody)
 
-            blocksignals();
             ExceptionHandler
                 result
                   = eval(mklist(mkstr("$&noreturn"),
                             mklist(lp->term, frombody)),
                      NULL,
                      evalflags);
-                unblocksignals();
             CatchException (fromcatcher)
 
                 if (termeq(fromcatcher->term, "retry")) {
                     retry = TRUE;
-                    unblocksignals();
                 } else {
-                    unblocksignals();
                     throw(fromcatcher);
                 }
             EndExceptionHandler
