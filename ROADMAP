@@ -64,6 +64,7 @@ potentially $&echo is just `write(1, ...)` and echo does the -- and -n interpret
 msg00416.html?
 we need to handle recursive structures better
   - re current semantics of let: msg00433.html
+  - msg00801.html -- common lisp circular objects?
 
 ## long-term
 first class bindings (FCBs)
