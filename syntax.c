@@ -76,7 +76,10 @@ extern Tree *prefix(char *s, Tree *t) {
 
 /* mklambda -- create a lambda */
 extern Tree *mklambda(Tree *params, Tree *body) {
-    return mk(nLambda, params, body);
+    if (params == NULL)
+        return thunkify(body);
+    else
+        return mk(nLambda, params, body);
 }
 
 /* mkseq -- destructively add to a sequence of nList/nThink operations */

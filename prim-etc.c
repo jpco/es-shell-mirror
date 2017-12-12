@@ -26,40 +26,18 @@ PRIM(count) {
     return mklist(mkstr(str("%d", length(list))), NULL);
 }
 
-PRIM(setnoexport) {
-    Ref(List *, lp, list);
-    setnoexport(lp);
-    RefReturn(lp);
-}
-
-PRIM(version) {
-    return mklist(mkstr((char *) version), NULL);
-}
-
 PRIM(exec) {
-    return eval(list, NULL, evalflags | eval_inchild);
+    return eval(list, NULL);
 }
 
+/* FIXME: I don't like having this here, but I can't figure out es'
+ * redirections well enough to go without it. */
 PRIM(dot) {
-    int c, fd;
+    int fd;
     Push zero, star;
-    volatile int runflags = (evalflags & eval_inchild);
-    const char * const usage = ". [-einvx] file [arg ...]";
-
-    esoptbegin(list, "$&dot", usage);
-    while ((c = esopt("einvx")) != EOF)
-        switch (c) {
-        case 'e':   runflags |= eval_exitonfalse;   break;
-        case 'i':   runflags |= run_interactive;    break;
-        case 'n':   runflags |= run_noexec;     break;
-        case 'v':   runflags |= run_echoinput;  break;
-        case 'x':   runflags |= run_printcmds;  break;
-        }
 
     Ref(List *, result, NULL);
-    Ref(List *, lp, esoptend());
-    if (lp == NULL)
-        fail("$&dot", "usage: %s", usage);
+    Ref(List *, lp, list);
 
     Ref(char *, file, getstr(lp->term));
     lp = lp->next;
@@ -68,9 +46,8 @@ PRIM(dot) {
         fail("$&dot", "%s: %s", file, esstrerror(errno));
 
     varpush(&star, "*", lp);
-    varpush(&zero, "0", mklist(mkstr(file), NULL));
 
-    result = runfd(fd, file, runflags);
+    result = runfd(fd);
 
     varpop(&zero);
     varpop(&star);
@@ -119,11 +96,7 @@ PRIM(parse) {
     return result;
 }
 
-PRIM(exitonfalse) {
-    return eval(list, NULL, evalflags | eval_exitonfalse);
-}
-
-PRIM(batchloop) {
+PRIM(inputloop) {
     Ref(List *, result, true);
     Ref(List *, dispatch, NULL);
 
@@ -133,13 +106,13 @@ PRIM(batchloop) {
             List *parser, *cmd;
             parser = varlookup("fn-%parse", NULL);
             cmd = (parser == NULL)
-                    ? prim("parse", NULL, NULL, 0)
-                    : eval(parser, NULL, 0);
+                    ? prim("parse", NULL, NULL)
+                    : eval(parser, NULL);
             dispatch = varlookup("fn-%dispatch", NULL);
             if (cmd != NULL) {
                 if (dispatch != NULL)
                     cmd = append(dispatch, cmd);
-                result = eval(cmd, NULL, evalflags);
+                result = eval(cmd, NULL);
             }
         }
 
@@ -158,20 +131,6 @@ PRIM(batchloop) {
 PRIM(collect) {
     gc();
     return true;
-}
-
-PRIM(noreturn) {
-    if (list == NULL)
-        fail("$&noreturn", "usage: $&noreturn lambda args ...");
-    Ref(List *, lp, list);
-    Ref(Closure *, closure, getclosure(lp->term));
-    if (closure == NULL || closure->tree->kind != nLambda)
-        fail("$&noreturn", "$&noreturn: %E is not a lambda", lp->term);
-    Ref(Tree *, tree, closure->tree);
-    Ref(Binding *, context, bindargs(tree->u[0].p, lp->next, closure->binding));
-    lp = walk(tree->u[1].p, context, evalflags);
-    RefEnd3(context, tree, closure);
-    RefReturn(lp);
 }
 
 PRIM(setmaxevaldepth) {
@@ -200,18 +159,14 @@ PRIM(setmaxevaldepth) {
 extern Dict *initprims_etc(Dict *primdict) {
     X(echo);
     X(count);
-    X(version);
     X(exec);
     X(dot);
     X(split);
     X(fsplit);
     X(parse);
-    X(batchloop);
+    X(inputloop);
     X(collect);
-    X(setnoexport);
     X(result);
-    X(exitonfalse);
-    X(noreturn);
     X(setmaxevaldepth);
     return primdict;
 }

@@ -62,12 +62,8 @@ const char dnw[] = {
 /* print_prompt2 -- called before all continuation lines */
 extern void print_prompt2(void) {
     input->lineno++;
-#if READLINE
-    prompt = prompt2;
-#else
-    if ((input->runflags & run_interactive) && prompt2 != NULL)
+    if (prompt2 != NULL)
         eprint("%s", prompt2);
-#endif
 }
 
 /* scanerror -- called for lexical errors */
@@ -128,15 +124,12 @@ top:
         w = KW;
         if (buf[1] == '\0') {
             int k = *buf;
-            if (k == '@' || k == '~')
+            if (k == '@' || k == '~' || k == '%')
                 return k;
         } else if (*buf == 'l') {
             if (streq(buf + 1, "ocal")) return LOCAL;
-            if (streq(buf + 1, "et"))   return LET;
         } else if (streq(buf, "~~"))
             return EXTRACT;
-        else if (streq(buf, "%closure"))
-            return CLOSURE;
         w = RW;
         y->str = gcdup(buf);
         return WORD;

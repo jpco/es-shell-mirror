@@ -42,8 +42,8 @@ static void dodeferred(int realfd, int userfd) {
     }
 }
 
-static int pushdefer(Boolean parent, int realfd, int userfd) {
-    if (parent) {
+static int pushdefer(int realfd, int userfd) {
+    /* if (parent) { */
         Defer *defer;
         if (defcount >= defmax) {
             int i;
@@ -59,21 +59,21 @@ static int pushdefer(Boolean parent, int realfd, int userfd) {
         defer->userfd = userfd;
         registerfd(&defer->realfd, TRUE);
         return defcount - 1;
-    } else {
+    /* } else {
         dodeferred(realfd, userfd);
         return UNREGISTERED;
-    }
+    } */
 }
 
-extern int defer_mvfd(Boolean parent, int old, int new) {
+extern int defer_mvfd(int old, int new) {
     assert(old >= 0);
     assert(new >= 0);
-    return pushdefer(parent, old, new);
+    return pushdefer(old, new);
 }
 
-extern int defer_close(Boolean parent, int fd) {
+extern int defer_close(int fd) {
     assert(fd >= 0);
-    return pushdefer(parent, -1, fd);
+    return pushdefer(-1, fd);
 }
 
 extern void undefer(int ticket) {

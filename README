@@ -12,13 +12,20 @@ Some anti-features of es-core:
  - Cannot run any external commands
  - No free carets
  - No syntax rewriting (e.g., ||, &&, implicit %seq, fn command, etc.)
- - No fork/exec (ergo, no piping)
+ - No fork/exec (and, ergo, no piping)
  - No cd (this may have been a mistake to remove?)
  - No definable signal handling
- - No `for` (use `apply` instead) (let and local are still there, though)
+ - No `for` (use `apply` instead) (let and local are still there, though, FOR NOW)
  - No readline/editline/etc.
+ - No run flags, no "please run this file" argument, etc.
+ - No $&whatis (it has been replaced with a carefully-written function)
+ - Lambdas do not catch return -- Ergo, $&noreturn doesn't exist
+ - No implicit $* variable in lambdas (`@ {}` becomes `{}`)
+ - No "interactive" vs. "non-interactive" distinction -- just %input-loop
+ - No environment interaction
 
 Future non-features:
- - None of es' good environment interaction (add env-related builtins perhaps?)
- - I ought to ransack the interactive loop; it's way heavy for what it's
-   used for in es-core
+ - How do we make variable access/assignment a primitive? :)
+
+Random thoughts:
+ - %whatis can run `$&fork-exec <={%pathsearch $cmd}`! :)

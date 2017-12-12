@@ -114,12 +114,8 @@ top:
         binding(f, "local", n);
         tailcall(n->u[1].p, FALSE);
 
-    case nLet:
-        binding(f, "let", n);
-        tailcall(n->u[1].p, FALSE);
-
     case nClosure:
-        binding(f, "%closure", n);
+        binding(f, "%", n);
         tailcall(n->u[1].p, FALSE);
 
 
@@ -360,91 +356,6 @@ static Boolean Wconv(Format *f) {
     return FALSE;
 }
 
-
-#if LISPTREES
-static Boolean Bconv(Format *f) {
-    Tree *n = va_arg(f->args, Tree *);
-    if (n == NULL) {
-        fmtprint(f, "nil");
-        return FALSE;
-    }
-    switch (n->kind) {
-
-    case nWord:
-        fmtprint(f, "(word \"%s\")", n->u[0].s);
-        break;
-
-    case nQword:
-        fmtprint(f, "(qword \"%s\")", n->u[0].s);
-        break;
-
-    case nPrim:
-        fmtprint(f, "(prim %s)", n->u[0].s);
-        break;
-
-    case nCall:
-        fmtprint(f, "(call %B)", n->u[0].p);
-        break;
-
-    case nThunk:
-        fmtprint(f, "(thunk %B)", n->u[0].p);
-        break;
-
-    case nVar:
-        fmtprint(f, "(var %B)", n->u[0].p);
-        break;
-
-    case nAssign:
-        fmtprint(f, "(assign %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nConcat:
-        fmtprint(f, "(concat %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nClosure:
-        fmtprint(f, "(%%closure %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nLambda:
-        fmtprint(f, "(lambda %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nLet:
-        fmtprint(f, "(let %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nLocal:
-        fmtprint(f, "(local %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nMatch:
-        fmtprint(f, "(match %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nExtract:
-        fmtprint(f, "(extract %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nVarsub:
-        fmtprint(f, "(varsub %B %B)", n->u[0].p, n->u[1].p);
-        break;
-
-    case nList: {
-        fmtprint(f, "(list");
-        do {
-            assert(n->kind == nList);
-            fmtprint(f, " %B", n->u[0].p);
-        } while ((n = n->u[1].p) != NULL);
-        fmtprint(f, ")");
-        break;
-    }
-
-    }
-    return FALSE;
-}
-#endif
-
 /* install the conversion routines */
 void initconv(void) {
     fmtinstall('C', Cconv);
@@ -456,7 +367,4 @@ void initconv(void) {
     fmtinstall('T', Tconv);
     fmtinstall('W', Wconv);
     fmtinstall('Z', Zconv);
-#if LISPTREES
-    fmtinstall('B', Bconv);
-#endif
 }

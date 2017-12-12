@@ -43,7 +43,7 @@ struct Closure {
  */
 
 typedef enum {
-    nAssign, nCall, nClosure, nConcat, nLambda, nLet, nList, nLocal,
+    nAssign, nCall, nClosure, nConcat, nLambda, nList, nLocal,
     nMatch, nExtract, nPrim, nQword, nThunk, nVar, nVarsub, nWord
 } NodeKind;
 
@@ -105,8 +105,8 @@ extern void releasefd(int fd);
 extern void closefds(void);
 
 extern int fdmap(int fd);
-extern int defer_mvfd(Boolean parent, int old, int new);
-extern int defer_close(Boolean parent, int fd);
+extern int defer_mvfd(int old, int new);
+extern int defer_close(int fd);
 extern void undefer(int ticket);
 
 
@@ -150,19 +150,14 @@ extern Binding *reversebindings(Binding *binding);
 
 extern Binding *bindargs(Tree *params, List *args, Binding *binding);
 extern List *forkexec(char *file, List *list, Boolean inchild);
-extern List *walk(Tree *tree, Binding *binding, int flags);
-extern List *eval(List *list, Binding *binding, int flags);
-extern List *eval1(Term *term, int flags);
+extern List *walk(Tree *tree, Binding *binding);
+extern List *eval(List *list, Binding *binding);
+extern List *eval1(Term *term);
 extern List *pathsearch(Term *term);
 
 extern unsigned long evaldepth, maxevaldepth;
 #define MINmaxevaldepth     100
 #define MAXmaxevaldepth     0xffffffffU
-
-#define eval_inchild        1
-#define eval_exitonfalse    2
-#define eval_flags      (eval_inchild|eval_exitonfalse)
-
 
 /* glom.c */
 
@@ -261,37 +256,14 @@ extern Boolean streq2(const char *s, const char *t1, const char *t2);
 extern char *prompt, *prompt2;
 extern Tree *parse(char *esprompt1, char *esprompt2);
 extern Tree *parsestring(const char *str);
-extern void sethistory(char *file);
-extern Boolean isinteractive(void);
 extern void initinput(void);
 extern void resetparser(void);
 
-extern List *runfd(int fd, const char *name, int flags);
-extern List *runstring(const char *str, const char *name, int flags);
-
-/* eval_* flags are also understood as runflags */
-#define run_interactive      4  /* -i or $0[0] = '-' */
-#define run_noexec       8  /* -n */
-#define run_echoinput       16  /* -v */
-#define run_printcmds       32  /* -x */
-#define run_lisptrees       64  /* -L and defined(LISPTREES) */
-
-#if READLINE
-extern Boolean resetterminal;
-#endif
-
-
-/* opt.c */
-
-extern void esoptbegin(List *list, const char *caller, const char *usage);
-extern int esopt(const char *options);
-extern Term *esoptarg(void);
-extern List *esoptend(void);
-
+extern List *runfd(int fd);
 
 /* prim.c */
 
-extern List *prim(char *s, List *list, Binding *binding, int evalflags);
+extern List *prim(char *s, List *list, Binding *binding);
 extern void initprims(void);
 
 
@@ -354,6 +326,14 @@ extern void gcreserve(size_t nbytes);       /* provoke a collection, if enabled 
 extern void gcenable(void);         /* enable collections */
 extern void gcdisable(void);            /* disable collections */
 extern Boolean gcisblocked();           /* is collection disabled? */
+
+
+/* opt.c */
+
+extern void esoptbegin(List *list, const char *caller, const char *usage);
+extern int esopt(const char *options);
+extern Term *esoptarg(void);
+extern List *esoptend(void);
 
 
 /*

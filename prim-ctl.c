@@ -7,7 +7,7 @@ PRIM(seq) {
     Ref(List *, result, true);
     Ref(List *, lp, list);
     for (; lp != NULL; lp = lp->next)
-        result = eval1(lp->term, evalflags &~ (lp->next == NULL ? 0 : eval_inchild));
+        result = eval1(lp->term);
     RefEnd(lp);
     RefReturn(result);
 }
@@ -15,14 +15,14 @@ PRIM(seq) {
 PRIM(if) {
     Ref(List *, lp, list);
     for (; lp != NULL; lp = lp->next) {
-        List *cond = eval1(lp->term, evalflags & (lp->next == NULL ? eval_inchild : 0));
+        List *cond = eval1(lp->term);
         lp = lp->next;
         if (lp == NULL) {
             RefPop(lp);
             return cond;
         }
         if (istrue(cond)) {
-            List *result = eval1(lp->term, evalflags);
+            List *result = eval1(lp->term);
             RefPop(lp);
             return result;
         }
@@ -34,7 +34,7 @@ PRIM(if) {
 PRIM(forever) {
     Ref(List *, body, list);
     for (;;)
-        list = eval(body, NULL, evalflags & eval_exitonfalse);
+        list = eval(body, NULL);
     RefEnd(body);
     return list;
 }
@@ -61,16 +61,14 @@ PRIM(catch) {
 
         ExceptionHandler
 
-            result = eval(lp->next, NULL, evalflags);
+            result = eval(lp->next, NULL);
 
         CatchException (frombody)
 
             ExceptionHandler
-                result
-                  = eval(mklist(mkstr("$&noreturn"),
-                            mklist(lp->term, frombody)),
-                     NULL,
-                     evalflags);
+
+                result = eval(mklist(lp->term, frombody), NULL);
+
             CatchException (fromcatcher)
 
                 if (termeq(fromcatcher->term, "retry")) {
@@ -78,6 +76,7 @@ PRIM(catch) {
                 } else {
                     throw(fromcatcher);
                 }
+
             EndExceptionHandler
 
         EndExceptionHandler

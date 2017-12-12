@@ -223,7 +223,7 @@ extern List *glom(Tree *tree, Binding *binding) {
             RefEnd2(sub, name);
             break;
         case nCall:
-            list = listcopy(walk(tp->u[0].p, bp, 0));
+            list = listcopy(walk(tp->u[0].p, bp));
             tp = NULL;
             break;
         case nList:

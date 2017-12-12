@@ -15,17 +15,18 @@ static int getnumber(const char *s) {
     return result;
 }
 
-static List *run_redir(int destfd, int srcfd, List *list, int evalflags) {
+// inparent = TRUE;
+
+static List *run_redir(int destfd, int srcfd, List *list) {
     assert(list != NULL);
-    volatile int inparent = (evalflags & eval_inchild) == 0;
     volatile int ticket = UNREGISTERED;
 
     Ref(List *, lp, list);
     ticket = (srcfd == -1)
-           ? defer_close(inparent, destfd)
-           : defer_mvfd(inparent, srcfd, destfd);
+           ? defer_close(destfd)
+           : defer_mvfd(srcfd, destfd);
     ExceptionHandler
-        lp = eval(lp, NULL, evalflags);
+        lp = eval(lp, NULL);
         undefer(ticket);
     CatchException (e)
         undefer(ticket);
@@ -35,7 +36,7 @@ static List *run_redir(int destfd, int srcfd, List *list, int evalflags) {
     RefReturn(lp);
 }
 
-static List *redir(List *(*rop)(int *fd, List *list), List *list, int evalflags) {
+static List *redir(List *(*rop)(int *fd, List *list), List *list) {
     int destfd, srcfd;
 
     assert(list != NULL);
@@ -43,7 +44,7 @@ static List *redir(List *(*rop)(int *fd, List *list), List *list, int evalflags)
     destfd = getnumber(getstr(lp->term));
 
     lp = (*rop)(&srcfd, lp->next);
-    lp = run_redir(destfd, srcfd, lp, evalflags);
+    lp = run_redir(destfd, srcfd, lp);
 
     RefReturn(lp);
 }
@@ -103,7 +104,7 @@ PRIM(openfile) {
     lp = list->next;
     list->next = lp->next;
     lp->next = list;
-    return redir(redir_openfile, lp, evalflags);
+    return redir(redir_openfile, lp);
 }
 
 REDIR(dup) {
@@ -122,7 +123,7 @@ PRIM(dup) {
     caller = "$&dup";
     if (length(list) != 3)
         argcount("%dup newfd oldfd cmd");
-    return redir(redir_dup, list, evalflags);
+    return redir(redir_dup, list);
 }
 
 REDIR(close) {
@@ -134,7 +135,7 @@ PRIM(close) {
     caller = "$&close";
     if (length(list) != 2)
         argcount("%close fd cmd");
-    return redir(redir_close, list, evalflags);
+    return redir(redir_close, list);
 }
 
 #define BUFSIZE 4096

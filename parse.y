@@ -8,11 +8,11 @@
 %}
 
 %token  WORD QWORD
-%token  LOCAL LET CLOSURE
+%token  LOCAL
 %token  EXTRACT CALL PRIM SUB
 %token  NL ENDFILE ERROR
 
-%left   LOCAL LET CLOSURE ')'
+%left   LOCAL '%' ')'
 %left   NL
 %right  VWORD
 %left   SUB
@@ -26,7 +26,7 @@
 
 %type <str>     WORD QWORD keyword
 %type <tree>    cmd comword first word param assign
-                binding bindings params nlwords words simple sword vword vsword
+                binding bindings params nlwords words simple sword vword
 %type <kind>    binder
 
 %start es
@@ -41,7 +41,7 @@ es      : cmd end               { parsetree = $1; YYACCEPT; }
 end     : NL
         | ENDFILE
 
-cmd     :               %prec LET               { $$ = NULL; }
+cmd     :               %prec '%'               { $$ = NULL; }
         | simple                                { $$ = $1; if ($$ == &errornode) YYABORT; }
         | first assign                          { $$ = mk(nAssign, $1, $2); }
         | binder nl '(' bindings ')' nl cmd     { $$ = mk($1, $4, $7); }
@@ -73,19 +73,16 @@ sword   : comword                       { $$ = $1; }
 word    : sword                         { $$ = $1; }
         | word '^' sword                { $$ = mk(nConcat, $1, $3); }
 
-vsword  : vword                         { $$ = $1; }
-        | keyword                       { $$ = mk(nWord, $1); }
-
 vword   : param                         { $$ = $1; }
         | '(' nlwords ')'               { $$ = $2; }
         | '{' nl cmd nl '}'             { $$ = thunkify($3); }
         | '@' params '{' nl cmd nl '}'  { $$ = mklambda($2, $5); }
-        | '$' vsword      %prec VWORD   { $$ = mk(nVar, $2); }
+        | '$' vword       %prec VWORD   { $$ = mk(nVar, $2); }
         | CALL sword                    { $$ = mk(nCall, $2); }
         | PRIM WORD                     { $$ = mk(nPrim, $2); }
 
 comword : vword                         { $$ = $1; }
-        | '$' vsword SUB words ')'      { $$ = mk(nVarsub, $2, $4); }
+        | '$' vword SUB words ')'       { $$ = mk(nVarsub, $2, $4); }
 
 param   : WORD                          { $$ = mk(nWord, $1); }
         | QWORD                         { $$ = mk(nQword, $1); }
@@ -104,11 +101,8 @@ nl      :
         | nl NL
 
 binder  : LOCAL         { $$ = nLocal; }
-        | LET           { $$ = nLet; }
-        | CLOSURE       { $$ = nClosure; }
+        | '%'           { $$ = nClosure; }
 
 keyword : '~'           { $$ = "~"; }
         | EXTRACT       { $$ = "~~"; }
         | LOCAL         { $$ = "local"; }
-        | LET           { $$ = "let"; }
-        | CLOSURE       { $$ = "%closure"; }

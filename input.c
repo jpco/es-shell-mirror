@@ -32,9 +32,7 @@ char *prompt, *prompt2;
 
 /* locate -- identify where an error came from */
 static char *locate(Input *in, char *s) {
-    return (in->runflags & run_interactive)
-        ? s
-        : str("%s:%d: %s", in->name, in->lineno, s);
+    return str("%s:%d: %s", in->name, in->lineno, s);
 }
 
 static char *error = NULL;
@@ -80,7 +78,7 @@ extern void unget(Input *in, int c) {
     if (in->ungot > 0) {
         assert(in->ungot < MAXUNGET);
         in->unget[in->ungot++] = c;
-    } else if (in->bufbegin < in->buf && in->buf[-1] == c && (input->runflags & run_echoinput) == 0)
+    } else if (in->bufbegin < in->buf && in->buf[-1] == c)
         --in->buf;
     else {
         assert(in->rfill == NULL);
@@ -108,20 +106,6 @@ static int get(Input *in) {
     return c;
 }
 
-/* getverbose -- get a character, print it to standard error */
-static int getverbose(Input *in) {
-    if (in->fill == ungetfill)
-        return get(in);
-    else {
-        int c = get(in);
-        if (c != EOF) {
-            char buf = c;
-            ewrite(2, &buf, 1);
-        }
-        return c;
-    }
-}
-
 /* eoffill -- report eof when called to fill input buffer */
 static int eoffill(Input *in) {
     assert(in->fd == -1);
@@ -142,7 +126,6 @@ static int fdfill(Input *in) {
         close(in->fd);
         in->fd = -1;
         in->fill = eoffill;
-        in->runflags &= ~run_interactive;
         if (nread == -1)
             fail("$&parse", "%s: %s", in->name == NULL ? "es" : in->name, esstrerror(errno));
         return EOF;
@@ -185,10 +168,6 @@ extern Tree *parse(char *pr1, char *pr2) {
         error = NULL;
         fail("$&parse", "%s", e);
     }
-#if LISPTREES
-    if (input->runflags & run_lisptrees)
-        eprint("%B\n", parsetree);
-#endif
     return parsetree;
 }
 
@@ -198,43 +177,20 @@ extern void resetparser(void) {
 }
 
 /* runinput -- run from an input source */
-extern List *runinput(Input *in, int runflags) {
-    volatile int flags = runflags;
+extern List *runinput(Input *in) {
     List * volatile result = NULL;
-    List *repl, *dispatch;
-    Push push;
-    const char *dispatcher[] = {
-        "fn-%eval-noprint",
-        "fn-%eval-print",
-        "fn-%noeval-noprint",
-        "fn-%noeval-print",
-    };
+    List *repl;
 
-    flags &= ~eval_inchild;
-    in->runflags = flags;
-    in->get = (flags & run_echoinput) ? getverbose : get;
+    in->get = get;
     in->prev = input;
     input = in;
 
     ExceptionHandler
 
-        dispatch
-              = varlookup(dispatcher[((flags & run_printcmds) ? 1 : 0)
-                     + ((flags & run_noexec) ? 2 : 0)],
-                  NULL);
-        if (flags & eval_exitonfalse)
-            dispatch = mklist(mkstr("%exit-on-false"), dispatch);
-        varpush(&push, "fn-%dispatch", dispatch);
-    
-        repl = varlookup((flags & run_interactive)
-                   ? "fn-%interactive-loop"
-                   : "fn-%batch-loop",
-                 NULL);
+        repl = varlookup("fn-%input-loop", NULL);
         result = (repl == NULL)
-                ? prim("batchloop", NULL, NULL, flags)
-                : eval(repl, NULL, flags);
-    
-        varpop(&push);
+                ? prim("inputloop", NULL, NULL)
+                : eval(repl, NULL);
 
     CatchException (e)
 
@@ -263,7 +219,7 @@ static void fdcleanup(Input *in) {
 }
 
 /* runfd -- run commands from a file descriptor */
-extern List *runfd(int fd, const char *name, int flags) {
+extern List *runfd(int fd) {
     Input in;
     List *result;
 
@@ -276,49 +232,12 @@ extern List *runfd(int fd, const char *name, int flags) {
     in.buflen = BUFSIZE;
     in.bufbegin = in.buf = ealloc(in.buflen);
     in.bufend = in.bufbegin;
-    in.name = (name == NULL) ? str("fd %d", fd) : name;
+    in.name = str("fd %d", fd);
 
     RefAdd(in.name);
-    result = runinput(&in, flags);
+    result = runinput(&in);
     RefRemove(in.name);
 
-    return result;
-}
-
-/* stringcleanup -- cleanup after running from a string */
-static void stringcleanup(Input *in) {
-    efree(in->bufbegin);
-}
-
-/* stringfill -- placeholder than turns into EOF right away */
-static int stringfill(Input *in) {
-    in->fill = eoffill;
-    return EOF;
-}
-
-/* runstring -- run commands from a string */
-extern List *runstring(const char *str, const char *name, int flags) {
-    Input in;
-    List *result;
-    unsigned char *buf;
-
-    assert(str != NULL);
-
-    memzero(&in, sizeof (Input));
-    in.fd = -1;
-    in.lineno = 1;
-    in.name = (name == NULL) ? str : name;
-    in.fill = stringfill;
-    in.buflen = strlen(str);
-    buf = ealloc(in.buflen + 1);
-    memcpy(buf, str, in.buflen);
-    in.bufbegin = in.buf = buf;
-    in.bufend = in.buf + in.buflen;
-    in.cleanup = stringcleanup;
-
-    RefAdd(in.name);
-    result = runinput(&in, flags);
-    RefRemove(in.name);
     return result;
 }
 
@@ -327,7 +246,6 @@ extern Tree *parseinput(Input *in) {
     Tree * volatile result = NULL;
 
     in->prev = input;
-    in->runflags = 0;
     in->get = get;
     input = in;
 
@@ -346,6 +264,17 @@ extern Tree *parseinput(Input *in) {
     return result;
 }
 
+/* stringcleanup -- cleanup after running from a string */
+static void stringcleanup(Input *in) {
+    efree(in->bufbegin);
+}
+
+/* stringfill -- placeholder than turns into EOF right away */
+static int stringfill(Input *in) {
+    in->fill = eoffill;
+    return EOF;
+}
+
 /* parsestring -- turn a string into a tree; must be exactly one tree */
 extern Tree *parsestring(const char *str) {
     Input in;
@@ -353,8 +282,6 @@ extern Tree *parsestring(const char *str) {
     unsigned char *buf;
 
     assert(str != NULL);
-
-    /* TODO: abstract out common code with runstring */
 
     memzero(&in, sizeof (Input));
     in.fd = -1;
@@ -373,12 +300,6 @@ extern Tree *parsestring(const char *str) {
     RefRemove(in.name);
     return result;
 }
-
-/* isinteractive -- is the innermost input source interactive? */
-extern Boolean isinteractive(void) {
-    return input == NULL ? FALSE : ((input->runflags & run_interactive) != 0);
-}
-
 
 /*
  * initialization

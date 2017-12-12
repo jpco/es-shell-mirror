@@ -51,7 +51,7 @@ static size_t minspace = MIN_minspace;  /* minimum number of bytes in a new spac
  */
 
 #if GCVERBOSE
-#define VERBOSE(p)  STMT(if (gcverbose) eprint p)
+#define VERBOSE(p)  STMT(eprint p)
 #else
 #define VERBOSE(p)  NOP
 #endif
@@ -411,9 +411,8 @@ extern void gc(void) {
 
 #if GCINFO
         size_t olddata = 0;
-        if (gcinfo)
-            for (space = new; space != NULL; space = space->next)
-                olddata += SPACEUSED(space);
+        for (space = new; space != NULL; space = space->next)
+            olddata += SPACEUSED(space);
 #endif
 
         assert(gcblocked >= 0);
@@ -454,11 +453,10 @@ extern void gc(void) {
             livedata += SPACEUSED(space);
 
 #if GCINFO
-        if (gcinfo)
-            eprint(
-                "[GC: old %8d  live %8d  min %8d  (pid %5d)]\n",
-                olddata, livedata, minspace, getpid()
-            );
+        eprint(
+            "[GC: old %8d  live %8d  min %8d  (pid %5d)]\n",
+            olddata, livedata, minspace, getpid()
+        );
 #endif
 
         if (minspace < livedata * 2)
@@ -629,7 +627,6 @@ static char *tree2name(NodeKind k) {
     case nConcat:   return "Concat";
     case nClosure:  return "Closure";
     case nLambda:   return "Lambda";
-    case nLet:  return "Let";
     case nList: return "List";
     case nLocal:    return "Local";
     case nMatch:    return "Match";
