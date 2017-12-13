@@ -104,6 +104,71 @@ static List *extractpattern(Tree *subjectform0, Tree *patternform0,
     RefReturn(result);
 }
 
+/* bindargs -- bind an argument list to the parameters of a lambda */
+/* TODO: This function REALLY deserves a polish/rewrite */
+extern Binding *bindargs(Tree *params0, List *args, Binding *binding0, Binding *context) {
+    if (params0 == NULL)
+        return binding0;
+
+    Ref(Binding *, binding, binding0);
+    Ref(Tree *, params, params0);
+    Ref(Tree *, lastvar, NULL);
+
+    for (; params != NULL; params = params->u[1].p) {
+        assert(params->kind == nList);
+        Ref(Tree *, param, params->u[0].p);
+        Ref(List *, value, NULL);
+
+        param = params->u[0].p;
+        if (param->kind == nAssign) {
+            Ref(List *, vars, glom(param->u[0].p, context));
+            Ref(List *, values, glom(param->u[1].p, context));
+
+            if (vars == NULL)
+                fail("es:@", "null variable name");
+
+            for (; vars != NULL; vars = vars->next) {
+                Ref(char *, name, getstr(vars->term));
+                if (values == NULL)
+                    value = NULL;
+                else if (vars->next == NULL || values->next == NULL) {
+                    value = values;
+                    values = NULL;
+                } else {
+                    value = mklist(values->term, NULL);
+                    values = values->next;
+                }
+                binding = mkbinding(name, value, binding);
+                RefEnd(name);
+            }
+
+            RefEnd2(values, vars);
+        } else {
+            assert(param->kind == nWord || param->kind == nQword);
+            if (lastvar != NULL) {
+                if (args == NULL)
+                    value = NULL;
+                else if (args->next == NULL) {
+                    value = args;
+                    args = NULL;
+                } else {
+                    value = mklist(args->term, NULL);
+                    args = args->next;
+                }
+                binding = mkbinding(lastvar->u[0].s, value, binding);
+            }
+            lastvar = param;
+        }
+        RefEnd2(param, value);
+    }
+    if (lastvar != NULL) {
+        binding = mkbinding(lastvar->u[0].s, args, binding);
+    }
+
+    RefEnd2(lastvar, params);
+    RefReturn(binding);
+}
+
 /* walk -- walk through a tree, evaluating nodes */
 extern List *walk(Tree *tree0, Binding *binding0) {
     Tree *volatile tree = tree0;
@@ -143,75 +208,6 @@ extern List *walk(Tree *tree0, Binding *binding0) {
 
     NOTREACHED;
     return NULL;
-}
-
-/* bindargs -- bind an argument list to the parameters of a lambda */
-extern Binding *bindargs(Tree *params0, List *args, Binding *binding0, Binding *context) {
-    if (params0 == NULL)
-        return binding0;
-
-    // gcdisable();
-    Ref(Binding *, binding, binding0);
-    Ref(Tree *, params, params0);
-
-    for (; params != NULL; params = params->u[1].p) {
-        assert(params->kind == nList);
-        Ref(Tree *, param, params->u[0].p);
-        Ref(List *, value, NULL);
-
-        param = params->u[0].p;
-        if (param->kind == nAssign) {
-            assert(param->kind == nAssign);
-            Ref(List *, vars, glom(param->u[0].p, context));
-            Ref(List *, values, glom(param->u[1].p, context));
-
-            if (vars == NULL)
-                fail("es:@", "null variable name");
-
-            for (; vars != NULL; vars = vars->next) {
-                Ref(char *, name, getstr(vars->term));
-                if (values == NULL)
-                    value = NULL;
-                else if (vars->next == NULL || values->next == NULL) {
-                    value = values;
-                    values = NULL;
-                } else {
-                    value = mklist(values->term, NULL);
-                    values = values->next;
-                }
-                binding = mkbinding(name, value, binding);
-                RefEnd(name);
-            }
-
-            RefEnd2(values, vars);
-        } else {
-            assert(param->kind == nWord || param->kind == nQword);
-            if (args == NULL)
-                value = NULL;
-            else if (params->u[1].p == NULL || args->next == NULL) {
-                value = args;
-                args = NULL;
-            } else {
-                value = mklist(args->term, NULL);
-                args = args->next;
-            }
-            binding = mkbinding(param->u[0].s, value, binding);
-        }
-        RefEnd2(param, value);
-    }
-
-    RefEnd(params);
-    RefReturn(binding);
-}
-
-/* pathsearch -- evaluate fn %pathsearch + some argument */
-extern List *pathsearch(Term *term) {
-    List *search, *list;
-    search = varlookup("fn-%pathsearch", NULL);
-    if (search == NULL)
-        fail("es:pathsearch", "%E: fn %%pathsearch undefined", term);
-    list = mklist(term, NULL);
-    return eval(append(search, list), NULL);
 }
 
 /* eval -- evaluate a list, producing a list */
@@ -267,9 +263,6 @@ restart:
     if (whatis != NULL) {
         fn = eval(append(whatis, mklist(list->term, NULL)), NULL);
     }
-    list = append(fn, list->next);
-    goto restart;
-
     list = append(fn, list->next);
     goto restart;
 

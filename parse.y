@@ -72,7 +72,6 @@ lambda  : thunk                         { $$ = mklambda(NULL, $1); }
 
 binding :                               { $$ = NULL; }
         | word assign                   { $$ = mk(nAssign, $1, $2); }
-        | word                          { $$ = mk(nAssign, $1, NULL); }
 
 vword   : param                                     { $$ = $1; }
         | lambda                                    { $$ = $1; }

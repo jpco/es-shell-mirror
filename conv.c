@@ -75,6 +75,9 @@ static void printargs(Format *f, Tree *args) {
             fmtprint(f, "%#T ", arg);
         }
     }
+    if (fbind != NULL) {
+        binding(f, fbind);
+    }
 }
 
 /* %T -- print a tree */
