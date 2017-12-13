@@ -29,11 +29,11 @@ static int treecount(Tree *tree) {
 }
 
 /* binding -- print a binding statement */
-static void binding(Format *f, char *keyword, Tree *tree) {
+static void binding(Format *f, Tree *tree) {
     Tree *np;
     char *sep = "";
-    fmtprint(f, "%s (", keyword);
-    for (np = tree->u[0].p; np != NULL; np = np->u[1].p) {
+    fmtprint(f, "(");
+    for (np = tree; np != NULL; np = np->u[1].p) {
         Tree *binding;
         assert(np->kind == nList);
         binding = np->u[0].p;
@@ -46,6 +46,35 @@ static void binding(Format *f, char *keyword, Tree *tree) {
         sep = "; ";
     }
     fmtprint(f, ") ");
+}
+
+// Print the arguments of a lambda
+static void printargs(Format *f, Tree *args) {
+    Tree *arg;
+    Tree *fbind = NULL;
+    Tree *last = NULL;
+
+    if (args == NULL)
+        return;
+
+    for (arg = args->u[0].p; args != NULL; last = args, args = args->u[1].p) {
+        assert(args->kind == nList);
+        arg = args->u[0].p;
+        assert(arg != NULL);
+
+        if (arg->kind != nAssign && fbind != NULL) {
+            last->u[1].p = NULL;
+            binding(f, fbind);
+            fbind = NULL;
+            last->u[1].p = args;
+        }
+        if (arg->kind == nAssign && fbind == NULL) {
+            fbind = args;
+        }
+        if (arg->kind != nAssign) {
+            fmtprint(f, "%#T ", arg);
+        }
+    }
 }
 
 /* %T -- print a tree */
@@ -102,27 +131,19 @@ top:
         } else
             return FALSE;
 
-    case nThunk:
-        fmtprint(f, "{%T}", n->u[0].p);
-        return FALSE;
-
     case nVarsub:
         fmtprint(f, "$%#T(%T)", n->u[0].p, n->u[1].p);
         return FALSE;
 
     case nLocal:
-        binding(f, "local", n);
+        fmtprint(f, "local ");
+        binding(f, n->u[0].p);
         tailcall(n->u[1].p, FALSE);
-
-    case nClosure:
-        binding(f, "%", n);
-        tailcall(n->u[1].p, FALSE);
-
 
     case nCall: {
         Tree *t = n->u[0].p;
         fmtprint(f, "<=");
-        if (t != NULL && (t->kind == nThunk || t->kind == nPrim))
+        if (t != NULL && (t->kind == nLambda || t->kind == nPrim))
             tailcall(t, FALSE);
         fmtprint(f, "{%T}", t);
         return FALSE;
@@ -137,12 +158,11 @@ top:
         return FALSE;
 
     case nLambda:
-        fmtprint(f, "@ ");
-        if (n->u[0].p == NULL)
-            fmtprint(f, "*");
-        else
-            fmtprint(f, "%T", n->u[0].p);
-        fmtprint(f, " {%T}", n->u[1].p);
+        if (n->u[0].p != NULL) {
+            fmtprint(f, "@ ");
+            printargs(f, n->u[0].p);
+        }
+        fmtprint(f, "{%T}", n->u[1].p);
         return FALSE;
 
     case nList:
@@ -186,10 +206,7 @@ static void enclose(Format *f, Binding *binding, const char *sep) {
         if (binding->defn == NULL) {
             fmtprint(f, "%S%s", binding->name, sep);
         } else {
-            char *fmtstr = (binding->defn->term->closure
-                            && binding->defn->term->closure->binding)
-                            ? "%S = %#L%s" : "%S = %L%s";
-            fmtprint(f, fmtstr, binding->name, binding->defn, " ", sep);
+            fmtprint(f, "%S = %L%s", binding->name, binding->defn, " ", sep);
         }
     }
 }
@@ -204,18 +221,28 @@ static Boolean Cconv(Format *f) {
     if (altform)
         fmtprint(f, "%S", str("%C", closure));
     else {
+        if (binding != NULL
+                || (tree->kind == nLambda
+                    && tree->u[0].p != NULL)) {
+            fmtprint(f, "@ ");
+        }
         if (binding != NULL) {
-            fmtprint(f, "%%closure (");
+            fmtprint(f, "(");
             enclose(f, binding, "");
             fmtprint(f, ") ");
         }
-        fmtprint(f, "%T", tree);
+        if (tree->kind == nLambda) {
+            printargs(f, tree->u[0].p);
+            tree = tree->u[1].p;
+        }
+        fmtprint(f, "{%T}", tree);
     }
 
     return FALSE;
 }
 
 /* %E -- print a term */
+/* TODO: chop this one */
 static Boolean Econv(Format *f) {
     Term *term = va_arg(f->args, Term *);
     Closure *closure = getclosure(term);
@@ -287,20 +314,6 @@ quoteit:
     return FALSE;
 }
 
-/* %Z -- print a StrList */
-static Boolean Zconv(Format *f) {
-    StrList *lp, *next;
-    char *sep;
-    
-    lp = va_arg(f->args, StrList *);
-    sep = va_arg(f->args, char *);
-    for (; lp != NULL; lp = next) {
-        next = lp->next;
-        fmtprint(f, "%s%s", lp->str, next == NULL ? "" : sep);
-    }
-    return FALSE;
-}
-
 /* %F -- protect an exported name from brain-dead shells */
 static Boolean Fconv(Format *f) {
     int c;
@@ -317,54 +330,12 @@ static Boolean Fconv(Format *f) {
     return FALSE;
 }
 
-/* %N -- undo %F */
-static Boolean Nconv(Format *f) {
-    int c;
-    unsigned char *s = va_arg(f->args, unsigned char *);
-
-    while ((c = *s++) != '\0') {
-        if (c == '_' && *s == '_') {
-            static const char hexchar[] = "0123456789abcdef";
-            const char *h1 = strchr(hexchar, s[1]);
-            const char *h2 = strchr(hexchar, s[2]);
-            if (h1 != NULL && h2 != NULL) {
-                c = ((h1 - hexchar) << 4) | (h2 - hexchar);
-                s += 3;
-            }
-        }
-        fmtputc(f, c);
-    }
-    return FALSE;
-}
-
-/* %W -- print a list for exporting to the environment, merging and quoting */
-static Boolean Wconv(Format *f) {
-    List *lp, *next;
-
-    for (lp = va_arg(f->args, List *); lp != NULL; lp = next) {
-        int c;
-        const char *s;
-        for (s = getstr(lp->term); (c = *s) != '\0'; s++) {
-            if (c == ENV_ESCAPE || c == ENV_SEPARATOR)
-                fmtputc(f, ENV_ESCAPE);
-            fmtputc(f, c);
-        }
-        next = lp->next;
-        if (next != NULL)
-            fmtputc(f, ENV_SEPARATOR);
-    }
-    return FALSE;
-}
-
 /* install the conversion routines */
 void initconv(void) {
     fmtinstall('C', Cconv);
     fmtinstall('E', Econv);
     fmtinstall('F', Fconv);
     fmtinstall('L', Lconv);
-    fmtinstall('N', Nconv);
     fmtinstall('S', Sconv);
     fmtinstall('T', Tconv);
-    fmtinstall('W', Wconv);
-    fmtinstall('Z', Zconv);
 }

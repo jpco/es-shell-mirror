@@ -48,16 +48,6 @@ extern Tree *treeconsend2(Tree *head, Tree *tail) {
     return treeappend(head, treecons(tail, NULL));
 }
 
-/* thunkify -- wrap a tree in thunk braces if it isn't already a thunk */
-extern Tree *thunkify(Tree *tree) {
-    if (tree != NULL && (
-           (tree->kind == nThunk)
-        || (tree->kind == nList && tree->CAR->kind == nThunk && tree->CDR == NULL)
-    ))
-        return tree;
-    return mk(nThunk, tree);
-}
-
 /* firstis -- check if the first word of a literal command matches a known string */
 static Boolean firstis(Tree *t, const char *s) {
     if (t == NULL || t->kind != nList)
@@ -74,12 +64,13 @@ extern Tree *prefix(char *s, Tree *t) {
     return treecons(mk(nWord, s), t);
 }
 
-/* mklambda -- create a lambda */
+static Tree *thunkify(Tree *body) {
+    return mk(nLambda, NULL, body);
+}
+
+/* mklambda -- create a lambda/closure */
 extern Tree *mklambda(Tree *params, Tree *body) {
-    if (params == NULL)
-        return thunkify(body);
-    else
-        return mk(nLambda, params, body);
+    return mk(nLambda, params, body);
 }
 
 /* mkseq -- destructively add to a sequence of nList/nThink operations */

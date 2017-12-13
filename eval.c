@@ -38,49 +38,6 @@ static List *assign(Tree *varform, Tree *valueform0, Binding *binding0) {
     RefReturn(result);
 }
 
-/* letbindings -- create a new Binding containing let-bound variables */
-static Binding *letbindings(Tree *defn0, Binding *outer0,
-                Binding *context0) {
-    Ref(Binding *, binding, outer0);
-    Ref(Binding *, context, context0);
-    Ref(Tree *, defn, defn0);
-
-    for (; defn != NULL; defn = defn->u[1].p) {
-        assert(defn->kind == nList);
-        if (defn->u[0].p == NULL)
-            continue;
-
-        Ref(Tree *, assign, defn->u[0].p);
-        assert(assign->kind == nAssign);
-        Ref(List *, vars, glom(assign->u[0].p, context));
-        Ref(List *, values, glom(assign->u[1].p, context));
-
-        if (vars == NULL)
-            fail("es:let", "null variable name");
-
-        for (; vars != NULL; vars = vars->next) {
-            List *value;
-            Ref(char *, name, getstr(vars->term));
-            if (values == NULL)
-                value = NULL;
-            else if (vars->next == NULL || values->next == NULL) {
-                value = values;
-                values = NULL;
-            } else {
-                value = mklist(values->term, NULL);
-                values = values->next;
-            }
-            binding = mkbinding(name, value, binding);
-            RefEnd(name);
-        }
-
-        RefEnd3(values, vars, assign);
-    }
-
-    RefEnd2(defn, context);
-    RefReturn(binding);
-}
-
 /* localbind -- recursively convert a Bindings list into dynamic binding */
 static List *localbind(Binding *dynamic0, Binding *lexical0,
                Tree *body0) {
@@ -109,7 +66,7 @@ static List *local(Tree *defn, Tree *body0,
     Ref(Tree *, body, body0);
     Ref(Binding *, bindings, bindings0);
     Ref(Binding *, dynamic,
-        reversebindings(letbindings(defn, NULL, bindings)));
+        reversebindings(bindargs(defn, NULL, NULL, bindings)));
 
     result = localbind(dynamic, bindings, body);
 
@@ -152,14 +109,13 @@ extern List *walk(Tree *tree0, Binding *binding0) {
     Tree *volatile tree = tree0;
     Binding *volatile binding = binding0;
 
-top:
     if (tree == NULL)
         return true;
 
     switch (tree->kind) {
 
-    case nConcat: case nList: case nQword: case nVar: case nVarsub:
-    case nWord: case nThunk: case nLambda: case nCall: case nPrim: {
+    case nLambda: case nConcat: case nList: case nQword:
+    case nVar: case nWord: case nVarsub: case nCall: case nPrim: {
         List *list;
         Ref(Binding *, bp, binding);
         list = glom(tree, binding);
@@ -170,13 +126,6 @@ top:
 
     case nAssign:
         return assign(tree->u[0].p, tree->u[1].p, binding);
-
-    case nClosure:
-        Ref(Tree *, body, tree->u[1].p);
-        binding = letbindings(tree->u[0].p, binding, binding);
-        tree = body;
-        RefEnd(body);
-        goto top;
 
     case nLocal:
         return local(tree->u[0].p, tree->u[1].p, binding);
@@ -197,33 +146,62 @@ top:
 }
 
 /* bindargs -- bind an argument list to the parameters of a lambda */
-extern Binding *bindargs(Tree *params, List *args, Binding *binding) {
-    if (params == NULL)
-        return mkbinding("*", args, binding);
+extern Binding *bindargs(Tree *params0, List *args, Binding *binding0, Binding *context) {
+    if (params0 == NULL)
+        return binding0;
 
-    gcdisable();
+    // gcdisable();
+    Ref(Binding *, binding, binding0);
+    Ref(Tree *, params, params0);
 
     for (; params != NULL; params = params->u[1].p) {
-        Tree *param;
-        List *value;
         assert(params->kind == nList);
+        Ref(Tree *, param, params->u[0].p);
+        Ref(List *, value, NULL);
+
         param = params->u[0].p;
-        assert(param->kind == nWord || param->kind == nQword);
-        if (args == NULL)
-            value = NULL;
-        else if (params->u[1].p == NULL || args->next == NULL) {
-            value = args;
-            args = NULL;
+        if (param->kind == nAssign) {
+            assert(param->kind == nAssign);
+            Ref(List *, vars, glom(param->u[0].p, context));
+            Ref(List *, values, glom(param->u[1].p, context));
+
+            if (vars == NULL)
+                fail("es:@", "null variable name");
+
+            for (; vars != NULL; vars = vars->next) {
+                Ref(char *, name, getstr(vars->term));
+                if (values == NULL)
+                    value = NULL;
+                else if (vars->next == NULL || values->next == NULL) {
+                    value = values;
+                    values = NULL;
+                } else {
+                    value = mklist(values->term, NULL);
+                    values = values->next;
+                }
+                binding = mkbinding(name, value, binding);
+                RefEnd(name);
+            }
+
+            RefEnd2(values, vars);
         } else {
-            value = mklist(args->term, NULL);
-            args = args->next;
+            assert(param->kind == nWord || param->kind == nQword);
+            if (args == NULL)
+                value = NULL;
+            else if (params->u[1].p == NULL || args->next == NULL) {
+                value = args;
+                args = NULL;
+            } else {
+                value = mklist(args->term, NULL);
+                args = args->next;
+            }
+            binding = mkbinding(param->u[0].s, value, binding);
         }
-        binding = mkbinding(param->u[0].s, value, binding);
+        RefEnd2(param, value);
     }
 
-    Ref(Binding *, result, binding);
-    gcenable();
-    RefReturn(result);
+    RefEnd(params);
+    RefReturn(binding);
 }
 
 /* pathsearch -- evaluate fn %pathsearch + some argument */
@@ -263,15 +241,11 @@ restart:
             assert(cp->binding == NULL);
             list = prim(cp->tree->u[0].s, list->next, binding);
             break;
-        case nThunk:
-            list = walk(cp->tree->u[0].p, cp->binding);
-            break;
         case nLambda: {
             Ref(Tree *, tree, cp->tree);
             Ref(Binding *, context,
-                       bindargs(tree->u[0].p,
-                        list->next,
-                        cp->binding));
+                        bindargs(tree->u[0].p, list->next,
+                            cp->binding, cp->binding));
             list = walk(tree->u[1].p, context);
             RefEnd2(context, tree);
             break;

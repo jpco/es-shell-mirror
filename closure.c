@@ -70,7 +70,6 @@ static Binding *extract(Tree *tree, Binding *bindings) {
                 NodeKind k = word->kind;
                 assert(defn->kind == nList);
                 switch (k) {
-                case nThunk:
                 case nLambda:
                 case nList:
                     term = mkterm(NULL, mkclosure(word, NULL));
@@ -107,7 +106,7 @@ extern Closure *extractbindings(Tree *tree0) {
 
     ExceptionHandler
 
-        while (tree->kind == nClosure) {
+        while (tree->kind == nLambda) {
             bindings = extract(tree->u[0].p, bindings);
             tree = tree->u[1].p;
             if (tree->kind == nList && tree->u[1].p == NULL)

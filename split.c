@@ -11,7 +11,7 @@ static List *value;
 static Boolean ifsvalid = FALSE;
 static char ifs[10], isifs[256];
 
-extern void startsplit(const char *sep, Boolean coalescef) {
+static void startsplit(const char *sep, Boolean coalescef) {
     static Boolean initialized = FALSE;
     if (!initialized) {
         initialized = TRUE;
@@ -38,7 +38,7 @@ extern void startsplit(const char *sep, Boolean coalescef) {
 
 // Re-entrant version of splitstring.  Returns a pointer to the next
 // substring, or NULL if the end of string has been found.
-extern char *splitstring_r(char *in, size_t len, Boolean endword) {
+static char *splitstring_r(char *in, size_t len, Boolean endword) {
     Buffer *buf = buffer;
     unsigned char *s = (unsigned char *) in, *inend = s + len;
 
@@ -81,16 +81,7 @@ extern char *splitstring_r(char *in, size_t len, Boolean endword) {
     return NULL;
 }
 
-extern void splitstring(char *in, size_t len, Boolean endword) {
-    size_t remainder;
-    char *s = in;
-    do {
-        remainder = len - (s - in);
-        s = splitstring_r(s, remainder, endword);
-    } while (s != NULL);
-}
-
-extern List *endsplit(void) {
+static List *endsplit(void) {
     List *result;
 
     if (buffer != NULL) {
@@ -103,7 +94,7 @@ extern List *endsplit(void) {
     return result;
 }
 
-extern List *fsplit(const char *sep, List *list, Boolean coalesce) {
+extern List *split(const char *sep, List *list, Boolean coalesce) {
     Ref(List *, lp, list);
     startsplit(sep, coalesce);
     for (; lp != NULL; lp = lp->next) {

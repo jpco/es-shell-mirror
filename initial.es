@@ -5,29 +5,27 @@
 #
 
 fn-access	  = $&access
-fn-break	  = $&break
 fn-catch	  = $&catch
 fn-echo		  = $&echo
 fn-exec		  = $&exec
 fn-forever	= $&forever
-fn-fork		  = $&fork
 fn-if		    = $&if
-fn-newpgrp	= $&newpgrp
 fn-result	  = $&result
+fn-%split   = $&split
 fn-throw	  = $&throw
-fn-umask	  = $&umask
-fn-wait		  = $&wait
 fn-%read	  = $&read
 
 # Tread carefully.
 fn-%whatis = @ cmd rest {
-  % (fn = $(fn-^$cmd))
+  @ (fn = $(fn-^$cmd)) {
     $&if {~ $fn ()} {
       $&throw error %whatis unknown command $cmd
     } {
       $&result $fn $rest
     }
+  }
 }
+
 fn-eval = @ * {'{' ^ <={%flatten ' ' $*} ^ '}'}
 
 fn-true		= result 0
@@ -55,8 +53,8 @@ fn-unwind-protect = @ body cleanup {
       throw error unwind-protect 'unwind-protect body cleanup'
     }
   } {
-    % (exception)
-      % (
+    @ (exception) {
+      @ (
         result = <={
           catch @ e {
             exception = caught $e
@@ -64,21 +62,18 @@ fn-unwind-protect = @ body cleanup {
             $body
           }
         }
-      ) %seq {
-          $cleanup
-        } {
-          if {~ $exception(1) caught} {
-            throw $exception(2 ...)
-          }
-        } {
-          result $result
+      ) {%seq {
+        $cleanup
+      } {
+        if {~ $exception(1) caught} {
+          throw $exception(2 ...)
         }
+      } {
+        result $result
+      }}
+    }
   }
 }
-
-fn-%fsplit  = $&fsplit
-fn-%newfd	  = $&newfd
-fn-%split   = $&split
 
 fn-while = @ cond body {
 	catch @ e value {
@@ -88,7 +83,7 @@ fn-while = @ cond body {
 		  result $value
     }
 	} {
-		% (result = <=true)
+		@ (result = <=true) {
 			forever {
 				if {%not $cond} {
 					throw break $result
@@ -96,11 +91,12 @@ fn-while = @ cond body {
 					result = <=$body
 				}
 			}
+    }
 	}
 }
 
 fn-apply = @ cmd args {
-  % (res) %seq {
+  @ (res) {%seq {
     while {%not {~ $args ()}} {
       %seq {
         res = <={$cmd $args(1)}
@@ -110,7 +106,7 @@ fn-apply = @ cmd args {
     }
   } {
     result $res
-  }
+  }}
 }
 
 #
@@ -118,11 +114,11 @@ fn-apply = @ cmd args {
 #
 
 fn-%flatten	= @ sep li {
-  % (res = $li(1)) %seq {
+  @ (res = $li(1)) {%seq {
     apply @ i {res = $res^$sep^$i} $li(2 ...)
   } {
     result $res
-  }
+  }}
 }
 
 fn-%count	= $&count
@@ -134,7 +130,7 @@ fn-%not = @ cmd {
 }
 
 fn-%and = @ first rest {
-	% (result = <={$first})
+	@ (result = <={$first}) {
 		if {~ <={%count $rest} 0} {
 			result $result
 		} {result $result} {
@@ -142,13 +138,14 @@ fn-%and = @ first rest {
 		} {
 			result $result
 		}
+  }
 }
 
 fn-%or = @ first rest {
 	if {~ <={%count $first} 0} {
 		false
 	} {
-		% (result = <={$first})
+		@ (result = <={$first}) {
 			if {~ <={%count $rest} 0} {
 				result $result
 			} {%not {result $result}} {
@@ -156,109 +153,18 @@ fn-%or = @ first rest {
 			} {
 				result $result
 			}
-	}
-}
-
-#	These redirections are rewritten:
-#
-#		cmd < file		%open 0 file {cmd}
-#		cmd > file		%create 1 file {cmd}
-#		cmd >[n] file		%create n file {cmd}
-#		cmd >> file		%append 1 file {cmd}
-#		cmd <> file		%open-write 0 file {cmd}
-#		cmd <>> file		%open-append 0 file {cmd}
-#		cmd >< file		%open-create 1 file {cmd}
-#		cmd >>< file		%open-append 1 file {cmd}
-#
-#	All the redirection hooks reduce to calls on the %openfile hook
-#	function, which interprets an fopen(3)-style mode argument as its
-#	first parameter.  The other redirection hooks (e.g., %open and
-#	%create) exist so that they can be spoofed independently of %openfile.
-#
-#	The %one function is used to make sure that exactly one file is
-#	used as the argument of a redirection.
-
-fn-%dup = $&dup
-
-fn-%openfile	  = $&openfile
-fn-%open	      = %openfile r		# < file
-fn-%create	    = %openfile w		# > file
-fn-%append	    = %openfile a		# >> file
-fn-%open-write	= %openfile r+		# <> file
-fn-%open-create	= %openfile w+		# >< file
-fn-%open-append	= %openfile a+		# >>< file, <>> file
-
-fn-%one = @ * {
-  %seq {
-    if {%not {~ <={%count $*} 1}} {
-      throw error %one <={
-        if {~ <={%count $*} 0} {
-          result 'null filename in redirection'
-        } {
-          result 'too many files in redirection: ' $*
-        }
-      }
     }
-  } {
-	  result $*
-  }
-}
-
-if {~ <=$&primitives readfrom} {
-	fn-%readfrom = $&readfrom
-} {
-	fn-%readfrom = @ var input cmd {
-		local ($var = /tmp/es.^$var^.^$pid) {
-			unwind-protect {
-        %seq {
-          %create 1 <={%one $$var} {$input}
-        } {
-          # text of $cmd is   command file
-          $cmd
-        }
-			} {
-				rm -f $$var
-			}
-		}
 	}
 }
-
-if {~ <=$&primitives writeto} {
-	fn-%writeto = $&writeto
-} {
-	fn-%writeto = @ var output cmd {
-		local ($var = /tmp/es.^$var^.^$pid) {
-			unwind-protect {
-        %seq {
-          %create 1 <={%one $$var} {}
-        } {
-          $cmd
-        } {
-          %create 1 <={%one $$var} {$output}
-        }
-			} {
-				rm -f $$var
-			}
-		}
-	}
-}
-
-#
-# Hook functions
-#
-
-#
-# Read-eval-print loops
-#
 
 fn-. = @ * {
-  local (prompt) $&dot $*
+  local (prompt) {$&dot $*}
 }
 
 fn-%parse	= $&parse
 
 fn-%input-loop = catch-return {
-	% (result)
+	@ (result) {
     catch @ e type msg {
       %seq {
         if {~ $e eof} {
@@ -266,25 +172,27 @@ fn-%input-loop = catch-return {
         } {~ $e exit} {
           throw $e $type $msg
         } {~ $e error} {
-          %dup 1 2 {echo $msg}
+          echo $msg
         } {~ $e signal} {
           if {%not {~ $type sigint sigterm sigquit}} {
-            %dup 1 2 {echo caught unexpected signal: $type}
+            echo caught unexpected signal: $type
           }
         } {
-          %dup 1 2 {echo uncaught exception: $e $type $msg}
+          echo uncaught exception: $e $type $msg
         }
       } {
         throw retry # restart forever loop
       }
     } {
       forever {
-        % (code = <={%parse $prompt})
+        @ (code = <={%parse $prompt}) {
           if {%not {~ <={%count $code} 0}} {
             result = <={$code}
           }
+        }
       }
     }
+  }
 }
 
 #	These functions are potentially passed to a REPL as the %dispatch
@@ -295,17 +203,6 @@ fn-%input-loop = catch-return {
 #
 # Settor functions
 #
-
-#	Settor functions are called when the appropriately named variable
-#	is set, either with assignment or local binding.  The argument to
-#	the settor function is the assigned value, and $0 is the name of
-#	the variable.  The return value of a settor function is used as
-#	the new value of the variable.  (Most settor functions just return
-#	their arguments, but it is always possible for them to modify the
-#	value.)
-
-#	These settor functions call primitives to set data structures used
-#	inside of es.
 
 set-max-eval-depth	= $&setmaxevaldepth
 

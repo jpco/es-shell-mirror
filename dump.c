@@ -86,7 +86,6 @@ static const char *nodename(NodeKind k) {
     default:    panic("nodename: bad node kind %d", k);
     case nAssign:   return "Assign";
     case nCall: return "Call";
-    case nClosure:  return "Closure";
     case nConcat:   return "Concat";
     case nLambda:   return "Lambda";
     case nList: return "List";
@@ -95,7 +94,6 @@ static const char *nodename(NodeKind k) {
     case nExtract:  return "Extract";
     case nPrim: return "Prim";
     case nQword:    return "Qword";
-    case nThunk:    return "Thunk";
     case nVar:  return "Var";
     case nVarsub:   return "Varsub";
     case nWord: return "Word";
@@ -115,11 +113,11 @@ static char *dumptree(Tree *tree) {
             print("static const Tree_s %s = { n%s, { { (char *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumpstring(tree->u[0].s));
             break;
-            case nCall: case nThunk: case nVar:
+            case nCall: case nVar:
             print("static const Tree_p %s = { n%s, { { (Tree *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumptree(tree->u[0].p));
             break;
-            case nAssign:  case nConcat: case nClosure:
+            case nAssign:  case nConcat:
             case nLambda: case nList:  case nLocal:
             case nVarsub: case nMatch: case nExtract:
             print("static const Tree_pp %s = { n%s, { { (Tree *) %s }, { (Tree *) %s } } };\n",

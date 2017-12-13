@@ -30,48 +30,13 @@ PRIM(exec) {
     return eval(list, NULL);
 }
 
-/* FIXME: I don't like having this here, but I can't figure out es'
- * redirections well enough to go without it. */
-PRIM(dot) {
-    int fd;
-    Push zero, star;
-
-    Ref(List *, result, NULL);
-    Ref(List *, lp, list);
-
-    Ref(char *, file, getstr(lp->term));
-    lp = lp->next;
-    fd = eopen(file, oOpen);
-    if (fd == -1)
-        fail("$&dot", "%s: %s", file, esstrerror(errno));
-
-    varpush(&star, "*", lp);
-
-    result = runfd(fd);
-
-    varpop(&zero);
-    varpop(&star);
-    RefEnd2(file, lp);
-    RefReturn(result);
-}
-
 PRIM(split) {
     char *sep;
     if (list == NULL)
         fail("$&split", "usage: %%split separator [args ...]");
     Ref(List *, lp, list);
     sep = getstr(lp->term);
-    lp = fsplit(sep, lp->next, TRUE);
-    RefReturn(lp);
-}
-
-PRIM(fsplit) {
-    char *sep;
-    if (list == NULL)
-        fail("$&fsplit", "usage: %%fsplit separator [args ...]");
-    Ref(List *, lp, list);
-    sep = getstr(lp->term);
-    lp = fsplit(sep, lp->next, FALSE);
+    lp = split(sep, lp->next, FALSE);
     RefReturn(lp);
 }
 
@@ -90,7 +55,7 @@ PRIM(parse) {
     tree = parse(prompt1, prompt2);
     result = (tree == NULL)
            ? NULL
-           : mklist(mkterm(NULL, mkclosure(mk(nThunk, tree), NULL)),
+           : mklist(mkterm(NULL, mkclosure(mk(nLambda, NULL, tree), NULL)),
                 NULL);
     RefEnd2(prompt2, prompt1);
     return result;
@@ -160,9 +125,7 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(echo);
     X(count);
     X(exec);
-    X(dot);
     X(split);
-    X(fsplit);
     X(parse);
     X(inputloop);
     X(collect);

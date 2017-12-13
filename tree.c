@@ -17,11 +17,11 @@ extern Tree *mk VARARGS1(NodeKind, t) {
     default:
         panic("mk: bad node kind %d", t);
     case nWord: case nQword: case nPrim:
-    case nCall: case nThunk: case nVar:
+    case nCall: case nVar:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].p = va_arg(ap, Tree *);
         break;
-    case nAssign: case nConcat: case nClosure:
+    case nAssign: case nConcat:
     case nLambda: case nList:  case nLocal:
     case nVarsub: case nMatch: case nExtract:
         n = gcalloc(offsetof(Tree, u[2]), &Tree2Tag);
@@ -64,7 +64,7 @@ static size_t Tree1Scan(void *p) {
     case nPrim: case nWord: case nQword:
         n->u[0].s = forward(n->u[0].s);
         break;
-    case nCall: case nThunk: case nVar:
+    case nCall: case nVar:
         n->u[0].p = forward(n->u[0].p);
         break;
     } 
@@ -74,7 +74,7 @@ static size_t Tree1Scan(void *p) {
 static size_t Tree2Scan(void *p) {
     Tree *n = p;
     switch (n->kind) {
-    case nAssign:  case nConcat: case nClosure:
+    case nAssign:  case nConcat:
     case nLambda: case nList:  case nLocal:
     case nVarsub: case nMatch: case nExtract:
         n->u[0].p = forward(n->u[0].p);

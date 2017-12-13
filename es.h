@@ -43,8 +43,8 @@ struct Closure {
  */
 
 typedef enum {
-    nAssign, nCall, nClosure, nConcat, nLambda, nList, nLocal,
-    nMatch, nExtract, nPrim, nQword, nThunk, nVar, nVarsub, nWord
+    nAssign, nCall, nConcat, nLambda, nList, nLocal,
+    nMatch, nExtract, nPrim, nQword, nVar, nVarsub, nWord
 } NodeKind;
 
 struct Tree {
@@ -93,23 +93,6 @@ extern Boolean gcinfo;          /* -I */
 extern void runinitial(void);
 
 
-/* fd.c */
-
-extern void mvfd(int old, int new);
-extern int newfd(void);
-
-#define UNREGISTERED    (-999)
-extern void registerfd(int *fdp, Boolean closeonfork);
-extern void unregisterfd(int *fdp);
-extern void releasefd(int fd);
-extern void closefds(void);
-
-extern int fdmap(int fd);
-extern int defer_mvfd(int old, int new);
-extern int defer_close(int fd);
-extern void undefer(int ticket);
-
-
 /* term.c */
 
 extern Term *mkterm(char *str, Closure *closure);
@@ -148,7 +131,7 @@ extern Binding *reversebindings(Binding *binding);
 
 /* eval.c */
 
-extern Binding *bindargs(Tree *params, List *args, Binding *binding);
+extern Binding *bindargs(Tree *params, List *args, Binding *binding, Binding *context);
 extern List *forkexec(char *file, List *list, Boolean inchild);
 extern List *walk(Tree *tree, Binding *binding);
 extern List *eval(List *list, Binding *binding);
@@ -197,9 +180,6 @@ extern void varpop(Push *);
 extern List *true, *false;
 extern Boolean istrue(List *status);
 extern int exitstatus(List *status);
-extern char *mkstatus(int status);
-extern void printstatus(int pid, int status);
-
 
 /* dict.c */
 
@@ -269,11 +249,7 @@ extern void initprims(void);
 
 /* split.c */
 
-extern void startsplit(const char *sep, Boolean coalesce);
-extern void splitstring(char *in, size_t len, Boolean endword);
-extern char *splitstring_r(char *in, size_t len, Boolean endword);
-extern List *endsplit(void);
-extern List *fsplit(const char *sep, List *list, Boolean coalesce);
+extern List *split(const char *sep, List *list, Boolean coalesce);
 
 /* open.c */
 

@@ -124,7 +124,7 @@ top:
         w = KW;
         if (buf[1] == '\0') {
             int k = *buf;
-            if (k == '@' || k == '~' || k == '%')
+            if (k == '@' || k == '~')
                 return k;
         } else if (*buf == 'l') {
             if (streq(buf + 1, "ocal")) return LOCAL;

@@ -51,32 +51,3 @@ extern int exitstatus(List *status) {
         return 1;
     return n;
 }
-
-/* mkstatus -- turn a unix exit(2) status into a string */
-extern char *mkstatus(int status) {
-    if (SIFSIGNALED(status)) {
-        char *name = signame(STERMSIG(status));
-        if (SCOREDUMP(status))
-            name = str("%s+core", name);
-        return name;
-    }
-    return str("%d", SEXITSTATUS(status));
-}
-
-/* printstatus -- print the status if we should */
-extern void printstatus(int pid, int status) {
-    if (SIFSIGNALED(status)) {
-        const char *msg = sigmessage(STERMSIG(status)), *tail = "";
-        if (SCOREDUMP(status)) {
-            tail = "--core dumped";
-            if (*msg == '\0')
-                tail += (sizeof "--") - 1;
-        }
-        if (*msg != '\0' || *tail != '\0') {
-            if (pid == 0)
-                eprint("%s%s\n", msg, tail);
-            else
-                eprint("%d: %s%s\n", pid, msg, tail);
-        }
-    }
-}

@@ -345,7 +345,7 @@ static void fdprint(Format *format, int fd, const char *fmt) {
     format->bufend  = buf + sizeof buf;
     format->grow    = fprint_flush;
     format->flushed = 0;
-    format->u.n = fdmap(fd);
+    format->u.n = fd;
 
     gcdisable();
     printfmt(format, fmt);

@@ -212,7 +212,6 @@ extern List *runinput(Input *in) {
 
 /* fdcleanup -- cleanup after running from a file descriptor */
 static void fdcleanup(Input *in) {
-    unregisterfd(&in->fd);
     if (in->fd != -1)
         close(in->fd);
     efree(in->bufbegin);
@@ -228,7 +227,6 @@ extern List *runfd(int fd) {
     in.fill = fdfill;
     in.cleanup = fdcleanup;
     in.fd = fd;
-    registerfd(&in.fd, TRUE);
     in.buflen = BUFSIZE;
     in.bufbegin = in.buf = ealloc(in.buflen);
     in.bufend = in.bufbegin;

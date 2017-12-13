@@ -13,7 +13,6 @@ extern Tree *treecons2(Tree *car, Tree *cdr);
 extern Tree *treeconsend(Tree *p, Tree *q);
 extern Tree *treeconsend2(Tree *p, Tree *q);
 extern Tree *treeappend(Tree *head, Tree *tail);
-extern Tree *thunkify(Tree *tree);
 
 extern Tree *prefix(char *s, Tree *t);
 extern Tree *mklambda(Tree *params, Tree *body);
