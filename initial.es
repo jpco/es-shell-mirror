@@ -4,14 +4,14 @@
 # The basics
 #
 
-fn-catch	  = $&catch
-fn-exec		  = $&exec
-fn-forever	= $&forever
-fn-if		    = $&if
-fn-result	  = $&result
+fn-catch    = $&catch
+fn-exec     = $&exec
+fn-forever  = $&forever
+fn-if       = $&if
+fn-result   = $&result
 fn-%split   = $&split
-fn-throw	  = $&throw
-fn-%read	  = $&read
+fn-throw    = $&throw
+fn-%read    = $&read
 
 # TODO: move this to the appropriate place in the file
 fn-echo = @ li (
@@ -39,11 +39,12 @@ fn-%whatis = @ cmd rest {
     }
   }
 }
+fn-whatis = @ * {echo <={%whatis $*}}
 
 fn-eval = @ * {'{' ^ <={%flatten ' ' $*} ^ '}'}
 
-fn-true		= result 0
-fn-false	= result 1
+fn-true   = result 0
+fn-false  = result 1
 
 #
 # Flow control helpers
@@ -51,19 +52,15 @@ fn-false	= result 1
 
 fn-%seq = $&seq
 
-fn-break	= throw break
-fn-exit		= throw exit
-fn-return	= throw return
-
-fn-catch-return = @ body {
+fn-escaped-by = @ ex body {
   catch @ e rest {
-    if {~ $e return} {
+    if {~ $e $ex} {
       result $rest
     } {
       throw $e $rest
     }
   } {
-    $body
+    local (fn-^$ex = throw $ex) $body
   }
 }
 
@@ -94,23 +91,23 @@ fn-unwind-protect = @ body cleanup (
 }
 
 fn-while = @ cond body {
-	catch @ e value {
-		if {%not {~ $e break}} {
-			throw $e $value
-		} {
-		  result $value
+  catch @ e value {
+    if {%not {~ $e break}} {
+      throw $e $value
+    } {
+      result $value
     }
-	} {
-		@ (result = <=true) {
-			forever {
-				if {%not $cond} {
-					throw break $result
-				} {
-					result = <=$body
-				}
-			}
+  } {
+    @ (result = <=true) {
+      forever {
+        if {%not $cond} {
+          throw break $result
+        } {
+          result = <=$body
+        }
+      }
     }
-	}
+  }
 }
 
 fn-apply = @ cmd args (
@@ -130,25 +127,25 @@ fn-apply = @ cmd args (
 }
 
 fn-%not = @ cmd {
-	if {$cmd} {false} {true}
+  if {$cmd} {false} {true}
 }
 
 fn-%and = @ first rest {
-	@ (result = <={$first}) {
-		if {~ <={%count $rest} 0} {
-			result $result
-		} {result $result} {
-			%and $rest
-		} {
-			result $result
-		}
+  @ (result = <={$first}) {
+    if {~ <={%count $rest} 0} {
+      result $result
+    } {result $result} {
+      %and $rest
+    } {
+      result $result
+    }
   }
 }
 
 fn-%or = @ first rest {
-	if {~ <={%count $first} 0} {
-		false
-	} @ (result = <={$first}) {
+  if {~ <={%count $first} 0} {
+    false
+  } @ (result = <={$first}) {
     if {~ <={%count $rest} 0} {
       result $result
     } {%not {result $result}} {
@@ -156,14 +153,14 @@ fn-%or = @ first rest {
     } {
       result $result
     }
-	}
+  }
 }
 
 #
 # Syntactic sugar
 #
 
-fn-%flatten	= @ sep result rest {
+fn-%flatten = @ sep result rest {
   %seq {
     apply @ i {result = $result^$sep^$i} $rest
   } {
@@ -171,15 +168,15 @@ fn-%flatten	= @ sep result rest {
   }
 }
 
-fn-%count	= $&count
+fn-%count = $&count
 
 #
 # input helpers
 #
 
-fn-%parse	= $&parse
+fn-%parse = $&parse
 
-fn-%input-loop = catch-return @ (result = ()) {
+fn-%input-loop = escaped-by return @ (result = ()) {
   catch @ e type msg {
     %seq {
       if {~ $e eof} {
@@ -207,8 +204,8 @@ fn-%input-loop = catch-return @ (result = ()) {
   }
 }
 
-set-max-eval-depth	= $&setmaxevaldepth
-ifs		= ' ' \t \n
-max-eval-depth	= 640
+set-max-eval-depth  = $&setmaxevaldepth
+ifs   = ' ' \t \n
+max-eval-depth  = 640
 
 result es-core initial state
