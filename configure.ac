@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(access.c)
+AC_INIT(eval.c)
 AC_CONFIG_HEADER(config.h)
 
 dnl AC_CMDSTDOUT_CPP(variable, command, headers)
@@ -12,15 +12,6 @@ EOF
 $1=`(eval "$ac_cpp conftest.$ac_ext") 2>&AC_FD_CC | $2`
 rm -f conftest*
 ])
-
-
-use_readline=yes
-use_editline=no
-
-AC_ARG_WITH(readline,
---with-readline		Use GNU Readline, use_readline=yes)
-AC_ARG_WITH(editline,
---with-editline		Use the Editline library, use_editline=yes)
 
 AC_CANONICAL_HOST
 

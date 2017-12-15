@@ -64,16 +64,16 @@ VPATH = $(srcdir)
 
 HFILES	= config.h es.h gc.h input.h prim.h print.h sigmsgs.h \
 	  stdenv.h syntax.h term.h var.h
-CFILES	= closure.c conv.c dict.c eval.c except.c fd.c gc.c \
+CFILES	= closure.c conv.c dict.c eval.c except.c gc.c \
 	  glom.c input.c list.c main.c match.c open.c opt.c \
 	  prim-ctl.c prim-etc.c prim-io.c prim.c print.c \
 	  sigmsgs.c signal.c split.c status.c str.c syntax.c term.c token.c \
-	  tree.c util.c var.c vec.c version.c y.tab.c dump.c
-OFILES	= closure.o conv.o dict.o eval.o except.o fd.o gc.o \
+	  tree.c util.c var.c vec.c y.tab.c dump.c
+OFILES	= closure.o conv.o dict.o eval.o except.o gc.o \
 	  glom.o input.o list.o main.o match.o open.o opt.o \
 	  prim-ctl.o prim-etc.o prim-io.o prim.o print.o \
 	  sigmsgs.o signal.o split.o status.o str.o syntax.o term.o token.o \
-	  tree.o util.o var.o vec.o version.o y.tab.o
+	  tree.o util.o var.o vec.o y.tab.o
 OTHER	= Makefile parse.y mksignal
 GEN	= esdump y.tab.c y.tab.h y.output token.h sigmsgs.c initial.c
 
@@ -132,7 +132,6 @@ conv.o : conv.c es.h config.h stdenv.h print.h
 dict.o : dict.c es.h config.h stdenv.h gc.h 
 eval.o : eval.c es.h config.h stdenv.h 
 except.o : except.c es.h config.h stdenv.h print.h 
-fd.o : fd.c es.h config.h stdenv.h 
 gc.o : gc.c es.h config.h stdenv.h gc.h 
 glom.o : glom.c es.h config.h stdenv.h gc.h 
 input.o : input.c es.h config.h stdenv.h input.h 
@@ -157,4 +156,3 @@ tree.o : tree.c es.h config.h stdenv.h gc.h
 util.o : util.c es.h config.h stdenv.h 
 var.o : var.c es.h config.h stdenv.h gc.h var.h term.h 
 vec.o : vec.c es.h config.h stdenv.h gc.h 
-version.o : version.c es.h config.h stdenv.h 
