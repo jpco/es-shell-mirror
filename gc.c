@@ -614,7 +614,6 @@ static char *tree1name(NodeKind k) {
     case nPrim: return "Prim";
     case nQword:    return "Qword";
     case nCall: return "Call";
-    case nThunk:    return "Thunk";
     case nVar:  return "Var";
     case nWord: return "Word";
     }
@@ -625,7 +624,6 @@ static char *tree2name(NodeKind k) {
     default:    panic("tree2name: bad node kind %d", k);
     case nAssign:   return "Assign";
     case nConcat:   return "Concat";
-    case nClosure:  return "Closure";
     case nLambda:   return "Lambda";
     case nList: return "List";
     case nLocal:    return "Local";
