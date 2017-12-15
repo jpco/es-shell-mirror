@@ -1,7 +1,5 @@
 /* prim-etc.c -- miscellaneous primitives ($Revision: 1.2 $) */
 
-#define REQUIRE_PWD 1
-
 #include "es.h"
 #include "prim.h"
 
@@ -10,15 +8,7 @@ PRIM(result) {
 }
 
 PRIM(echo) {
-    const char *eol = "\n";
-    if (list != NULL) {
-        if (termeq(list->term, "-n")) {
-            eol = "";
-            list = list->next;
-        } else if (termeq(list->term, "--"))
-            list = list->next;
-    }
-    print("%L%s", list, " ", eol);
+    print("%L", list);
     return true;
 }
 

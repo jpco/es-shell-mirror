@@ -5,7 +5,6 @@
 #
 
 fn-catch	  = $&catch
-fn-echo		  = $&echo
 fn-exec		  = $&exec
 fn-forever	= $&forever
 fn-if		    = $&if
@@ -13,6 +12,22 @@ fn-result	  = $&result
 fn-%split   = $&split
 fn-throw	  = $&throw
 fn-%read	  = $&read
+
+# TODO: move this to the appropriate place in the file
+fn-echo = @ li (
+  end = \n
+) {%seq {
+  if {~ $li(1) -n} {%seq {
+    end = ''
+  } {
+    li = $li(2 ...)
+  }} {~ $li(1) --} {
+    li = $li(2 ...)
+  }
+} {
+  $&echo <={%flatten ' ' $li}^$end
+}}
+
 
 # Tread carefully.
 fn-%whatis = @ cmd rest {
