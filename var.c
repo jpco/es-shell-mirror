@@ -77,13 +77,6 @@ extern void validatevar(const char *var) {
 extern List *varlookup(const char *name, Binding *bp) {
     Var *var;
 
-    if (iscounting(name)) {
-        Term *term = nth(varlookup("*", bp), strtol(name, NULL, 10));
-        if (term == NULL)
-            return NULL;
-        return mklist(term, NULL);
-    }
-
     validatevar(name);
     for (; bp != NULL; bp = bp->next)
         if (streq(name, bp->name))
