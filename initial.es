@@ -13,6 +13,8 @@ fn-%split   = $&split
 fn-throw    = $&throw
 fn-%read    = $&read
 
+fn-exit = throw exit
+
 # TODO: move this to the appropriate place in the file
 fn-echo = @ li (
   end = \n
@@ -31,11 +33,13 @@ fn-echo = @ li (
 
 # Tread carefully.
 fn-%whatis = @ cmd rest {
-  @ (fn = $(fn-^$cmd)) {
-    $&if {~ $fn ()} {
-      $&throw error %whatis unknown command $cmd
-    } {
-      $&result $fn $rest
+  local (fn-%whatis = $&whatis) {
+    @ (fn = $(fn-^$cmd)) {
+      if {~ $fn ()} {
+        throw error %whatis unknown command $cmd
+      } {
+        result $fn $rest
+      }
     }
   }
 }

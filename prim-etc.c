@@ -20,6 +20,26 @@ PRIM(exec) {
     return eval(list, NULL);
 }
 
+PRIM(whatis) {
+	/* the logic in here is duplicated in eval() */
+	if (list == NULL || list->next != NULL)
+		fail("$&whatis", "usage: $&whatis program");
+	Ref(Term *, term, list->term);
+	if (getclosure(term) == NULL) {
+		List *fn;
+		Ref(char *, prog, getstr(term));
+		assert(prog != NULL);
+		fn = varlookup2("fn-", prog, binding);
+		if (fn != NULL)
+			list = fn;
+		else 
+			fail("$&whatis", "unknown command %s", prog);
+        RefEnd(prog);
+	}
+	RefEnd(term);
+	return list;
+}
+
 PRIM(split) {
     char *sep;
     if (list == NULL)
@@ -115,6 +135,7 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(echo);
     X(count);
     X(exec);
+    X(whatis);
     X(split);
     X(parse);
     X(inputloop);
