@@ -219,7 +219,7 @@ restart:
         goto done;
     }
 
-    List *whatis = varlookup("shell-%whatis", NULL);
+    List *whatis = varlookup("shellfn:whatis", NULL);
     fn = (whatis == NULL)
         ? prim("whatis", mklist(list->term, NULL), NULL)
         : eval(append(whatis, mklist(list->term, NULL)), NULL);

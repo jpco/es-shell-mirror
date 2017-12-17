@@ -1,25 +1,29 @@
 # initial.es -- set up initial interpreter state ($Revision: 1.1.1.1 $)
 
 #
-# shell-%fns -- these get called by the C code
+# shellfns -- these get called by the C code
 #
 
 # Here there be dragons!
 # Fun feature: if arg %foo isn't defined, we automatically map it to $&foo
 # Fun feature: the "fn" namespace is only defined here, it's not in the C code
-shell-%whatis = @ cmd rest (
+shellfn:whatis = @ cmd rest (
   result = ()
 ) {$&if {~ <={result = $(fn-^$cmd)}} {
 
   if {~ <={result = <={~~ $cmd %*}}} {
     throw error whatis unknown command $cmd
   } {
-    result '$&'^$result
+    $&seq {
+      fn-^$cmd = '$&'^$result
+    } {
+      result $(fn-^$cmd)
+    }
   }
 
 } {$&result $result}}
 
-shell-%main = %escaped-by eof @ (result = ()) {
+shellfn:main = %escaped-by eof @ (result = ()) {
   catch @ e type rest {
     if {~ $e eof} {
       throw eof $result
@@ -53,7 +57,7 @@ fn-forever  = $&forever
 fn-exit = throw exit
 
 fn-whatis = @ * (fn = ()) {
-  if {~ <={fn = <={$shell-%whatis $*}} ()} {
+  if {~ <={fn = <={$'shellfn:whatis' $*}} ()} {
     throw error whatis unknown command $*
   } {
     echo $fn

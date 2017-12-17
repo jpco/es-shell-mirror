@@ -187,7 +187,7 @@ extern List *runinput(Input *in) {
 
     ExceptionHandler
 
-        repl = varlookup("shell-%main", NULL);
+        repl = varlookup("shellfn:main", NULL);
         result = (repl == NULL)
                 ? prim("main", NULL, NULL)
                 : eval(repl, NULL);
