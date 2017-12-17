@@ -38,42 +38,6 @@ static List *assign(Tree *varform, Tree *valueform0, Binding *binding0) {
     RefReturn(result);
 }
 
-/* localbind -- recursively convert a Bindings list into dynamic binding */
-static List *localbind(Binding *dynamic0, Binding *lexical0,
-               Tree *body0) {
-    if (dynamic0 == NULL)
-        return walk(body0, lexical0);
-    else {
-        Push p;
-        Ref(List *, result, NULL);
-        Ref(Tree *, body, body0);
-        Ref(Binding *, dynamic, dynamic0);
-        Ref(Binding *, lexical, lexical0);
-
-        varpush(&p, dynamic->name, dynamic->defn);
-        result = localbind(dynamic->next, lexical, body);
-        varpop(&p);
-
-        RefEnd3(lexical, dynamic, body);
-        RefReturn(result);
-    }
-}
-    
-/* local -- build, recursively, one layer of local assignment */
-static List *local(Tree *defn, Tree *body0,
-           Binding *bindings0) {
-    Ref(List *, result, NULL);
-    Ref(Tree *, body, body0);
-    Ref(Binding *, bindings, bindings0);
-    Ref(Binding *, dynamic,
-        reversebindings(bindargs(defn, NULL, NULL, bindings)));
-
-    result = localbind(dynamic, bindings, body);
-
-    RefEnd3(dynamic, bindings, body);
-    RefReturn(result);
-}
-
 /* matchpattern -- does the text match a pattern? */
 static List *matchpattern(Tree *subjectform0, Tree *patternform0,
               Binding *binding) {
@@ -192,9 +156,6 @@ extern List *walk(Tree *tree0, Binding *binding0) {
     case nAssign:
         return assign(tree->u[0].p, tree->u[1].p, binding);
 
-    case nLocal:
-        return local(tree->u[0].p, tree->u[1].p, binding);
-
     case nMatch:
         return matchpattern(tree->u[0].p, tree->u[1].p, binding);
 
@@ -258,11 +219,14 @@ restart:
         goto done;
     }
 
-    fn = NULL;
-    List *whatis = varlookup("fn-%whatis", NULL);
-    if (whatis != NULL) {
-        fn = eval(append(whatis, mklist(list->term, NULL)), NULL);
-    }
+    List *whatis = varlookup("shell-%whatis", NULL);
+    fn = (whatis == NULL)
+        ? prim("whatis", mklist(list->term, NULL), NULL)
+        : eval(append(whatis, mklist(list->term, NULL)), NULL);
+
+    if (fn == NULL)
+        fail("es:whatis", "unknown command");
+
     list = append(fn, list->next);
     goto restart;
 

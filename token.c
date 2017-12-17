@@ -126,8 +126,6 @@ top:
             int k = *buf;
             if (k == '@' || k == '~')
                 return k;
-        } else if (*buf == 'l') {
-            if (streq(buf + 1, "ocal")) return LOCAL;
         } else if (streq(buf, "~~"))
             return EXTRACT;
         w = RW;

@@ -1,49 +1,64 @@
 # initial.es -- set up initial interpreter state ($Revision: 1.1.1.1 $)
 
 #
-# The basics
+# shell-%fns -- these get called by the C code
 #
 
-fn-catch    = $&catch
-fn-exec     = $&exec
-fn-forever  = $&forever
-fn-if       = $&if
-fn-result   = $&result
-fn-%split   = $&split
-fn-throw    = $&throw
-fn-%read    = $&read
+# Here there be dragons!
+# Fun feature: if arg %foo isn't defined, we automatically map it to $&foo
+# Fun feature: the "fn" namespace is only defined here, it's not in the C code
+shell-%whatis = @ cmd rest (
+  result = ()
+) {$&if {~ <={result = $(fn-^$cmd)}} {
 
-fn-exit = throw exit
-
-# TODO: move this to the appropriate place in the file
-fn-echo = @ li (
-  end = \n
-) {%seq {
-  if {~ $li(1) -n} {%seq {
-    end = ''
+  if {~ <={result = <={~~ $cmd %*}}} {
+    throw error whatis unknown command $cmd
   } {
-    li = $li(2 ...)
-  }} {~ $li(1) --} {
-    li = $li(2 ...)
+    result '$&'^$result
   }
-} {
-  $&echo <={%flatten ' ' $li}^$end
-}}
 
+} {$&result $result}}
 
-# Tread carefully.
-fn-%whatis = @ cmd rest {
-  local (fn-%whatis = $&whatis) {
-    @ (fn = $(fn-^$cmd)) {
-      if {~ $fn ()} {
-        throw error %whatis unknown command $cmd
+shell-%main = %escaped-by eof @ (result = ()) {
+  catch @ e type rest {
+    if {~ $e eof} {
+      throw eof $result
+    } {~ $e exit} {
+      throw $e $type $rest
+    } {%seq {
+      echo caught $e^: $type - $rest
       } {
-        result $fn $rest
+      throw retry
+    }}
+  } {
+    forever @ (code = <={%parse $prompt}) {
+      if {%not {~ <={%count $code} 0}} {
+        result = <={$code}
       }
     }
   }
 }
-fn-whatis = @ * {echo <={%whatis $*}}
+
+#
+#
+#
+
+fn-catch    = $&catch
+fn-if       = $&if
+fn-result   = $&result
+fn-throw    = $&throw
+
+fn-forever  = $&forever
+
+fn-exit = throw exit
+
+fn-whatis = @ * (fn = ()) {
+  if {~ <={fn = <={$shell-%whatis $*}} ()} {
+    throw error whatis unknown command $*
+  } {
+    echo $fn
+  }
+}
 
 fn-eval = @ * {'{' ^ <={%flatten ' ' $*} ^ '}'}
 
@@ -54,9 +69,7 @@ fn-false  = result 1
 # Flow control helpers
 #
 
-fn-%seq = $&seq
-
-fn-escaped-by = @ ex body {
+fn-%escaped-by = @ ex body {
   catch @ e rest {
     if {~ $e $ex} {
       result $rest
@@ -64,27 +77,22 @@ fn-escaped-by = @ ex body {
       throw $e $rest
     }
   } {
-    local (fn-^$ex = throw $ex) $body
+    $body
   }
 }
+fn-escaped-by = @ ex body {%escaped-by $ex local fn-^$ex {$body} throw $ex}
 
 fn-unwind-protect = @ body cleanup (
   exception = (); result = ()
 ) {
   %seq {
-    if {%not {~ <={%count $cleanup} 1}} {
-      throw error unwind-protect 'unwind-protect body cleanup'
-    }
-  } {
-    catch @ e {%seq {
+    catch @ e {
       exception = $e
     } {
-      $cleanup
-    }} {%seq {
       result = <=$body
-    } {
-      $cleanup
-    }}
+    }
+  } {
+    $cleanup
   } {
     if {~ $exception ()} {
       result $result
@@ -94,39 +102,40 @@ fn-unwind-protect = @ body cleanup (
   }
 }
 
-fn-while = @ cond body {
-  catch @ e value {
-    if {%not {~ $e break}} {
-      throw $e $value
-    } {
-      result $value
-    }
-  } {
-    @ (result = <=true) {
-      forever {
-        if {%not $cond} {
-          throw break $result
-        } {
-          result = <=$body
-        }
+fn-%while = %escaped-by while-test-is-false @ cond body {
+  @ (result = <=true) {
+    forever {
+      if {%not $cond} {
+        throw while-test-is-false $result
+      } {
+        result = <=$body
       }
     }
   }
 }
+fn-while = escaped-by break %while
 
-fn-apply = @ cmd args (
-  result = ()
-) {
-  %seq {
-    while {%not {~ $args ()}} {
-      %seq {
-        result = <={$cmd $args(1)}
-      } {
-        args = $args(2 ...)
-      }
-    }
-  } {
-    result $result
+fn-apply = @ cmd args (curr = ()) {
+  %while {%not {~ <={(curr args) = $args} ()}} {
+    $cmd $curr
+  }
+}
+
+fn-local = @ var cmd value (result = ()) {
+  @ (old = $$var) {
+    unwind-protect {
+       %seq {
+         $var = $value
+       } {
+         result = <=$cmd
+       }
+     } {
+       %seq {
+         $var = $old
+       } {
+         result $result
+       }
+     }
   }
 }
 
@@ -160,56 +169,39 @@ fn-%or = @ first rest {
   }
 }
 
-#
-# Syntactic sugar
-#
-
 fn-%flatten = @ sep result rest {
-  %seq {
-    apply @ i {result = $result^$sep^$i} $rest
+  if {~ ($result $rest) ()} {
+    result ''
   } {
-    result $result
-  }
-}
-
-fn-%count = $&count
-
-#
-# input helpers
-#
-
-fn-%parse = $&parse
-
-fn-%input-loop = escaped-by return @ (result = ()) {
-  catch @ e type msg {
     %seq {
-      if {~ $e eof} {
-        return $result
-      } {~ $e exit} {
-        throw $e $type $msg
-      } {~ $e error} {
-        echo $msg
-      } {~ $e signal} {
-        if {%not {~ $type sigint sigterm sigquit}} {
-          echo caught unexpected signal: $type
-        }
-      } {
-        echo uncaught exception: $e $type $msg
-      }
+      apply @ i {result = $result^$sep^$i} $rest
     } {
-      throw retry # restart forever loop
-    }
-  } {
-    forever @ (code = <={%parse $prompt}) {
-      if {%not {~ <={%count $code} 0}} {
-        result = <={$code}
-      }
+      result $result
     }
   }
 }
+
+#
+# I/O helpers
+#
+
+# TODO: move this to the appropriate place in initial.es
+fn-echo = @ li (
+  end = \n
+) {%seq {
+  if {~ $li(1) -n} {%seq {
+    end = ''
+  } {
+    li = $li(2 ...)
+  }} {~ $li(1) --} {
+    li = $li(2 ...)
+  }
+} {
+  $&echo <={%flatten ' ' $li}^$end
+}}
 
 set-max-eval-depth  = $&setmaxevaldepth
 ifs   = ' ' \t \n
-max-eval-depth  = 640
+max-eval-depth = 640
 
 result es-core initial state

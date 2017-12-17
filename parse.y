@@ -8,11 +8,10 @@
 %}
 
 %token  WORD QWORD
-%token  LOCAL
 %token  EXTRACT CALL PRIM SUB
 %token  NL ENDFILE ERROR
 
-%left   LOCAL ')'
+%left   ')'
 %left   NL
 %right  VWORD
 %left   SUB
@@ -40,10 +39,9 @@ es      : cmd end               { parsetree = $1; YYACCEPT; }
 end     : NL
         | ENDFILE
 
-cmd     :               %prec LOCAL             { $$ = NULL; }
+cmd     :               %prec ')'               { $$ = NULL; }
         | simple                                { $$ = $1; if ($$ == &errornode) YYABORT; }
         | first assign                          { $$ = mk(nAssign, $1, $2); }
-        | LOCAL nl '(' bindings ')' nl cmd      { $$ = mk(nLocal, $4, $7); }
         | '~' word words                        { $$ = mk(nMatch, $2, $3); }
         | EXTRACT word words                    { $$ = mk(nExtract, $2, $3); }
 

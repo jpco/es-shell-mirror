@@ -20,26 +20,6 @@ PRIM(exec) {
     return eval(list, NULL);
 }
 
-PRIM(whatis) {
-	/* the logic in here is duplicated in eval() */
-	if (list == NULL || list->next != NULL)
-		fail("$&whatis", "usage: $&whatis program");
-	Ref(Term *, term, list->term);
-	if (getclosure(term) == NULL) {
-		List *fn;
-		Ref(char *, prog, getstr(term));
-		assert(prog != NULL);
-		fn = varlookup2("fn-", prog, binding);
-		if (fn != NULL)
-			list = fn;
-		else 
-			fail("$&whatis", "unknown command %s", prog);
-        RefEnd(prog);
-	}
-	RefEnd(term);
-	return list;
-}
-
 PRIM(split) {
     char *sep;
     if (list == NULL)
@@ -71,24 +51,16 @@ PRIM(parse) {
     return result;
 }
 
-PRIM(inputloop) {
+PRIM(main) {
     Ref(List *, result, true);
     Ref(List *, dispatch, NULL);
 
     ExceptionHandler
 
         for (;;) {
-            List *parser, *cmd;
-            parser = varlookup("fn-%parse", NULL);
-            cmd = (parser == NULL)
-                    ? prim("parse", NULL, NULL)
-                    : eval(parser, NULL);
-            dispatch = varlookup("fn-%dispatch", NULL);
-            if (cmd != NULL) {
-                if (dispatch != NULL)
-                    cmd = append(dispatch, cmd);
-                result = eval(cmd, NULL);
-            }
+            List *cmd;
+            cmd = prim("parse", NULL, NULL);
+            result = eval(cmd, NULL);
         }
 
     CatchException (e)
@@ -135,10 +107,9 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(echo);
     X(count);
     X(exec);
-    X(whatis);
     X(split);
     X(parse);
-    X(inputloop);
+    X(main);
     X(collect);
     X(result);
     X(setmaxevaldepth);

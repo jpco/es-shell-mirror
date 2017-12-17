@@ -138,11 +138,6 @@ top:
         fmtprint(f, "$%#T(%T)", n->u[0].p, n->u[1].p);
         return FALSE;
 
-    case nLocal:
-        fmtprint(f, "local ");
-        binding(f, n->u[0].p);
-        tailcall(n->u[1].p, FALSE);
-
     case nCall: {
         Tree *t = n->u[0].p;
         fmtprint(f, "<=");

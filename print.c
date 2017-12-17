@@ -77,38 +77,6 @@ static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) 
     return t;
 }
 
-static Boolean fconv(Format *format) {
-    double f = va_arg(format->args, double);
-
-    // It might make sense that fconv would respect things
-    // like FMT_leftside.  Interesting how things don't
-    // always happen the sensical way.
-
-    if (f < 0) {
-        fmtputc(format, '-');
-        f = -f;
-    }
-
-#define PRECISION 100000
-
-    unsigned int whole = (unsigned int)f;
-    unsigned int dec   = ((unsigned int)(f * PRECISION) % PRECISION);
-    while (dec != 0 && dec % 10 == 0) dec /= 10;
-
-    char num[32];
-    char *end = es_utoa(whole, num, 10, chartable[0]);
-    *end = '\0';
-    fmtcat(format, num);
-
-    fmtputc(format, '.');
-
-    end = es_utoa(dec, num, 10, chartable[0]);
-    *end = '\0';
-    fmtcat(format, num);
-
-    return FALSE;
-}
-
 static void intconv(Format *format, unsigned int radix, int upper, char *altform) {
     char padchar;
     size_t len, pre, zeroes, padding, width;
@@ -214,7 +182,6 @@ static void inittab(void) {
     fmttab['s'] = sconv;
     fmttab['c'] = cconv;
     fmttab['d'] = dconv;
-    fmttab['f'] = fconv;
     fmttab['o'] = oconv;
     fmttab['x'] = xconv;
     fmttab['%'] = pctconv;
