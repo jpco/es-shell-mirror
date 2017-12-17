@@ -1,31 +1,55 @@
-This is es-core, which is a much less useful version of es.
+This is core/es, which is a much less useful version of es-shell.
 
-It's intended to be a testbed for a few different ideas in es development:
+Goals:
  - Total C-code minimality
- - Extensions -- potentially, es-shell could be an extension of es-core in
-   some way?  Could something else (es-lang) also do that at the same time?
- - "Systematizing" es' "non-core" features (e.g., fork/exec)
- - Improvements and optimizations to the "core" parts of es (first-class
-   bindings, tail-call optimization, lexical bindings, the GC, etc.)
+ - Generality + extensibility -- you could build a shell/es and a lang/es
+ - "Primitivizing" es-shell behaviors (e.g., fork/exec)
+ - Improvements and optimizations to the "core" parts of es
 
-Some anti-features of es-core:
- - Cannot run any external commands
+"Anti-features" compared to es-shell:
  - No free carets
  - No syntax rewriting (e.g., ||, &&, implicit %seq, fn command, etc.)
  - No fork/exec (and, ergo, no piping)
- - No cd (this may have been a mistake to remove?)
+ - No cd or filesystem interaction (just echo and %read)
  - No definable signal handling
- - No `for` (use `apply` instead) (let and local are still there, though, FOR NOW)
+ - No `for` (use `apply` instead)
+ - No `let` syntax -- it's been eaten as part of LEXICAL UNIFICATION
+ - No `local` syntax -- it's a regular function now
  - No readline/editline/etc.
  - No run flags, no "please run this file" argument, etc.
- - No $&whatis (it has been replaced with a carefully-written function)
  - Lambdas do not catch return -- Ergo, $&noreturn doesn't exist
- - No implicit $* variable in lambdas (`@ {}` becomes `{}`)
- - No "interactive" vs. "non-interactive" distinction -- just %input-loop
+ - No implicit * binding in lambdas (`@ {}` becomes `{}`) (LEXICAL UNIFICATION)
+ - No $1, $2, etc. (use $*(1), $*(2), ya dinguses)
+ - No "interactive" vs. "non-interactive" distinction -- just shellfn-main
  - No environment interaction
+ - Many builtins have been replaced by es functions
 
-Future non-features:
- - How do we make variable access/assignment a primitive? :)
+Ideas/todo:
+ - there's no reason core/es needs to flatten lists -- that's just a fork/exec usability thing.
+   what happens when we allow nested lists?
+ - Why are settor functions magic? We ought to unmagic them!
+ - tail-call optimization -- trampoline eval()? need to look at how that works
+ - first-class bindings
 
-Random thoughts:
- - %whatis can run `$&fork-exec <={%pathsearch $cmd}`! :)
+To merge into es-shell:
+ - es-implemented %whatis that calls %pathsearch
+ - lexical unification (with `let` as a syntax frontend -- like `let` vs. `closure` now)
+    - this kind of requires lambdas don't catch return by default ... is that ok?
+ - fork, exec, and wait are all primitives.  spawning a binary is basically
+        `%wait <={%fork {%exec /path/to/bin arg arg}}`
+    - %background is that, just without the $&wait :) (or something more clever, like adding to
+        a $child-pids list and waiting for children on each prompt)
+    - %backquote is a primitive still?
+
+BEFORE trying to make shell/es:
+ - first-class bindings, so we can rebuild for and local syntax -- the lambda versions are less flexible
+ - tail call optimization (via trampolining?) - we build big stacks with more es-centric syntax
+ - fix all memory/GC bugs on this layer! before trying to add layers! !!!
+ - performance improvements ??? HAOW -- look up Tcl?
+ - figure out how we want to do things like {get,set}env
+
+REQUIRED to make shell/es:
+ - detecting interactive (or not) input
+ - how to do syntax extensions (e.g., piping, redirections)
+ - how to do added primitives (e.g., fork/exec, redirections, chdir)
+ - how to do input extensions (basically, readline/editline)
