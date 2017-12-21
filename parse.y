@@ -88,9 +88,13 @@ bindings    : binding                       { $$ = treecons2($1, NULL); }
             | bindings ';' binding          { $$ = treeconsend2($1, $3); }
             | bindings NL binding           { $$ = treeconsend2($1, $3); }
 
-params  :                               { $$ = NULL; }
-        | param params                  { $$ = treecons2($1, $2); }
-        | '(' bindings ')' params       { $$ = treeappend($2, $4); }
+params  :                                   { $$ = NULL; }
+        | param params                      { $$ = treecons2($1, $2); }
+        /*
+        | '$' vword params                  { $$ = treecons2(mk(nVar, $2), $3); }
+        | '$' vword SUB words ')' params    { $$ = treecons2(mk(nVarsub, $2, $4), $6); }
+        */
+        | '(' bindings ')' params           { $$ = treeappend($2, $4); }
 
 words   :                               { $$ = NULL; }
         | words word                    { $$ = treeconsend($1, $2); }

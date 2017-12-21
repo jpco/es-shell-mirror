@@ -25,11 +25,13 @@ Goals:
  - Many builtins have been replaced by es functions
 
 Ideas/todo:
- - there's no reason core/es needs to flatten lists -- that's just a fork/exec usability thing.
-   what happens when we allow nested lists?
- - Why are settor functions magic? We ought to unmagic them!
+ - there's no reason core/es needs to flatten lists -- that's just a fork/exec usability thing. what happens when we allow nested lists?
+ - why are settor functions magic? we ought to unmagic them!
  - tail-call optimization -- trampoline eval()? need to look at how that works
  - first-class bindings
+ - reimplement parser so we can run es code in more places (the grammar is actually quite simple)
+ - I will make fn-fn if it kills me (or maybe that should be shellfn:fn? :)
+    - this is basically required now that lambdas don't catch return
 
 To merge into es-shell:
  - es-implemented %whatis that calls %pathsearch

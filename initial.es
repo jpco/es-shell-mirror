@@ -5,14 +5,16 @@
 #
 
 # Here there be dragons!
-# Fun feature: if arg %foo isn't defined, we automatically map it to $&foo
-# Fun feature: the "fn" namespace is only defined here, it's not in the C code
+# 
+# Fun feature: if arg %foo isn't defined, we automatically define it as $&foo
+# Fun feature: the "fn" namespace is only defined here, not in the eval code
 shellfn:whatis = @ cmd rest (
   result = ()
-) {$&if {~ <={result = $(fn-^$cmd)}} {
+) {$&if {~ <={result = $(fn-^$cmd)} ()} {
 
-  if {~ <={result = <={~~ $cmd %*}}} {
-    throw error whatis unknown command $cmd
+  if {~ <={result = <={~~ $cmd %*}} ()} {
+    # INSERT MORE FUNCTIONALITY HERE
+    result ()
   } {
     $&seq {
       fn-^$cmd = '$&'^$result
@@ -44,7 +46,7 @@ shellfn:main = %escaped-by eof @ (result = ()) {
 }
 
 #
-#
+# some basic convenience functions
 #
 
 fn-catch    = $&catch
@@ -70,7 +72,7 @@ fn-true   = result 0
 fn-false  = result 1
 
 #
-# Flow control helpers
+# Flow control functions && binders
 #
 
 fn-%escaped-by = @ ex body {
@@ -125,7 +127,9 @@ fn-apply = @ cmd args (curr = ()) {
   }
 }
 
-fn-local = @ var cmd value (result = ()) {
+fn-local = @ var cmd value (
+  result = ()
+) {
   @ (old = $$var) {
     unwind-protect {
        %seq {
@@ -142,6 +146,10 @@ fn-local = @ var cmd value (result = ()) {
      }
   }
 }
+
+#
+# General hook functions
+#
 
 fn-%not = @ cmd {
   if {$cmd} {false} {true}
@@ -189,23 +197,27 @@ fn-%flatten = @ sep result rest {
 # I/O helpers
 #
 
-# TODO: move this to the appropriate place in initial.es
 fn-echo = @ li (
   end = \n
-) {%seq {
-  if {~ $li(1) -n} {%seq {
-    end = ''
+) {
+  %seq {
+    if {~ $li(1) -n} {
+      %seq {
+	end = ''
+      } {
+	li = $li(2 ...)
+      }
+    } {~ $li(1) --} {
+      li = $li(2 ...)
+    }
   } {
-    li = $li(2 ...)
-  }} {~ $li(1) --} {
-    li = $li(2 ...)
+    $&echo <={%flatten ' ' $li}^$end
   }
-} {
-  $&echo <={%flatten ' ' $li}^$end
-}}
+}
 
 set-max-eval-depth  = $&setmaxevaldepth
-ifs   = ' ' \t \n
 max-eval-depth = 640
+
+ifs   = ' ' \t \n
 
 result es-core initial state
