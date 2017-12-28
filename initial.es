@@ -5,10 +5,16 @@
 #
 
 # Here there be dragons!
-# 
+#
 # Fun feature: if arg %foo isn't defined, we automatically define it as $&foo
 # Fun feature: the "fn" namespace is only defined here, not in the eval code
-shellfn:whatis = @ cmd rest (
+# BIG PROBLEM: This doesn't resolve lexically scoped stuff!
+
+# es:whatis = @ cmd rest {
+#   $&result $(fn-^$cmd)
+# }
+
+es:whatis = @ cmd rest (
   result = ()
 ) {$&if {~ <={result = $(fn-^$cmd)} ()} {
 
@@ -25,17 +31,27 @@ shellfn:whatis = @ cmd rest (
 
 } {$&result $result}}
 
-shellfn:main = %escaped-by eof @ (result = ()) {
+# es:main = forever @ (
+#   code = <={$&parse $prompt}
+# ) {
+#   $code
+# }
+
+es:main = %escaped-by eof @ (
+  result = ()
+) {
   catch @ e type rest {
     if {~ $e eof} {
       throw eof $result
     } {~ $e exit} {
       throw $e $type $rest
-    } {%seq {
-      echo caught $e^: $type - $rest
+    } {
+      %seq {
+	echo caught $e^: $type - $rest
       } {
-      throw retry
-    }}
+	throw retry
+      }
+    }
   } {
     forever @ (code = <={%parse $prompt}) {
       if {%not {~ <={%count $code} 0}} {
@@ -49,6 +65,8 @@ shellfn:main = %escaped-by eof @ (result = ()) {
 # some basic convenience functions
 #
 
+fn-%seq = $&seq
+
 fn-catch    = $&catch
 fn-if       = $&if
 fn-result   = $&result
@@ -59,7 +77,7 @@ fn-forever  = $&forever
 fn-exit = throw exit
 
 fn-whatis = @ * (fn = ()) {
-  if {~ <={fn = <={$'shellfn:whatis' $*}} ()} {
+  if {~ <={fn = <={$'es:whatis' $*}} ()} {
     throw error whatis unknown command $*
   } {
     echo $fn
@@ -89,7 +107,8 @@ fn-%escaped-by = @ ex body {
 fn-escaped-by = @ ex body {%escaped-by $ex local fn-^$ex {$body} throw $ex}
 
 fn-unwind-protect = @ body cleanup (
-  exception = (); result = ()
+  exception = ()
+  result = ()
 ) {
   %seq {
     catch @ e {
@@ -108,20 +127,22 @@ fn-unwind-protect = @ body cleanup (
   }
 }
 
-fn-%while = %escaped-by while-test-is-false @ cond body {
-  @ (result = <=true) {
-    forever {
-      if {%not $cond} {
-        throw while-test-is-false $result
-      } {
-        result = <=$body
-      }
+fn-%while = %escaped-by while-test-is-false @ cond body (
+  result = <=true
+) {
+  forever {
+    if {%not $cond} {
+      throw while-test-is-false $result
+    } {
+      result = <=$body
     }
   }
 }
 fn-while = escaped-by break %while
 
-fn-apply = @ cmd args (curr = ()) {
+fn-apply = @ cmd args (
+  curr = ()
+) {
   %while {%not {~ <={(curr args) = $args} ()}} {
     $cmd $curr
   }
@@ -182,7 +203,7 @@ fn-%or = @ first rest {
 }
 
 fn-%flatten = @ sep result rest {
-  if {~ ($result $rest) ()} {
+  if {~ $result ()} {
     result ''
   } {
     %seq {
@@ -196,6 +217,10 @@ fn-%flatten = @ sep result rest {
 #
 # I/O helpers
 #
+
+# fn-echo = @ li {
+#   $&echo $li \n
+# }
 
 fn-echo = @ li (
   end = \n

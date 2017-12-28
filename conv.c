@@ -9,7 +9,7 @@ static Boolean Lconv(Format *f) {
     List *lp, *next;
     char *sep;
     const char *fmt = (f->flags & FMT_altform) ? "%S%s" : "%s%s";
-    
+
     lp = va_arg(f->args, List *);
     sep = va_arg(f->args, char *);
     for (; lp != NULL; lp = next) {
@@ -39,10 +39,7 @@ static void binding(Format *f, Tree *tree) {
         binding = np->u[0].p;
         assert(binding != NULL);
         assert(binding->kind == nAssign);
-        if (binding->u[1].p == NULL)
-            fmtprint(f, "%s%#T", sep, binding->u[0].p);
-        else
-            fmtprint(f, "%s%#T = %T", sep, binding->u[0].p, binding->u[1].p);
+        fmtprint(f, "%s%#T = %T", sep, binding->u[0].p, binding->u[1].p);
         sep = "; ";
     }
     fmtprint(f, ") ");
@@ -201,11 +198,7 @@ static void enclose(Format *f, Binding *binding, const char *sep) {
     if (binding != NULL) {
         Binding *next = binding->next;
         enclose(f, next, "; ");
-        if (binding->defn == NULL) {
-            fmtprint(f, "%S%s", binding->name, sep);
-        } else {
-            fmtprint(f, "%S = %L%s", binding->name, binding->defn, " ", sep);
-        }
+        fmtprint(f, "%S = %L%s", binding->name, binding->defn, " ", sep);
     }
 }
 
@@ -236,19 +229,6 @@ static Boolean Cconv(Format *f) {
         fmtprint(f, "{%T}", tree);
     }
 
-    return FALSE;
-}
-
-/* %E -- print a term */
-/* TODO: chop this one */
-static Boolean Econv(Format *f) {
-    Term *term = va_arg(f->args, Term *);
-    Closure *closure = getclosure(term);
-
-    if (closure != NULL)
-        fmtprint(f, (f->flags & FMT_altform) ? "%#C" : "%C", closure);
-    else
-        fmtprint(f, (f->flags & FMT_altform) ? "%S" : "%s", getstr(term));
     return FALSE;
 }
 
@@ -331,7 +311,6 @@ static Boolean Fconv(Format *f) {
 /* install the conversion routines */
 void initconv(void) {
     fmtinstall('C', Cconv);
-    fmtinstall('E', Econv);
     fmtinstall('F', Fconv);
     fmtinstall('L', Lconv);
     fmtinstall('S', Sconv);

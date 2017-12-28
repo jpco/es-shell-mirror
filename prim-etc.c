@@ -8,7 +8,7 @@ PRIM(result) {
 }
 
 PRIM(echo) {
-    print("%L", list);
+    print("%L", list, " ");
     return true;
 }
 
@@ -53,7 +53,6 @@ PRIM(parse) {
 
 PRIM(main) {
     Ref(List *, result, true);
-    Ref(List *, dispatch, NULL);
 
     ExceptionHandler
 
@@ -67,7 +66,6 @@ PRIM(main) {
 
         if (!termeq(e->term, "eof"))
             throw(e);
-        RefEnd(dispatch);
         if (result == true)
             result = true;
         RefReturn(result);

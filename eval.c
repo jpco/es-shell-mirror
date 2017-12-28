@@ -70,13 +70,14 @@ static List *extractpattern(Tree *subjectform0, Tree *patternform0,
 
 /* bindargs -- bind an argument list to the parameters of a lambda */
 /* TODO: This function REALLY deserves a polish/rewrite */
-extern Binding *bindargs(Tree *params0, List *args, Binding *binding0, Binding *context) {
+extern Binding *bindargs(Tree *params0, List *args0, Binding *binding0, Binding *context) {
     if (params0 == NULL)
         return binding0;
 
     Ref(Binding *, binding, binding0);
     Ref(Tree *, params, params0);
     Ref(Tree *, lastvar, NULL);
+    Ref(List *, args, args0);
 
     for (; params != NULL; params = params->u[1].p) {
         assert(params->kind == nList);
@@ -129,7 +130,7 @@ extern Binding *bindargs(Tree *params0, List *args, Binding *binding0, Binding *
         binding = mkbinding(lastvar->u[0].s, args, binding);
     }
 
-    RefEnd2(lastvar, params);
+    RefEnd3(lastvar, params, args);
     RefReturn(binding);
 }
 
@@ -182,11 +183,10 @@ extern List *eval(List *list0, Binding *binding0) {
 
     Ref(List *, list, list0);
     Ref(Binding *, binding, binding0);
-    Ref(char *, funcname, NULL);
 
 restart:
     if (list == NULL) {
-        RefPop3(funcname, binding, list);
+        RefPop2(binding, list);
         --evaldepth;
         return true;
     }
@@ -219,20 +219,23 @@ restart:
         goto done;
     }
 
-    List *whatis = varlookup("shellfn:whatis", NULL);
+    List *whatis = varlookup("es:whatis", NULL);
+    Ref(List *, lookup, mklist(list->term, NULL));
     fn = (whatis == NULL)
-        ? prim("whatis", mklist(list->term, NULL), NULL)
-        : eval(append(whatis, mklist(list->term, NULL)), NULL);
+        ? prim("whatis", lookup, NULL)
+        : eval(append(whatis, lookup), NULL);
 
     if (fn == NULL)
-        fail("es:whatis", "unknown command");
+        fail("es:whatis", "unknown command %L", lookup, " ");
+
+    RefEnd(lookup);
 
     list = append(fn, list->next);
     goto restart;
 
 done:
     --evaldepth;
-    RefEnd2(funcname, binding);
+    RefEnd(binding);
     RefReturn(list);
 }
 
