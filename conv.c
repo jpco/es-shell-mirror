@@ -4,7 +4,10 @@
 #include "print.h"
 #include "term.h"
 
-/* %L -- print a list */
+/* %L -- print a list
+ *
+ * NB: This function consumes two arguments -- the list (List *), and the
+ * separator (char *) */
 static Boolean Lconv(Format *f) {
     List *lp, *next;
     char *sep;
@@ -296,7 +299,7 @@ quoteit:
 static Boolean Fconv(Format *f) {
     int c;
     unsigned char *name, *s;
-    
+
     name = va_arg(f->args, unsigned char *);
 
     for (s = name; (c = *s) != '\0'; s++)

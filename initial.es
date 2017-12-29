@@ -1,64 +1,107 @@
 # initial.es -- set up initial interpreter state ($Revision: 1.1.1.1 $)
 
 #
-# shellfns -- these get called by the C code
+# shell fns -- these get called by the C code
 #
 
-# Here there be dragons!
-#
-# Fun feature: if arg %foo isn't defined, we automatically define it as $&foo
-# Fun feature: the "fn" namespace is only defined here, not in the eval code
-# BIG PROBLEM: This doesn't resolve lexically scoped stuff!
+# This var, when set, loads up tiny, simple versions of es' shell fns.
+# This shrinks up stack traces and makes certain bugs much simpler to
+# investigate.
 
-# es:whatis = @ cmd rest {
-#   $&result $(fn-^$cmd)
-# }
+# ES_MINIMAL = true
 
-es:whatis = @ cmd rest (
-  result = ()
-) {$&if {~ <={result = $(fn-^$cmd)} ()} {
+$&if {~ $ES_MINIMAL ()} {
 
-  if {~ <={result = <={~~ $cmd %*}} ()} {
-    # INSERT MORE FUNCTIONALITY HERE
-    result ()
-  } {
-    $&seq {
-      fn-^$cmd = '$&'^$result
-    } {
-      result $(fn-^$cmd)
-    }
-  }
+  $&seq {
 
-} {$&result $result}}
+    # Here there be dragons! es:whatis bites back!
+    es:whatis = @ cmd rest (
+      result = ()
+    ) {$&if {~ <={result = $(fn-^$cmd)} ()} {
 
-# es:main = forever @ (
-#   code = <={$&parse $prompt}
-# ) {
-#   $code
-# }
-
-es:main = %escaped-by eof @ (
-  result = ()
-) {
-  catch @ e type rest {
-    if {~ $e eof} {
-      throw eof $result
-    } {~ $e exit} {
-      throw $e $type $rest
-    } {
-      %seq {
-	echo caught $e^: $type - $rest
+      if {~ <={result = <={~~ $cmd %*}} ()} {
+	# INSERT MORE FUNCTIONALITY HERE
+	result ()
       } {
-	throw retry
+	$&seq {
+	  fn-^$cmd = '$&'^$result
+	} {
+	  result $(fn-^$cmd)
+	}
       }
-    }
+
+    } {$&result $result}}
+
   } {
-    forever @ (code = <={%parse $prompt}) {
-      if {%not {~ <={%count $code} 0}} {
-        result = <={$code}
+
+    es:main = %escaped-by eof @ (
+      result = ()
+    ) {
+      catch @ e type rest {
+	if {~ $e eof} {
+	  throw eof $result
+	} {~ $e exit} {
+	  throw $e $type $rest
+	} {
+	  %seq {
+	    echo caught $e^: $type - $rest
+	  } {
+	    throw retry
+	  }
+	}
+      } {
+	forever @ (code = <={%parse $prompt}) {
+	  if {%not {~ <={%count $code} 0}} {
+	    result = <={$code}
+	  }
+	}
       }
     }
+
+  } {
+
+    fn-echo = @ li (
+      end = \n
+    ) {
+      %seq {
+	if {~ $li(1) -n} {
+	  %seq {
+	    end = ''
+	  } {
+	    li = $li(2 ...)
+	  }
+	} {~ $li(1) --} {
+	  li = $li(2 ...)
+	}
+      } {
+	$&echo <={%flatten ' ' $li}^$end
+      }
+    }
+
   }
+
+} {
+
+  $&seq {
+
+    es:whatis = @ cmd rest {
+      $&result $(fn-^$cmd)
+    }
+
+  } {
+
+    es:main = forever @ (
+      code = <={$&parse $prompt}
+    ) {$code}
+
+  } {
+
+    fn-echo = @ li {
+      $&echo $li \n
+    }
+
+  }
+
 }
 
 #
@@ -76,8 +119,9 @@ fn-forever  = $&forever
 
 fn-exit = throw exit
 
-fn-whatis = @ * (fn = ()) {
-  if {~ <={fn = <={$'es:whatis' $*}} ()} {
+# Oh God, I've created a monster
+fn-whatis = $&keeplexicalbinding @ * (fn = ()) {
+  if {~ <={fn = <={$&keeplexicalbinding $'es:whatis' $*}} ()} {
     throw error whatis unknown command $*
   } {
     echo $fn
@@ -217,28 +261,6 @@ fn-%flatten = @ sep result rest {
 #
 # I/O helpers
 #
-
-# fn-echo = @ li {
-#   $&echo $li \n
-# }
-
-fn-echo = @ li (
-  end = \n
-) {
-  %seq {
-    if {~ $li(1) -n} {
-      %seq {
-	end = ''
-      } {
-	li = $li(2 ...)
-      }
-    } {~ $li(1) --} {
-      li = $li(2 ...)
-    }
-  } {
-    $&echo <={%flatten ' ' $li}^$end
-  }
-}
 
 set-max-eval-depth  = $&setmaxevaldepth
 max-eval-depth = 640

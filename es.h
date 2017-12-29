@@ -138,6 +138,7 @@ extern List *eval(List *list, Binding *binding);
 extern List *eval1(Term *term);
 extern List *pathsearch(Term *term);
 
+extern Boolean keeplexicalbinding;
 extern unsigned long evaldepth, maxevaldepth;
 #define MINmaxevaldepth     100
 #define MAXmaxevaldepth     0xffffffffU

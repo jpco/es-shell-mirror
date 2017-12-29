@@ -31,9 +31,9 @@ int main(int argc, char **argv) {
         initinput();
         initprims();
         initvars();
-    
+
         runinitial();
-    
+
         hidevariables();
 
         vardef("*", NULL, listify(ac - optind, av + optind));

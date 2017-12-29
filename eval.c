@@ -4,6 +4,8 @@
 
 unsigned long evaldepth = 0, maxevaldepth = MAXmaxevaldepth;
 
+Boolean keeplexicalbinding = FALSE;
+
 /* assign -- bind a list of values to a list of variables */
 static List *assign(Tree *varform, Tree *valueform0, Binding *binding0) {
     Ref(List *, result, NULL);
@@ -203,6 +205,16 @@ restart:
             Ref(Binding *, context,
                         bindargs(tree->u[0].p, list->next,
                             cp->binding, cp->binding));
+
+	    if (keeplexicalbinding) {
+		Binding *cp = context;
+		for (; cp->next != NULL; cp = cp->next)
+		    ;
+		cp->next = binding;
+
+		keeplexicalbinding = FALSE;
+	    }
+
             list = walk(tree->u[1].p, context);
             RefEnd2(context, tree);
             break;
@@ -220,10 +232,14 @@ restart:
     }
 
     List *whatis = varlookup("es:whatis", NULL);
+
+    if (whatis == NULL)
+        panic("eval: es:whatis undefined");
+
     Ref(List *, lookup, mklist(list->term, NULL));
-    fn = (whatis == NULL)
-        ? prim("whatis", lookup, NULL)
-        : eval(append(whatis, lookup), NULL);
+    lookup = append(whatis, lookup);
+
+    fn = prim("keeplexicalbinding", lookup, binding);
 
     if (fn == NULL)
         fail("es:whatis", "unknown command %L", lookup, " ");

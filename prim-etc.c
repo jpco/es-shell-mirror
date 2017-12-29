@@ -16,10 +16,6 @@ PRIM(count) {
     return mklist(mkstr(str("%d", length(list))), NULL);
 }
 
-PRIM(exec) {
-    return eval(list, NULL);
-}
-
 PRIM(split) {
     char *sep;
     if (list == NULL)
@@ -66,8 +62,6 @@ PRIM(main) {
 
         if (!termeq(e->term, "eof"))
             throw(e);
-        if (result == true)
-            result = true;
         RefReturn(result);
 
     EndExceptionHandler
@@ -97,6 +91,17 @@ PRIM(setmaxevaldepth) {
     RefReturn(lp);
 }
 
+PRIM(keeplexicalbinding) {
+    Ref(List *, lp, list);
+    Ref(Binding *, bp, binding);
+
+    keeplexicalbinding = TRUE;
+    lp = eval(lp, bp);
+
+    RefEnd(bp);
+    RefReturn(lp);
+}
+
 /*
  * initialization
  */
@@ -104,7 +109,7 @@ PRIM(setmaxevaldepth) {
 extern Dict *initprims_etc(Dict *primdict) {
     X(echo);
     X(count);
-    X(exec);
+    X(keeplexicalbinding);
     X(split);
     X(parse);
     X(main);

@@ -20,7 +20,7 @@ Goals:
  - Lambdas do not catch return -- Ergo, $&noreturn doesn't exist
  - No implicit * binding in lambdas (`@ {}` becomes `{}`) (LEXICAL UNIFICATION)
  - No $1, $2, etc. (use $*(1), $*(2), ya dinguses)
- - No "interactive" vs. "non-interactive" distinction -- just shellfn-main
+ - No "interactive" vs. "non-interactive" distinction -- just es:main
  - No environment interaction
  - Many builtins have been replaced by es functions
 
@@ -30,7 +30,7 @@ Ideas/todo:
  - tail-call optimization -- trampoline eval()? need to look at how that works
  - first-class bindings
  - reimplement parser so we can run es code in more places (the grammar is actually quite simple)
- - I will make fn-fn if it kills me (or maybe that should be shellfn:fn? :)
+ - I will make fn-fn if it kills me (or maybe that should be es:fn? :)
     - this is basically required now that lambdas don't catch return
 
 To merge into es-shell:

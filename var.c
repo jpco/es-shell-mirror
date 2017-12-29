@@ -79,7 +79,7 @@ extern List *varlookup(const char *name, Binding *bp) {
 
     validatevar(name);
     for (; bp != NULL; bp = bp->next)
-        if (streq(name, bp->name))
+	if (streq(name, bp->name))
             return bp->defn;
 
     var = dictget(vars, name);
@@ -90,7 +90,7 @@ extern List *varlookup(const char *name, Binding *bp) {
 
 extern List *varlookup2(char *name1, char *name2, Binding *bp) {
     Var *var;
-    
+
     for (; bp != NULL; bp = bp->next)
         if (streq2(bp->name, name1, name2))
             return bp->defn;
@@ -183,7 +183,7 @@ extern void varpush(Push *push, char *name, List *defn) {
 
 extern void varpop(Push *push) {
     Var *var;
-    
+
     assert(pushlist == push);
     assert(rootlist == &push->defnroot);
     assert(rootlist->next == &push->nameroot);
