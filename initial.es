@@ -4,9 +4,9 @@
 # shell fns -- these get called by the C code
 #
 
-# This var, when set, loads up tiny, simple versions of es' shell fns.
-# This shrinks up stack traces and makes certain bugs much simpler to
-# investigate.
+# This var, when set, loads up tiny, simple versions of es' shell fns
+# (as well as echo). This shrinks up stack traces and makes certain bugs
+# much simpler to investigate.
 
 # ES_MINIMAL = true
 
@@ -17,20 +17,24 @@ $&if {~ $ES_MINIMAL ()} {
     # Here there be dragons! es:whatis bites back!
     es:whatis = @ cmd rest (
       result = ()
-    ) {$&if {~ <={result = $(fn-^$cmd)} ()} {
+    ) {
+      $&if {~ <={result = $(fn-^$cmd)} ()} {
+	if {~ <={result = <={~~ $cmd %*}} ()} {
 
-      if {~ <={result = <={~~ $cmd %*}} ()} {
-	# INSERT MORE FUNCTIONALITY HERE
-	result ()
-      } {
-	$&seq {
-	  fn-^$cmd = '$&'^$result
+	  # XXX: More whatis functionality goes here (e.g., %pathsearch)
+
+	  result ()
 	} {
-	  result $(fn-^$cmd)
+	  $&seq {
+	    fn-^$cmd = '$&'^$result
+	  } {
+	    result $(fn-^$cmd)
+	  }
 	}
+      } {
+	$&result $result
       }
-
-    } {$&result $result}}
+    }
 
   } {
 

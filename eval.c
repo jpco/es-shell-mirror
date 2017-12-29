@@ -236,15 +236,15 @@ restart:
     if (whatis == NULL)
         panic("eval: es:whatis undefined");
 
-    Ref(List *, lookup, mklist(list->term, NULL));
-    lookup = append(whatis, lookup);
+    Ref(List *, whatterm, mklist(list->term, NULL));
+    Ref(List *, lookup, append(whatis, whatterm));
 
     fn = prim("keeplexicalbinding", lookup, binding);
 
     if (fn == NULL)
-        fail("es:whatis", "unknown command %L", lookup, " ");
+        fail("es:whatis", "unknown command %L", whatterm, " ");
 
-    RefEnd(lookup);
+    RefEnd2(whatterm, lookup);
 
     list = append(fn, list->next);
     goto restart;

@@ -215,21 +215,24 @@ static Boolean Cconv(Format *f) {
     if (altform)
         fmtprint(f, "%S", str("%C", closure));
     else {
-        if (binding != NULL
-                || (tree->kind == nLambda
-                    && tree->u[0].p != NULL)) {
-            fmtprint(f, "@ ");
+	switch (tree->kind) {
+	case nLambda: {
+	    if (binding != NULL
+                    || tree->u[0].p != NULL) {
+		fmtprint(f, "@ ");
+	    }
+	    if (binding != NULL) {
+		fmtprint(f, "(");
+		enclose(f, binding, "");
+		fmtprint(f, ") ");
+	    }
+	    printargs(f, tree->u[0].p);
+	    fmtprint(f, "{%T}", tree->u[1].p);
+	    break;
         }
-        if (binding != NULL) {
-            fmtprint(f, "(");
-            enclose(f, binding, "");
-            fmtprint(f, ") ");
-        }
-        if (tree->kind == nLambda) {
-            printargs(f, tree->u[0].p);
-            tree = tree->u[1].p;
-        }
-        fmtprint(f, "{%T}", tree);
+	default:
+	    fmtprint(f, "%T", tree);
+	}
     }
 
     return FALSE;
