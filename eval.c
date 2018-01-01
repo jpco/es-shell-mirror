@@ -239,7 +239,7 @@ restart:
     Ref(List *, whatterm, mklist(list->term, NULL));
     Ref(List *, lookup, append(whatis, whatterm));
 
-    fn = prim("keeplexicalbinding", lookup, binding);
+    fn = eval(lookup, binding);
 
     if (fn == NULL)
         fail("es:whatis", "unknown command %L", whatterm, " ");

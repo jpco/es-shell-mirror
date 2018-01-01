@@ -15,7 +15,7 @@ $&if {~ $ES_MINIMAL ()} {
   $&seq {
 
     # Here there be dragons! es:whatis bites back!
-    es:whatis = @ cmd rest (
+    es:whatis = $&keeplexicalbinding @ cmd rest (
       result = ()
     ) {
       $&if {~ <={result = $(fn-^$cmd)} ()} {
@@ -88,7 +88,7 @@ $&if {~ $ES_MINIMAL ()} {
 
   $&seq {
 
-    es:whatis = @ cmd rest {
+    es:whatis = $&keeplexicalbinding @ cmd rest {
       $&result $(fn-^$cmd)
     }
 
@@ -124,11 +124,41 @@ fn-forever  = $&forever
 fn-exit = throw exit
 
 # Oh God, I've created a monster
-fn-whatis = $&keeplexicalbinding @ * (fn = ()) {
-  if {~ <={fn = <={$&keeplexicalbinding $'es:whatis' $*}} ()} {
+fn-%whatis = $&keeplexicalbinding @ * (fn = ()) {
+  if {~ <={fn = <={$'es:whatis' $*}} ()} {
     throw error whatis unknown command $*
   } {
-    echo $fn
+    result $fn
+  }
+}
+
+fn-whatis = $&keeplexicalbinding @ * (
+  result = ()
+) {
+  if {~ $* ()} {
+    result
+  } {
+    %seq {
+      catch @ e f m {
+	if {~ $e error} {
+	  %seq {
+	    echo $m  # >[1=2]
+	  } {
+	    result = 1
+	  }
+	} {
+	  throw $e $f $m
+	}
+      } {
+	%seq {
+	  echo <={%whatis $i(1)}
+	} {
+	  result = 0
+	}
+      }
+    } {
+      result $result <={whatis $*(2 ...)}
+    }
   }
 }
 
