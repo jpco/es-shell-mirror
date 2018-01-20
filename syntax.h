@@ -16,7 +16,6 @@ extern Tree *treeappend(Tree *head, Tree *tail);
 
 extern Tree *prefix(char *s, Tree *t);
 extern Tree *mklambda(Tree *params, Tree *body);
-extern Tree *mkseq(char *op, Tree *t1, Tree *t2);
 
 
 /* heredoc.c */

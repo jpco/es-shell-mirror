@@ -7,7 +7,7 @@
 # This var, when set, loads up tiny, simple versions of es' shell fns
 # (as well as echo). This shrinks up stack traces and makes certain bugs
 # much simpler to investigate.
-
+#
 # ES_MINIMAL = true
 
 $&if {~ $ES_MINIMAL ()} {
@@ -135,9 +135,7 @@ fn-%whatis = $&keeplexicalbinding @ * (fn = ()) {
 fn-whatis = $&keeplexicalbinding @ * (
   result = ()
 ) {
-  if {~ $* ()} {
-    result
-  } {
+  if {%not {~ $* ()}} {
     %seq {
       catch @ e f m {
 	if {~ $e error} {
@@ -151,7 +149,7 @@ fn-whatis = $&keeplexicalbinding @ * (
 	}
       } {
 	%seq {
-	  echo <={%whatis $i(1)}
+	  echo <={%whatis $*(1)}
 	} {
 	  result = 0
 	}
@@ -291,10 +289,6 @@ fn-%flatten = @ sep result rest {
     }
   }
 }
-
-#
-# I/O helpers
-#
 
 set-max-eval-depth  = $&setmaxevaldepth
 max-eval-depth = 640
