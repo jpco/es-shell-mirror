@@ -31,11 +31,20 @@ static int treecount(Tree *tree) {
             : 1;
 }
 
-/* binding -- print a binding statement */
+/* enclose -- build up a closure (sans parens) */
+static void enclose(Format *f, Binding *binding, const char *sep) {
+    if (binding != NULL) {
+        Binding *next = binding->next;
+        enclose(f, next, "; ");
+        fmtprint(f, "%S = %L%s", binding->name, binding->defn, " ", sep);
+    }
+}
+
+/* binding -- print a binding statement (sans parens) */
 static void binding(Format *f, Tree *tree) {
     Tree *np;
     char *sep = "";
-    fmtprint(f, "(");
+    // fmtprint(f, "(");
     for (np = tree; np != NULL; np = np->u[1].p) {
         Tree *binding;
         assert(np->kind == nList);
@@ -45,17 +54,24 @@ static void binding(Format *f, Tree *tree) {
         fmtprint(f, "%s%#T = %T", sep, binding->u[0].p, binding->u[1].p);
         sep = "; ";
     }
-    fmtprint(f, ") ");
+    // fmtprint(f, ") ");
 }
 
-// Print the arguments of a lambda
-static void printargs(Format *f, Tree *args) {
+// Print the bindings && params of a lambda
+static void printparams(Format *f, Tree *args, Binding *outer) {
     Tree *arg;
     Tree *fbind = NULL;
     Tree *last = NULL;
+    Boolean inparen = FALSE;
 
     if (args == NULL)
         return;
+
+    if (outer != NULL) {
+	fmtprint(f, "(");
+	enclose(f, outer, "");
+	inparen = TRUE;
+    }
 
     for (arg = args->u[0].p; args != NULL; last = args, args = args->u[1].p) {
         assert(args->kind == nList);
@@ -64,7 +80,10 @@ static void printargs(Format *f, Tree *args) {
 
         if (arg->kind != nAssign && fbind != NULL) {
             last->u[1].p = NULL;
+	    if (!inparen) fmtprint(f, "(");
+	    else fmtprint(f, "; ");
             binding(f, fbind);
+	    inparen = TRUE;
             fbind = NULL;
             last->u[1].p = args;
         }
@@ -72,12 +91,18 @@ static void printargs(Format *f, Tree *args) {
             fbind = args;
         }
         if (arg->kind != nAssign) {
+	    if (inparen) fmtprint(f, ") ");
             fmtprint(f, "%#T ", arg);
+	    inparen = FALSE;
         }
     }
     if (fbind != NULL) {
+	if (!inparen) fmtprint(f, "(");
+	else fmtprint(f, "; ");
         binding(f, fbind);
+	inparen = TRUE;
     }
+    if (inparen) fmtprint(f, ") ");
 }
 
 /* %T -- print a tree */
@@ -158,7 +183,7 @@ top:
     case nLambda:
         if (n->u[0].p != NULL) {
             fmtprint(f, "@ ");
-            printargs(f, n->u[0].p);
+            printparams(f, n->u[0].p, NULL);
         }
         fmtprint(f, "{%T}", n->u[1].p);
         return FALSE;
@@ -196,15 +221,6 @@ top:
     return FALSE;
 }
 
-/* enclose -- build up a closure */
-static void enclose(Format *f, Binding *binding, const char *sep) {
-    if (binding != NULL) {
-        Binding *next = binding->next;
-        enclose(f, next, "; ");
-        fmtprint(f, "%S = %L%s", binding->name, binding->defn, " ", sep);
-    }
-}
-
 /* %C -- print a closure */
 static Boolean Cconv(Format *f) {
     Closure *closure = va_arg(f->args, Closure *);
@@ -221,12 +237,7 @@ static Boolean Cconv(Format *f) {
                     || tree->u[0].p != NULL) {
 		fmtprint(f, "@ ");
 	    }
-	    if (binding != NULL) {
-		fmtprint(f, "(");
-		enclose(f, binding, "");
-		fmtprint(f, ") ");
-	    }
-	    printargs(f, tree->u[0].p);
+	    printparams(f, tree->u[0].p, binding);
 	    fmtprint(f, "{%T}", tree->u[1].p);
 	    break;
         }
