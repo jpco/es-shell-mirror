@@ -8,7 +8,7 @@
 # (as well as echo). This shrinks up stack traces and makes certain bugs
 # much simpler to investigate.
 #
-# ES_MINIMAL = true
+ES_MINIMAL = true
 
 $&if {~ $ES_MINIMAL ()} {
 
@@ -199,6 +199,26 @@ fn-unwind-protect = @ body cleanup (
       result $result
     } {
       throw $exception
+    }
+  }
+}
+
+fn-%runfn = @ nm cmd {
+  escaped-by return $cmd
+}
+
+fn-fn = @ nm rest {
+  @ ((body args) = $rest(<={$&count $rest} ... 1)) {
+    %seq {
+      if {%not {~ $args ()}} {
+	args = $args(<={$&count $args} ... 1)
+      }
+    } {
+      if {~ $body '@'^*} {
+	@ (spl = <={$&split '' $body}) {body = <={%flatten '' $spl(2 ...)}}
+      }
+    } {
+      fn-^$nm = %runfn $nm <={eval result '@' $args $body}
     }
   }
 }

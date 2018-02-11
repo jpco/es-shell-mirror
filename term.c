@@ -32,7 +32,6 @@ extern Closure *getclosure(Term *term) {
         if (
             ((*s == '{' || *s == '@') && s[strlen(s) - 1] == '}')
             || (*s == '$' && s[1] == '&')
-            || hasprefix(s, "%closure")
         ) {
             Ref(Term *, tp, term);
             Ref(Tree *, np, parsestring(s));

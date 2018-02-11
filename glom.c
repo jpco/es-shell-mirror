@@ -2,6 +2,7 @@
 
 #include "es.h"
 #include "gc.h"
+#include "syntax.h"
 
 char QUOTED[] = "QUOTED", UNQUOTED[] = "RAW";
 
@@ -162,6 +163,56 @@ static List *subscript(List *list, List *subs) {
     RefReturn(r);
 }
 
+/* glomparams -- glom the params to a lambda.
+
+   This is kind of a nasty hack, since we convert the glommed
+   List back to a Tree.  We ought to think about this. */
+static Tree *glomparams(Tree *params, Binding *binding) {
+    Ref(Tree *, result, NULL);
+    Ref(Tree *, tail, NULL);
+    Ref(Tree *, pp, params);
+    for (; pp != NULL; pp = pp->u[1].p) {
+	assert(pp->kind == nList);
+
+	Tree *item = pp->u[0].p;
+	Ref(Tree *, curr, NULL);
+	Ref(Tree *, cp, NULL);
+	switch (item->kind) {
+	    case nAssign: case nWord: case nQword:
+		curr = mk(nList, item, NULL);
+		break;
+	    default: {
+		Ref(List *, gr, glom(item, binding));
+		for (; gr != NULL; gr = gr->next) {
+		    Ref(Tree *, ct,
+			    mk(nList,
+				mk(nQword, getstr(gr->term)),
+				NULL));
+		    if (curr == NULL) {
+			curr = cp = ct;
+		    } else {
+			cp->u[1].p = ct;
+			cp = cp->u[1].p;
+		    }
+		    RefEnd(ct);
+		}
+		RefEnd(gr);
+	    }
+	}
+	if (result == NULL) {
+	    result = tail = curr;
+	} else {
+	    tail->u[1].p = curr;
+	}
+	for (; tail != NULL && tail->u[1].p != NULL; tail = tail->u[1].p)
+	    assert(tail->kind == nList);
+
+	RefEnd2(curr, cp);
+    }
+    RefEnd2(pp, tail);
+    RefReturn(result);
+}
+
 /* glom -- glom when we don't need to produce a quote list */
 extern List *glom(Tree *tree, Binding *binding) {
     Ref(List *, result, NULL);
@@ -183,10 +234,13 @@ extern List *glom(Tree *tree, Binding *binding) {
             list = mklist(mkterm(tp->u[0].s, NULL), NULL);
             tp = NULL;
             break;
-        case nLambda:
+        case nLambda: {
+	    Tree *ps = glomparams(tp->u[0].p, bp);
+	    tp = mklambda(ps, tp->u[1].p);
             list = mklist(mkterm(NULL, mkclosure(tp, bp)), NULL);
             tp = NULL;
             break;
+	}
         case nPrim:
             list = mklist(mkterm(NULL, mkclosure(tp, NULL)), NULL);
             tp = NULL;
@@ -236,7 +290,7 @@ extern List *glom(Tree *tree, Binding *binding) {
             list = concat(l, r);
             RefEnd2(r, l);
             break;
-        default:
+	default:
             fail("es:glom", "glom: bad node kind %d", tree->kind);
         }
 

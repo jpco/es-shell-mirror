@@ -24,8 +24,9 @@
 }
 
 %type <str>     WORD QWORD
-%type <tree>    cmd comword first word param assign lambda thunk
-                binding bindings params nlwords words simple sword vword
+%type <tree>    cmd assign lambda thunk
+                binding bindings params nlwords words simple
+		word comword first param sword vword pword
 
 %start es
 
@@ -71,11 +72,13 @@ lambda  : thunk                         { $$ = mklambda(NULL, $1); }
 binding :                               { $$ = NULL; }
         | word assign                   { $$ = mk(nAssign, $1, $2); }
 
-vword   : param                                     { $$ = $1; }
+pword	: param					    { $$ = $1; }
+	| '$' vword       %prec VWORD		    { $$ = mk(nVar, $2); }
+	| CALL sword				    { $$ = mk(nCall, $2); }
+
+vword   : pword					    { $$ = $1; }
         | lambda                                    { $$ = $1; }
         | '(' nlwords ')'                           { $$ = $2; }
-        | '$' vword       %prec VWORD               { $$ = mk(nVar, $2); }
-        | CALL sword                                { $$ = mk(nCall, $2); }
         | PRIM WORD                                 { $$ = mk(nPrim, $2); }
 
 comword : vword                         { $$ = $1; }
@@ -89,11 +92,8 @@ bindings    : binding                       { $$ = treecons2($1, NULL); }
             | bindings NL binding           { $$ = treeconsend2($1, $3); }
 
 params  :                                   { $$ = NULL; }
-        | param params                      { $$ = treecons2($1, $2); }
-        /*
-        | '$' vword params                  { $$ = treecons2(mk(nVar, $2), $3); }
-        | '$' vword SUB words ')' params    { $$ = treecons2(mk(nVarsub, $2, $4), $6); }
-        */
+	| pword params			    { $$ = treecons2($1, $2); }
+	| '$' vword SUB words ')' params    { $$ = treecons2(mk(nVarsub, $2, $4), $6); }
         | '(' bindings ')' params           { $$ = treeappend($2, $4); }
 
 words   :                               { $$ = NULL; }

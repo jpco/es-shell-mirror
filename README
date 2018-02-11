@@ -32,15 +32,17 @@ Ideas/todo:
  - reimplement parser so we can run es code in more places (the grammar is actually quite simple)
  - I will make fn-fn if it kills me (or maybe that should be es:fn? :)
     - this is basically required now that lambdas don't catch return
+ - Closures vs. lambdas need to be streamlined, I think
 
 To merge into es-shell:
- - es-implemented %whatis that calls %pathsearch
+ - es-implemented %whatis that calls %pathsearch (... maybe)
  - lexical unification (with `let` as a syntax frontend -- like `let` vs. `closure` now)
     - this kind of requires lambdas don't catch return by default ... is that ok?
  - fork, exec, and wait are all primitives.  spawning a binary is basically
         `%wait <={%fork {%exec /path/to/bin arg arg}}`
-    - %background is that, just without the $&wait :) (or something more clever, like adding to
-        a $child-pids list and waiting for children on each prompt)
+    - %background is just `%fork <={%exec /path/to/bin arg arg}` (or something more
+	clever, like adding to a $child-pids list and waiting for children on each
+	prompt)
     - %backquote is a primitive still?
 
 BEFORE trying to make shell/es:

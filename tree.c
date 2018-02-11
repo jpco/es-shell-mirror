@@ -67,7 +67,7 @@ static size_t Tree1Scan(void *p) {
     case nCall: case nVar:
         n->u[0].p = forward(n->u[0].p);
         break;
-    } 
+    }
     return offsetof(Tree, u[1]);
 }
 

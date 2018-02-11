@@ -64,13 +64,15 @@ static void printparams(Format *f, Tree *args, Binding *outer) {
     Tree *last = NULL;
     Boolean inparen = FALSE;
 
-    if (args == NULL)
-        return;
-
     if (outer != NULL) {
 	fmtprint(f, "(");
 	enclose(f, outer, "");
 	inparen = TRUE;
+    }
+
+    if (args == NULL) {
+	if (inparen) fmtprint(f, ") ");
+        return;
     }
 
     for (arg = args->u[0].p; args != NULL; last = args, args = args->u[1].p) {

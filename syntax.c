@@ -5,6 +5,7 @@
 #include "syntax.h"
 #include "token.h"
 
+/* FIXME: these declarations && initparse() don't belong here */
 Tree errornode;
 Tree *parsetree;
 
@@ -55,11 +56,11 @@ extern Tree *prefix(char *s, Tree *t) {
 
 /* mklambda -- create a lambda/closure */
 extern Tree *mklambda(Tree *params, Tree *body) {
-    if (body != NULL && body->kind == nList) {
+    /* if (body != NULL && body->kind == nList) {
 	Tree *tb = body->u[0].p;
 	while (tb != NULL && tb->kind == nLambda && tb->u[0].p == NULL)
 	    tb = tb->u[1].p;
 	body->u[0].p = tb;
-    }
+    } */
     return mk(nLambda, params, body);
 }

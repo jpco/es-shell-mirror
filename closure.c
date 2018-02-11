@@ -106,7 +106,7 @@ extern Closure *extractbindings(Tree *tree0) {
 
     ExceptionHandler
 
-        while (tree->kind == nLambda) {
+        while (tree->kind == nLambda && tree->u[0].p != NULL) {
             bindings = extract(tree->u[0].p, bindings);
             tree = tree->u[1].p;
             if (tree->kind == nList && tree->u[1].p == NULL)
