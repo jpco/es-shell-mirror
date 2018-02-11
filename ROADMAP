@@ -62,6 +62,7 @@ how do we set up "throw exception on non-zero status" in the repl?  I feel like 
 we want: `echo {let (x) y}` === `echo {let (x=) y}` === `echo {let (x=()) y}`
 potentially $&echo is just `write(1, ...)` and echo does the -- and -n interpretation?
 msg00416.html?
+es should treat '000' as truthy (and, possibly, '0.0' as well)
 we need to handle recursive structures better
   - re current semantics of let: msg00433.html
   - msg00801.html -- common lisp circular objects?

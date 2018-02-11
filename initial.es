@@ -87,8 +87,8 @@ fn eval { '{' ^ $^* ^ '}' }
 # but, as many pointed out, they don't need to be.  These
 # values are not very clear, but unix demands them.
 
-fn-true   = result 0
-fn-false  = result 1
+fn-true   = {result 0}
+fn-false  = {result 1}
 
 # These functions just generate exceptions for control-flow
 # constructions.  The for command and the while builtin both

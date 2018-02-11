@@ -26,7 +26,6 @@ fn get-output cmd {
 }
 
 # driver functions
-
 fn run-file file {
   echo $file
   local (
@@ -41,14 +40,15 @@ fn run-file file {
     }
 
     for (pa = $cases; pw = $wants) let (args = <=$pa; want = <=$pw) {
-      let (got = <={$test $args}) if {~ $got $want} {
-        passed = `($passed + 1)
-      } {
-        failed = `($failed + 1)
-        echo ' - [31mFAILED[0m:' $args
-        echo '   got:' $got
-        echo '   want:' $want
-      }
+      let (got = <={$test $args})
+	if @ {for (a = $got; b = $want) if {!~ $a $b} {return 1}} {
+	  passed = `($passed + 1)
+	} {
+	  failed = `($failed + 1)
+	  echo ' - [31mFAILED[0m:' $args
+	  echo '   got:' $got
+	  echo '   want:' $want
+	}
     }
     echo ' -' $passed cases passed
     result $failed
@@ -56,7 +56,7 @@ fn run-file file {
 }
 
 fn run-tests files {
-  let (failed) {
+  let (failed = ()) {
     if {~ $files ()} {files = ./tests/*.es}
     for (f = $files) {
       if {!~ <={fork {run-file $f}} 0} {
