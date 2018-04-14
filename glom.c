@@ -160,9 +160,9 @@ static List *subscript(List *list, List *subs) {
     RefReturn(r);
 }
 
-static double todouble(char *s) {
+static long double todouble(char *s) {
     char *end;
-    double res = strtod(s, &end);
+    long double res = strtold(s, &end);
 
     if (*end != '\0')
         fail("es:arith", "failed to fully convert input string to number");
@@ -170,7 +170,7 @@ static double todouble(char *s) {
     return res;
 }
 
-static int parse_int_or_float(char *str, double *dptr) {
+static int parse_int_or_float(char *str, long double *dptr) {
     // This duplicates logic in token.c :/
     Boolean isfloat = FALSE;
     Boolean radix   = FALSE;
@@ -180,7 +180,7 @@ static int parse_int_or_float(char *str, double *dptr) {
 
     char c;
     char *buf = str;
-    double result = 0;
+    long double result = 0;
 
     if (*buf == '-') {
         ++buf;
@@ -189,11 +189,11 @@ static int parse_int_or_float(char *str, double *dptr) {
 
     for (; c = *buf, isdigit(c) || (!radix && c == '.'); ++buf) {
         if (c == '.') {
-            radix  = TRUE;
+            radix = TRUE;
         } else {
             digits = TRUE;
             if (radix) rdepth++;
-            result = (result * 10.0) + ((double)(c - '0'));
+            result = (result * 10.0) + ((long double)(c - '0'));
         }
     }
 
@@ -216,7 +216,7 @@ fail:
     return 0;
 }
 
-static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
+static int arithmefy_inner(Tree *expr, Binding *binding, long double *dptr) {
     if (expr == NULL) {
         *dptr = 0;
         return nInt;
@@ -242,7 +242,7 @@ static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
         char cmptype = (expr->u[0].s)[0];
         char orequal = (expr->u[0].s)[1];
 
-        double leftval, rightval;
+        long double leftval, rightval;
         arithmefy_inner(expr->u[1].p->u[0].p, binding, &leftval);
         arithmefy_inner(expr->u[1].p->u[1].p->u[0].p, binding, &rightval);
 
@@ -266,7 +266,7 @@ static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
     case nOp: {
         char optype = *(expr->u[0].s);
 
-        double accum;
+        long double accum;
         int accumtype;
 
         Ref(Tree *, lp, expr->u[1].p);
@@ -276,13 +276,13 @@ static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
         for (lp = lp->u[1].p; lp != NULL; lp = lp->u[1].p) {
             assert(lp->kind == nList);
 
-            double curr;
+            long double curr;
             accumtype = (arithmefy_inner(lp->u[0].p, binding, &curr) == nFloat)
                 ? nFloat : accumtype;
 
 #define DOOWOP(OP) \
             ((accumtype == nFloat) ? \
-             accum OP curr : (double)((int)accum OP (int)curr))
+             accum OP curr : (long double)((long long)accum OP (long double)curr))
 
             switch (optype) {
             case '+':
@@ -295,17 +295,17 @@ static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
                 accum = DOOWOP(*);
                 break;
             case '/':
-                if (curr == 0.0 || (accumtype == nInt && (int)curr == 0))
+                if (curr == 0.0 || (accumtype == nInt && (long long)curr == 0))
                     fail("es:arith", "divide by zero");
                 accum = DOOWOP(/);
                 break;
             case '%':
-                if ((double)((int)accum) != accum)
+                if ((long double)((long long)accum) != accum)
                     fail("es:arith", "left-hand side of %% is not int-valued");
-                if ((double)((int)curr) != curr)
+                if ((long double)((long long)curr) != curr)
                     fail("es:arith", "right-hand side of %% is not int-valued");
 
-                accum = (double)((int)accum % (int)curr);
+                accum = (long double)((long long)accum % (long long)curr);
             }
         }
 
@@ -322,10 +322,10 @@ static int arithmefy_inner(Tree *expr, Binding *binding, double *dptr) {
 }
 
 static List *arithmefy(Tree *expr, Binding *binding) {
-    double result;
+    long double result;
     switch (arithmefy_inner(expr, binding, &result)) {
     case nInt:
-        return mklist(mkstr(str("%d", (int)result)), NULL);
+        return mklist(mkstr(str("%ld", (long long)result)), NULL);
     case nFloat:
         return mklist(mkstr(str("%f", result)), NULL);
     case nCmp:
