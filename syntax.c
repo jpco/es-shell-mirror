@@ -108,7 +108,7 @@ extern Tree *mkseq(char *op, Tree *t1, Tree *t2) {
         if (t2 == NULL)
             return t1;
     }
-    
+
     sametail = firstis(t2, op);
     tail = sametail ? t2->CDR : treecons(thunkify(t2), NULL);
     if (firstis(t1, op))
@@ -160,7 +160,9 @@ static Tree *injectpass(Tree *tree) {
                 // Artisinally crafted for the peculiar syntax of redirections
                 body = body->u[i < 3].p;
             }
-            body = treeconsend2(body, nv);
+            if (body->kind == nThunk)
+                body = treecons(body, treecons(nv, NULL));
+            else body = treeconsend2(body, nv);
         } else {
             return treeconsend2(tree, nv);
         }
@@ -178,8 +180,7 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     if (passtail) {
         tail = t2->CDR;
     } else if (t2 != NULL) {
-        if (t2->CAR->kind != nThunk)
-            t2 = injectpass(t2);
+        t2 = injectpass(t2);
 
         if (t2->CAR->kind == nThunk && t2->CDR == NULL) {
             tail = t2;
