@@ -141,7 +141,7 @@ extern Tree *mkpipe(Tree *t1, int outfd, int infd, Tree *t2) {
 }
 
 static Tree *injectpass(Tree *tree) {
-    Tree *nv = mk(nVar, mk(nWord, "pass"));
+    Tree *nv = mk(nVar, mk(nWord, "-"));
     switch (tree->kind) {
     case nLet: case nLocal: case nClosure:
     case nAssign:

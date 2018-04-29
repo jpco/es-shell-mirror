@@ -368,8 +368,8 @@ fn %backquote {
 fn-%seq   = $&seq
 
 fn-%pass = $&noreturn @ first rest {
-  local (pass = <={$first})
-    for (cmd = $rest) pass = <=$cmd
+  local (- = <={$first})
+    for (cmd = $rest) - = <=$cmd
 }
 
 fn-%not = $&noreturn @ cmd {
