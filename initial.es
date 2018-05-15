@@ -152,12 +152,12 @@ if {~ <=$&primitives time}  {fn-time  = $&time}
 # These builtins are mainly useful for internal functions, but
 # they're there to be called if you want to use them.
 
-fn-%apids = $&apids
-fn-%fsplit      = $&fsplit
-fn-%newfd = $&newfd
-fn-%run         = $&run
-fn-%split       = $&split
-fn-%var   = $&var
+fn-%apids   = $&apids
+fn-%fsplit  = $&fsplit
+fn-%newfd   = $&newfd
+fn-%run     = $&run
+fn-%split   = $&split
+fn-%var     = $&var
 fn-%whatis  = $&whatis
 
 # These builtins are only around as a matter of convenience, so
@@ -185,8 +185,9 @@ fn whatis {
 }
 
 # The escaped-by function is a shorthand which allows various
-# defined-in-shell a simple syntax for 'break'-like escape mechanisms.
-# Anything which uses escaped-by is automatically $&noreturn.
+# defined-in-shell constructs a simple syntax for 'break'-like
+# escape mechanisms. Anything which uses escaped-by is implicitly
+# $&noreturn.
 
 fn-escaped-by = $&noreturn @ ex body {
   local (fn-$ex = throw $ex)
@@ -207,7 +208,7 @@ fn-while = escaped-by break @ cond body {
 }
 
 # The switch function, ported from XS, is a convenience wrapper to test
-# a variable against multiple possible values.  It uses `escaped-by` to
+# a variable against multiple possible values.  It uses escaped-by to
 # catch switch-break.
 fn-switch = escaped-by switch-break @ value args {
   if {~ $#args 0} {
@@ -219,6 +220,20 @@ fn-switch = escaped-by switch-break @ value args {
       {~ $#action 0}   {$cond}  # this is the default action
     )
   }
+}
+
+# The for-each builtin is for operating on streaming data, line-by-line.
+# It is roughly equivalent to the `while read line; do` construct in
+# POSIX shells.
+fn-for-each = $&noreturn @ sep lambda {
+  if {~ $lambda ()} {
+    lambda = $sep
+    sep = ' '^\t
+  }
+  let (line = ())
+    while {!~ <={line = <=%read} ()} {
+      $&noreturn $lambda <={%split $sep $line}
+    }
 }
 
 # The cd builtin provides a friendlier veneer over the cd primitive:
