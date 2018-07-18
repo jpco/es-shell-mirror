@@ -16,31 +16,30 @@ Goals:
  - No `let` syntax -- it's been eaten as part of LEXICAL UNIFICATION
  - No `local` syntax -- it's a regular function now
  - No readline/editline/etc.
- - No run flags, no "please run this file" argument, etc.
+ - No run flags, no "please run this file" argument, etc. Just es:main
  - Lambdas do not catch return -- Ergo, $&noreturn doesn't exist
  - No implicit * binding in lambdas (`@ {}` becomes `{}`) (LEXICAL UNIFICATION)
- - No $1, $2, etc. (use $*(1), $*(2), ya dinguses)
+ - No $1, $2, etc. (use $*(1), $*(2), etc.)
  - No "interactive" vs. "non-interactive" distinction -- just es:main
  - No environment interaction
  - Many builtins have been replaced by es functions
 
 Ideas/todo:
  - there's no reason core/es needs to flatten lists -- that's just a fork/exec usability thing. what happens when we allow nested lists?
- - why are settor functions magic? we ought to unmagic them!
+ - why are settor functions magic? we ought to unmagic them! (what if there's a single $&set primitive?)
  - tail-call optimization -- trampoline eval()? need to look at how that works
  - first-class bindings
- - reimplement parser so we can run es code in more places (the grammar is actually quite simple)
  - I will make fn-fn if it kills me (or maybe that should be es:fn? :)
     - this is basically required now that lambdas don't catch return
  - Closures vs. lambdas need to be streamlined, I think
 
 To merge into es-shell:
  - es-implemented %whatis that calls %pathsearch (... maybe)
- - lexical unification (with `let` as a syntax frontend -- like `let` vs. `closure` now)
+ - lexical unification (with `let` as a syntax frontend -- like `let` vs. `%closure` now)
     - this kind of requires lambdas don't catch return by default ... is that ok?
  - fork, exec, and wait are all primitives.  spawning a binary is basically
         `%wait <={%fork {%exec /path/to/bin arg arg}}`
-    - %background is just `%fork <={%exec /path/to/bin arg arg}` (or something more
+    - %background is just `%fork {%exec /path/to/bin arg arg}` (or something more
 	clever, like adding to a $child-pids list and waiting for children on each
 	prompt)
     - %backquote is a primitive still?
