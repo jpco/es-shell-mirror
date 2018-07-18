@@ -2,7 +2,7 @@
 
 #include "es.h"
 
-unsigned long evaldepth = 0, maxevaldepth = MAXmaxevaldepth;
+unsigned long evaldepth = 0, maxevaldepth = 640;  // up to MAXmaxevaldepth
 
 Boolean keeplexicalbinding = FALSE;
 
@@ -206,14 +206,14 @@ restart:
                         bindargs(tree->u[0].p, list->next,
                             cp->binding, cp->binding));
 
-	    if (keeplexicalbinding) {
-		Binding *cp = context;
-		for (; cp->next != NULL; cp = cp->next)
-		    ;
-		cp->next = binding;
+            if (keeplexicalbinding) {
+                Binding *cp = context;
+                for (; cp->next != NULL; cp = cp->next)
+                    ;
+                cp->next = binding;
 
-		keeplexicalbinding = FALSE;
-	    }
+                keeplexicalbinding = FALSE;
+            }
 
             list = walk(tree->u[1].p, context);
             RefEnd2(context, tree);

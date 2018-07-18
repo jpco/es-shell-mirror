@@ -75,7 +75,7 @@ static void printparams(Format *f, Tree *args, Binding *outer) {
         return;
     }
 
-    for (arg = args->u[0].p; args != NULL; last = args, args = args->u[1].p) {
+    for (; args != NULL; last = args, args = args->u[1].p) {
         assert(args->kind == nList);
         arg = args->u[0].p;
         assert(arg != NULL);

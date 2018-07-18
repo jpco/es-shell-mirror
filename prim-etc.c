@@ -72,25 +72,6 @@ PRIM(collect) {
     return true;
 }
 
-PRIM(setmaxevaldepth) {
-    char *s;
-    long n;
-    if (list == NULL) {
-        maxevaldepth = MAXmaxevaldepth;
-        return NULL;
-    }
-    if (list->next != NULL)
-        fail("$&setmaxevaldepth", "usage: $&setmaxevaldepth [limit]");
-    Ref(List *, lp, list);
-    n = strtol(getstr(lp->term), &s, 0);
-    if (n < 0 || (s != NULL && *s != '\0'))
-        fail("$&setmaxevaldepth", "max-eval-depth must be set to a positive integer");
-    if (n < MINmaxevaldepth)
-        n = (n == 0) ? MAXmaxevaldepth : MINmaxevaldepth;
-    maxevaldepth = n;
-    RefReturn(lp);
-}
-
 PRIM(keeplexicalbinding) {
     Ref(List *, lp, list);
     Ref(Binding *, bp, binding);
@@ -115,6 +96,5 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(main);
     X(collect);
     X(result);
-    X(setmaxevaldepth);
     return primdict;
 }

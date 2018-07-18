@@ -222,11 +222,9 @@ extern void sortvector(Vector *v);
 /* util.c */
 
 extern char *esstrerror(int err);
-extern void uerror(char *msg);
 extern void *ealloc(size_t n);
 extern void *erealloc(void *p, size_t n);
 extern void efree(void *p);
-extern void ewrite(int fd, const char *s, size_t n);
 extern long eread(int fd, char *buf, size_t n);
 extern Boolean isabsolute(char *path);
 extern Boolean streq2(const char *s, const char *t1, const char *t2);
@@ -251,11 +249,6 @@ extern void initprims(void);
 /* split.c */
 
 extern List *split(const char *sep, List *list, Boolean coalesce);
-
-/* open.c */
-
-typedef enum { oOpen, oCreate, oAppend, oReadWrite, oReadCreate, oReadAppend } OpenKind;
-extern int eopen(char *name, OpenKind k);
 
 
 /* version.c */
@@ -303,14 +296,6 @@ extern void gcreserve(size_t nbytes);       /* provoke a collection, if enabled 
 extern void gcenable(void);         /* enable collections */
 extern void gcdisable(void);            /* disable collections */
 extern Boolean gcisblocked();           /* is collection disabled? */
-
-
-/* opt.c */
-
-extern void esoptbegin(List *list, const char *caller, const char *usage);
-extern int esopt(const char *options);
-extern Term *esoptarg(void);
-extern List *esoptend(void);
 
 
 /*

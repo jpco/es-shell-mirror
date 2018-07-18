@@ -8,7 +8,7 @@
 # (as well as echo). This shrinks up stack traces and makes certain bugs
 # much simpler to investigate.
 #
-ES_MINIMAL = true
+ES_MINIMAL = ()
 
 $&if {~ $ES_MINIMAL ()} {
 
@@ -19,20 +19,21 @@ $&if {~ $ES_MINIMAL ()} {
       result = ()
     ) {
       $&if {~ <={result = $(fn-^$cmd)} ()} {
-	if {~ <={result = <={~~ $cmd %*}} ()} {
-
-	  # XXX: More whatis functionality goes here (e.g., %pathsearch)
-
-	  result ()
-	} {
-	  $&seq {
-	    fn-^$cmd = '$&'^$result
-	  } {
-	    result $(fn-^$cmd)
-	  }
-	}
+        if {~ <={result = <={~~ $cmd %*}} ()} {
+          if {~ $fn-%pathsearch ()} {
+            result ()
+          } {
+            %pathsearch $cmd
+          }
+        } {
+          $&seq {
+            fn-^$cmd = '$&'^$result
+          } {
+            result $(fn-^$cmd)
+          }
+        }
       } {
-	$&result $result
+        $&result $result
       }
     }
 
@@ -42,23 +43,23 @@ $&if {~ $ES_MINIMAL ()} {
       result = ()
     ) {
       catch @ e type rest {
-	if {~ $e eof} {
-	  throw eof $result
-	} {~ $e exit} {
-	  throw $e $type $rest
-	} {
-	  %seq {
-	    echo caught $e^: $type - $rest
-	  } {
-	    throw retry
-	  }
-	}
+        if {~ $e eof} {
+          throw eof $result
+        } {~ $e exit} {
+          throw $e $type $rest
+        } {
+          %seq {
+            echo caught $e^: $type - $rest
+          } {
+            throw retry
+          }
+        }
       } {
-	forever @ (code = <={%parse $prompt}) {
-	  if {%not {~ <={%count $code} 0}} {
-	    result = <={$code}
-	  }
-	}
+        forever @ (code = <={%parse $prompt}) {
+          if {%not {~ <={%count $code} 0}} {
+            result = <={$code}
+          }
+        }
       }
     }
 
@@ -68,17 +69,17 @@ $&if {~ $ES_MINIMAL ()} {
       end = \n
     ) {
       %seq {
-	if {~ $li(1) -n} {
-	  %seq {
-	    end = ''
-	  } {
-	    li = $li(2 ...)
-	  }
-	} {~ $li(1) --} {
-	  li = $li(2 ...)
-	}
+        if {~ $li(1) -n} {
+          %seq {
+            end = ''
+          } {
+            li = $li(2 ...)
+          }
+        } {~ $li(1) --} {
+          li = $li(2 ...)
+        }
       } {
-	$&echo <={%flatten ' ' $li}^$end
+        $&echo <={%flatten ' ' $li}^$end
       }
     }
 
@@ -138,21 +139,21 @@ fn-whatis = $&keeplexicalbinding @ * (
   if {%not {~ $* ()}} {
     %seq {
       catch @ e f m {
-	if {~ $e error} {
-	  %seq {
-	    echo $m  # >[1=2]
-	  } {
-	    result = 1
-	  }
-	} {
-	  throw $e $f $m
-	}
+        if {~ $e error} {
+          %seq {
+            echo $m  # >[1=2]
+          } {
+            result = 1
+          }
+        } {
+          throw $e $f $m
+        }
       } {
-	%seq {
-	  echo <={%whatis $*(1)}
-	} {
-	  result = 0
-	}
+        %seq {
+          echo <={%whatis $*(1)}
+        } {
+          result = 0
+        }
       }
     } {
       result $result <={whatis $*(2 ...)}
@@ -162,8 +163,8 @@ fn-whatis = $&keeplexicalbinding @ * (
 
 fn-eval = @ * {'{' ^ <={%flatten ' ' $*} ^ '}'}
 
-fn-true   = result 0
-fn-false  = result 1
+fn-true   = {result 0}
+fn-false  = {result 1}
 
 #
 # Flow control functions && binders
@@ -211,11 +212,11 @@ fn-fn = @ nm rest {
   @ ((body args) = $rest(<={$&count $rest} ... 1)) {
     %seq {
       if {%not {~ $args ()}} {
-	args = $args(<={$&count $args} ... 1)
+        args = $args(<={$&count $args} ... 1)
       }
     } {
       if {~ $body '@'^*} {
-	@ (spl = <={$&split '' $body}) {body = <={%flatten '' $spl(2 ...)}}
+        @ (spl = <={$&split '' $body}) {body = <={%flatten '' $spl(2 ...)}}
       }
     } {
       fn-^$nm = %runfn $nm <={eval result '@' $args $body}
@@ -309,9 +310,6 @@ fn-%flatten = @ sep result rest {
     }
   }
 }
-
-set-max-eval-depth  = $&setmaxevaldepth
-max-eval-depth = 640
 
 ifs   = ' ' \t \n
 

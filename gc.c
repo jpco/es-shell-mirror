@@ -140,7 +140,7 @@ static void *take(size_t n) {
 #else
     static int devzero = -1;
     if (devzero == -1)
-        devzero = eopen("/dev/zero", oOpen);
+        devzero = open("/dev/zero", O_RDONLY, 0666);
     addr = mmap(0, n, PROT_READ|PROT_WRITE, MAP_PRIVATE, devzero, 0);
 #endif
     if (addr == (caddr_t) -1)
@@ -465,7 +465,7 @@ extern void gc(void) {
             minspace /= 2;
 
         --gcblocked;
-    } while (new->next != NULL);
+    } while (new != NULL && new->next != NULL);
 }
 
 /* initgc -- initialize the garbage collector */

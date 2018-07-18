@@ -39,10 +39,6 @@ CC	= @CC@
 INSTALL	= @INSTALL@
 MKDIR_P = @MKDIR_P@
 
-
-## Bison is generating incorrect parsers.  So do not use, for now
-# YACC = @YACC@
-
 OPT = 0
 OPTFLAGS = @CFLAGS@
 ifeq (${OPT},release)
@@ -65,17 +61,17 @@ VPATH = $(srcdir)
 HFILES	= config.h es.h gc.h input.h prim.h print.h sigmsgs.h \
 	  stdenv.h syntax.h term.h var.h
 CFILES	= closure.c conv.c dict.c eval.c except.c gc.c \
-	  glom.c input.c list.c main.c match.c open.c opt.c \
+	  glom.c input.c list.c main.c match.c \
 	  prim-ctl.c prim-etc.c prim-io.c prim.c print.c \
 	  sigmsgs.c signal.c split.c status.c str.c syntax.c term.c token.c \
-	  tree.c util.c var.c vec.c y.tab.c dump.c
+	  tree.c util.c var.c vec.c dump.c
 OFILES	= closure.o conv.o dict.o eval.o except.o gc.o \
-	  glom.o input.o list.o main.o match.o open.o opt.o \
+	  glom.o input.o list.o main.o match.o \
 	  prim-ctl.o prim-etc.o prim-io.o prim.o print.o \
-	  sigmsgs.o signal.o split.o status.o str.o syntax.o term.o token.o \
-	  tree.o util.o var.o vec.o y.tab.o
-OTHER	= Makefile parse.y mksignal
-GEN	= esdump y.tab.c y.tab.h y.output token.h sigmsgs.c initial.c
+	  sigmsgs.o signal.o split.o status.o str.o syntax.o parse.o term.o \
+	  token.o tree.o util.o var.o vec.o
+OTHER	= Makefile mksignal
+GEN	= esdump sigmsgs.c initial.c
 
 SIGFILES = @SIGFILES@
 
@@ -109,12 +105,6 @@ trip	: es $(srcdir)/trip.es
 src	:
 	@echo ${OTHER} ${CFILES} ${HFILES}
 
-y.tab.c y.tab.h : parse.y
-	${YACC} -vd $(srcdir)/parse.y
-
-token.h : y.tab.h
-	-cmp -s y.tab.h token.h || cp y.tab.h token.h
-
 initial.c : esdump $(srcdir)/initial.es
 	./esdump < $(srcdir)/initial.es > initial.c
 
@@ -138,8 +128,6 @@ input.o : input.c es.h config.h stdenv.h input.h
 list.o : list.c es.h config.h stdenv.h gc.h 
 main.o : main.c es.h config.h stdenv.h 
 match.o : match.c es.h config.h stdenv.h 
-open.o : open.c es.h config.h stdenv.h 
-opt.o : opt.c es.h config.h stdenv.h 
 prim.o : prim.c es.h config.h stdenv.h prim.h 
 prim-ctl.o : prim-ctl.c es.h config.h stdenv.h prim.h 
 prim-etc.o : prim-etc.c es.h config.h stdenv.h prim.h 
@@ -149,9 +137,10 @@ signal.o : signal.c es.h config.h stdenv.h sigmsgs.h
 split.o : split.c es.h config.h stdenv.h gc.h 
 status.o : status.c es.h config.h stdenv.h term.h 
 str.o : str.c es.h config.h stdenv.h gc.h print.h 
-syntax.o : syntax.c es.h config.h stdenv.h input.h syntax.h token.h 
+syntax.o : syntax.c es.h config.h stdenv.h input.h syntax.h 
+parse.o : parse.c input.h syntax.h es.h stdenv.h 
 term.o : term.c es.h config.h stdenv.h gc.h term.h 
-token.o : token.c es.h config.h stdenv.h input.h syntax.h token.h 
+token.o : token.c es.h config.h stdenv.h input.h syntax.h 
 tree.o : tree.c es.h config.h stdenv.h gc.h 
 util.o : util.c es.h config.h stdenv.h 
 var.o : var.c es.h config.h stdenv.h gc.h var.h term.h 

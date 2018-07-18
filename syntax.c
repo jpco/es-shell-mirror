@@ -3,10 +3,8 @@
 #include "es.h"
 #include "input.h"
 #include "syntax.h"
-#include "token.h"
 
 /* FIXME: these declarations && initparse() don't belong here */
-Tree errornode;
 Tree *parsetree;
 
 /* initparse -- called at the dawn of time */

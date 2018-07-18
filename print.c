@@ -297,7 +297,7 @@ static void fprint_flush(Format *format, size_t more) {
         int written = write(format->u.n, buf, n);
         if (written == -1) {
             if (format->u.n != 2)
-                uerror("write");
+                eprint("write: %s\n", esstrerror(errno));
             exit(1);
         }
         n -= written;

@@ -4,9 +4,22 @@
 #define	CDR	u[1].p
 
 
-/* syntax.c */
+/* parse.c */
 
-extern Tree errornode;
+#define WORD 258
+#define QWORD 259
+#define EXTRACT 260
+#define CALL 261
+#define PRIM 262
+#define ENDFILE 265
+#define ERROR 266
+#define SUB 267
+
+char *tokenval;
+extern int yyparse();
+
+
+/* syntax.c */
 
 extern Tree *treecons(Tree *car, Tree *cdr);
 extern Tree *treecons2(Tree *car, Tree *cdr);
@@ -16,9 +29,3 @@ extern Tree *treeappend(Tree *head, Tree *tail);
 
 extern Tree *prefix(char *s, Tree *t);
 extern Tree *mklambda(Tree *params, Tree *body);
-
-
-/* heredoc.c */
-
-extern Boolean readheredocs(Boolean endfile);
-extern Boolean queueheredoc(Tree *t);

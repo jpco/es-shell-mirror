@@ -110,14 +110,17 @@ extern Term *nth(List *list, int n) {
 
 /* sortlist */
 extern List *sortlist(List *list) {
-    if (length(list) > 1) {
-        Vector *v = vectorize(list);
-        sortvector(v);
-        gcdisable();
-        Ref(List *, lp, listify(v->count, v->vector));
-        gcenable();
-        list = lp;
-        RefEnd(lp);
+    if (length(list) <= 1) {
+        return list;
     }
+
+    Vector *v = vectorize(list);
+    sortvector(v);
+    gcdisable();
+    Ref(List *, lp, listify(v->count, v->vector));
+    gcenable();
+    list = lp;
+    RefEnd(lp);
+
     return list;
 }

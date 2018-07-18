@@ -24,15 +24,6 @@ extern char *esstrerror(int n) {
 }
 
 
-
-/* uerror -- print a unix error, our version of perror */
-extern void uerror(char *s) {
-    if (s != NULL)
-        eprint("%s: %s\n", s, esstrerror(errno));
-    else
-        eprint("%s\n", esstrerror(errno));
-}
-
 /* isabsolute -- test to see if pathname begins with "/", "./", or "../" */
 extern Boolean isabsolute(char *path) {
     return path[0] == '/'
@@ -63,7 +54,7 @@ extern void *ealloc(size_t n) {
     extern void *malloc(size_t n);
     void *p = malloc(n);
     if (p == NULL) {
-        uerror("malloc");
+        eprint("malloc: %s\n", esstrerror(errno));
         exit(1);
     }
     return p;
@@ -76,7 +67,7 @@ extern void *erealloc(void *p, size_t n) {
         return ealloc(n);
     p = realloc(p, n);
     if (p == NULL) {
-        uerror("realloc");
+        eprint("realloc: %s\n", esstrerror(errno));
         exit(1);
     }
     return p;
@@ -93,24 +84,6 @@ extern void efree(void *p) {
 /*
  * private interfaces to system calls
  */
-
-extern void ewrite(int fd, const char *buf, size_t n) {
-    volatile long i, remain;
-    const char *volatile bufp = buf;
-    for (i = 0, remain = n; remain > 0; bufp += i, remain -= i) {
-        if (!setjmp(slowlabel)) {
-            slow = TRUE;
-            if (interrupted)
-                break;
-            else if ((i = write(fd, bufp, remain)) <= 0)
-                break; /* abort silently on errors in write() */
-        } else
-            break;
-        slow = FALSE;
-    }
-    slow = FALSE;
-    SIGCHK();
-}
 
 extern long eread(int fd, char *buf, size_t n) {
     long r;

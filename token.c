@@ -3,7 +3,6 @@
 #include "es.h"
 #include "input.h"
 #include "syntax.h"
-#include "token.h"
 
 #define isodigit(c) ('0' <= (c) && (c) < '8')
 
@@ -89,11 +88,10 @@ extern int yylex(void) {
     size_t i;           /* The purpose of all these local assignments is to */
     const char *meta;       /* allow optimizing compilers like gcc to load these    */
     char *buf = tokenbuf;       /* values into registers. On a sparc this is a      */
-    YYSTYPE *y = &yylval;       /* win, in code size *and* execution time       */
 
     if (goterror) {
         goterror = FALSE;
-        return NL;
+        return '\n';
     }
 
     if (newline) {
@@ -129,7 +127,7 @@ top:
         } else if (streq(buf, "~~"))
             return EXTRACT;
         w = RW;
-        y->str = gcdup(buf);
+        tokenval = gcdup(buf);
         return WORD;
     }
 
@@ -158,7 +156,7 @@ top:
         }
         UNGETC(c);
         bufput(&buf, i, '\0');
-        y->str = gcdup(buf);
+        tokenval = gcdup(buf);
         return QWORD;
     case '\\':
         if ((c = GETC()) == '\n') {
@@ -171,7 +169,6 @@ top:
             goto badescape;
         }
         UNGETC(c);
-        c = '\\';
         w = RW;
         c = GETC();
         switch (c) {
@@ -219,7 +216,7 @@ top:
             break;
         }
         buf[1] = 0;
-        y->str = gcdup(buf);
+        tokenval = gcdup(buf);
         return QWORD;
     case '#':
         while ((c = GETC()) != '\n') /* skip comment until newline */
@@ -230,7 +227,7 @@ top:
         input->lineno++;
         newline = TRUE;
         w = NW;
-        return NL;
+        return '\n';
     case '(':
         if (w == RW)    /* not keywords, so let & friends work */
             c = SUB;

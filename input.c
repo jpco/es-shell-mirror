@@ -168,6 +168,7 @@ extern Tree *parse(char *pr1, char *pr2) {
         error = NULL;
         fail("$&parse", "%s", e);
     }
+
     return parsetree;
 }
 
