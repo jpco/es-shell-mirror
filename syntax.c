@@ -199,18 +199,17 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     return prefix("%pass", treecons(t1, tail));
 }
 
-static Boolean cmp2chars(char *one, char *two) {
-    return one[0] == two[0] && one[1] == two[1];
+extern Tree *mkneg(Tree *t) {
+    return mkop("N", t, NULL);
+    if (t->kind == nInt || t->kind == nFloat) {
+        char buf[31] = "-";
+        return mk(t->kind, gcdup(strncat(buf, t->u[0].s, 28)));
+    }
+    return mkop("-", mk(nInt, "0"), t);
 }
 
 extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
     Tree *tail = NULL;
-
-    if (t1->kind == nInt && cmp2chars(t1->u[0].s, "0"))
-        if ((t2->kind == nInt || t2->kind == nFloat) && *(t2->u[0].s) != '-') {
-            char buf[31] = "-";
-            return mk(t2->kind, gcdup(strncat(buf, t2->u[0].s, 28)));
-        }
 
     if (t2->kind == nOp && *(t2->u[0].s) == *op)
         tail = t2->CDR;
@@ -219,10 +218,13 @@ extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
     else
         tail = treecons(t2, NULL);
 
+    // Flatten repeated associative ops
+    // i.e., "+ (1 1 1)" rather than "+ ((+ (1 1)) 1)"
     if (t1->kind == nOp && *(t1->u[0].s) == *op) {
         t1->CDR = treeappend(t1->CDR, tail);
         return t1;
     }
+
     if (t1->kind != nList)
         return mk(nOp, op, treecons(t1, tail));
     else

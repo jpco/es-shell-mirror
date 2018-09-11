@@ -188,7 +188,7 @@ top:
         Tree *curr;
         for (; operand->u[1].p != NULL; operand = operand->u[1].p) {
             curr = operand->u[0].p;
-            if (first && *op == '-' && curr->kind == nInt 
+            if (first && *op == '-' && curr->kind == nInt
                     && *curr->u[0].s == '0' && (curr->u[0].s)[1] == '\0')
                 fmtprint(f, "-");
             else if (curr->kind == nOp)

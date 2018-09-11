@@ -24,6 +24,7 @@ extern Tree *mkseq(char *op, Tree *t1, Tree *t2);
 extern Tree *mkpipe(Tree *t1, int outfd, int infd, Tree *t2);
 extern Tree *mkpass(Tree *t1, Tree *t2);
 
+extern Tree *mkneg(Tree *t);
 extern Tree *mkop(char *op, Tree *t1, Tree *t2);
 extern Tree *mkcmp(char *op, Tree *t1, Tree *t2);
 
