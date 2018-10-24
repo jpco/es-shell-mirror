@@ -185,23 +185,15 @@ PRIM(exitonfalse) {
 
 PRIM(batchloop) {
     Ref(List *, result, true);
-    Ref(List *, dispatch, NULL);
 
     SIGCHK();
 
     ExceptionHandler
 
         for (;;) {
-            List *parser, *cmd;
-            parser = varlookup("fn-%parse", NULL);
-            cmd = (parser == NULL)
-                    ? prim("parse", NULL, NULL, 0)
-                    : eval(parser, NULL, 0);
+            List *cmd = prim("parse", NULL, NULL, 0);
             SIGCHK();
-            dispatch = varlookup("fn-%dispatch", NULL);
             if (cmd != NULL) {
-                if (dispatch != NULL)
-                    cmd = append(dispatch, cmd);
                 result = eval(cmd, NULL, evalflags);
                 SIGCHK();
             }
@@ -211,7 +203,6 @@ PRIM(batchloop) {
 
         if (!termeq(e->term, "eof"))
             throw(e);
-        RefEnd(dispatch);
         if (result == true)
             result = true;
         RefReturn(result);

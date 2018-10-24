@@ -145,6 +145,34 @@ extern void sethistory(char *file) {
     history = file;
 }
 
+#define NRUNFLAGS 7
+static struct{
+    int   mask;
+    char *name;
+} flagarr[NRUNFLAGS] = {
+    {eval_inchild, "inchild"},
+    {eval_exitonfalse, "exitonfalse"},
+    {run_interactive, "interactive"},
+    {run_noexec, "noexec"},
+    {run_echoinput, "echoinput"},
+    {run_printcmds, "printcmds"},
+    {run_lisptrees, "lisptrees"}
+};
+
+/* export_runflags -- make runflags into an es list */
+static List *export_runflags(int flags) {
+    int len = 0;
+    char *flagstrs[NRUNFLAGS];
+
+    int i;
+    for (i = 0; i < NRUNFLAGS; i++) {
+        if (flags & flagarr[i].mask) {
+            flagstrs[len++] = flagarr[i].name;
+        }
+    }
+
+    return listify(len, flagstrs);
+}
 
 /*
  * unget -- character pushback
@@ -414,14 +442,7 @@ extern void resetparser(void) {
 extern List *runinput(Input *in, int runflags) {
     volatile int flags = runflags;
     List * volatile result = NULL;
-    List *repl, *dispatch;
-    Push push;
-    const char *dispatcher[] = {
-        "fn-%eval-noprint",
-        "fn-%eval-print",
-        "fn-%noeval-noprint",
-        "fn-%noeval-print",
-    };
+    List *run;
 
     flags &= ~eval_inchild;
     in->runflags = flags;
@@ -431,23 +452,10 @@ extern List *runinput(Input *in, int runflags) {
 
     ExceptionHandler
 
-        dispatch
-              = varlookup(dispatcher[((flags & run_printcmds) ? 1 : 0)
-                     + ((flags & run_noexec) ? 2 : 0)],
-                  NULL);
-        if (flags & eval_exitonfalse)
-            dispatch = mklist(mkstr("%exit-on-false"), dispatch);
-        varpush(&push, "fn-%dispatch", dispatch);
-    
-        repl = varlookup((flags & run_interactive)
-                   ? "fn-%interactive-loop"
-                   : "fn-%batch-loop",
-                 NULL);
-        result = (repl == NULL)
-                ? prim("batchloop", NULL, NULL, flags)
-                : eval(repl, NULL, flags);
-    
-        varpop(&push);
+        run = varlookup("fn-%run-input", NULL);
+        result = (run == NULL)
+                    ? prim("batchloop", NULL, NULL, flags)
+                    : eval(append(run, export_runflags(flags)), NULL, flags);
 
     CatchException (e)
 
