@@ -88,8 +88,10 @@ fn %interactive-loop {
     } {
       forever {
         if {!~ $#fn-%prompt 0} {
-          catch @ _ _ e {
-            echo 'caught error in %prompt: '^$e
+          catch @ e rest {
+            if {!~ $e false} {
+              echo >[1=2] 'caught exception in %prompt:' $e $rest
+            }
           } {%prompt}
         }
         let (code = <={%parse $prompt}) {
@@ -106,11 +108,11 @@ fn %interactive-loop {
 # function.  (For %eval-noprint, note that an empty list prepended
 # to a command just causes the command to be executed.)
 
-fn %eval-noprint                            # <default>
-fn %eval-print      { echo $* >[1=2]; $* }  # -x
-fn %noeval-noprint  { }                     # -n
-fn %noeval-print    { echo $* >[1=2] }      # -n -x
-fn-%exit-on-false = $&exitonfalse           # -e
+fn %eval-noprint                             # <default>
+fn %eval-print       { echo $* >[1=2]; $* }  # -x
+fn %noeval-noprint   { }                     # -n
+fn %noeval-print     { echo $* >[1=2] }      # -n -x
+fn-%throw-on-false = $&throwonfalse          # -e
 
 
 # Likely migration path:
@@ -141,18 +143,12 @@ fn-%exit-on-false = $&exitonfalse           # -e
 # `fn %run-input file`, and if ~ $#file 0, it will run stdin; runflags will be a special global.
 fn %run-input runflags {
   let (
-    dispatch-p = 'noprint'
-    dispatch-e = 'eval'
-    on-false   = ()
-    loop       = %batch-loop
+    dispatch-p = <={if {~ $runflags printcmds} {result 'print'} {result 'noprint'}}
+    dispatch-e = <={if {~ $runflags noexec}    {result 'noeval'} {result 'eval'}}
+    on-false   = <={if {~ $runflags throwonfalse} {result $fn-%throw-on-false} {result ()}}
+    loop       = <={if {~ $runflags interactive} {result %interactive-loop} {result %batch-loop}}
   ) {
-    if {~ $runflags printcmds}   {dispatch-p = print}
-    if {~ $runflags noexec}      {dispatch-e = noeval}
-    if {~ $runflags exitonfalse} {on-false = %exit-on-false}
-    if {~ $runflags interactive} {loop = %interactive-loop}
-    if {~ $#(fn-^$loop) 0}       {loop = $&batchloop}
-
-    local (fn-%dispatch = $(fn-%^$(dispatch-e)^-^$(dispatch-p))) {
+    local (fn-%dispatch = $on-false $(fn-%^$(dispatch-e)^-^$(dispatch-p))) {
       $loop
     }
   }
@@ -175,38 +171,23 @@ noexport = $noexport fn-%dispatch
 # - eventually including arg parsing
 #
 
-#
 # runflags:
 #
-#   inchild     - currently in a child context
+#   inchild      - currently in child (e.g., don't fork on fork/exec)
+#   throwonfalse - exit on false                 -e
+#   interactive  - forced to interactive         -i
+#   noexec       - don't execute commands        -n
+#   echoinput    - echoinput to stderr           -v
+#   printcmds    - print commands                -x
+#   lisptrees    - print commands as lisp trees  -L
 #
-# controls some redirection behavior, forking behavior, etc.
-# kind of all over, probably not to be messed with.
-#
-#   exitonfalse - exit on false                 -e
-#
-# exits if eval call turns out false.
-# TODO: replace with a handleable 'throw on false'?
-#
-#   interactive - forced to interactive         -i
-#
-# if true, use readline, use fn-%interactive-loop, change error printing
-#
-#   noexec      - don't execute commands        -n
-#
-# fn-%dispatch is set to a noexec version if set
-#
-#   echoinput   - echoinput to stderr           -v
-#
-# print input as read (input.c:203)
-#
-#   printcmds   - print commands                -x
-#
-# fn-%dispatch is set to an echo version if set
-#
-#   lisptrees   - print commands as lisp trees  -L
-#
-# print parsed input as lisp tree after parsing (input.c:402)
+#   inchild      - internal, readonly
+#   throwonfalse - internal, so things like $&if can disable/reenable for each block
+#   interactive  - internal, to control things like readline enabling
+#   noexec       - not internal
+#   echoinput    - internal, requires input support
+#   printcmds    - not internal
+#   lisptrees    - internal, requires input support
 #
 # other flags:
 #   -l  - login shell (also if $0[0] == '-')
@@ -215,4 +196,3 @@ noexport = $noexport fn-%dispatch
 #   -s  - read cmds from stdin, stop parsing args
 #   -o  - keep stdout, stdin, and stderr closed if not already open
 #   -c  - cmd to run, babey
-

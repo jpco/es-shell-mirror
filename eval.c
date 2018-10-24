@@ -219,7 +219,7 @@ static List *forloop(Tree *defn0, Tree *body0,
                 cont = FALSE;
                 goto end;
             }
-            result = walk(body, bp, evalflags & eval_exitonfalse);
+            result = walk(body, bp, evalflags & eval_throwonfalse);
             RefEnd(bp);
             SIGCHK();
 
@@ -471,8 +471,8 @@ restart:
 
 done:
     --evaldepth;
-    if ((flags & eval_exitonfalse) && !istrue(list))
-        exit(exitstatus(list));
+    if ((flags & eval_throwonfalse) && !istrue(list))
+        throw(mklist(mkstr("false"), list));
     RefEnd2(funcname, binding);
     RefReturn(list);
 }

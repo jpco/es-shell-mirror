@@ -127,25 +127,25 @@ int main(int argc, char **argv) {
 
     while ((c = getopt(argc, argv, "eilxvnpodsc:?GIL")) != EOF)
         switch (c) {
-        case 'c':   cmd = optarg;           break;
-        case 'e':   runflags |= eval_exitonfalse;   break;
+        case 'c':   cmd = optarg;                   break;
+        case 'e':   runflags |= eval_throwonfalse;  break;
         case 'i':   runflags |= run_interactive;    break;
-        case 'n':   runflags |= run_noexec;     break;
-        case 'v':   runflags |= run_echoinput;  break;
-        case 'x':   runflags |= run_printcmds;  break;
+        case 'n':   runflags |= run_noexec;         break;
+        case 'v':   runflags |= run_echoinput;      break;
+        case 'x':   runflags |= run_printcmds;      break;
 #if LISPTREES
-        case 'L':   runflags |= run_lisptrees;  break;
+        case 'L':   runflags |= run_lisptrees;      break;
 #endif
-        case 'l':   loginshell = TRUE;      break;
-        case 'p':   protected = TRUE;       break;
-        case 'o':   keepclosed = TRUE;      break;
-        case 'd':   allowquit = TRUE;       break;
-        case 's':   cmd_stdin = TRUE;           goto getopt_done;
+        case 'l':   loginshell = TRUE;              break;
+        case 'p':   protected = TRUE;               break;
+        case 'o':   keepclosed = TRUE;              break;
+        case 'd':   allowquit = TRUE;               break;
+        case 's':   cmd_stdin = TRUE;               goto getopt_done;
 #if GCVERBOSE
-        case 'G':   gcverbose = TRUE;       break;
+        case 'G':   gcverbose = TRUE;               break;
 #endif
 #if GCINFO
-        case 'I':   gcinfo = TRUE;          break;
+        case 'I':   gcinfo = TRUE;                  break;
 #endif
         default:
             usage();

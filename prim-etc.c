@@ -49,11 +49,11 @@ PRIM(dot) {
     esoptbegin(list, "$&dot", usage);
     while ((c = esopt("einvx")) != EOF)
         switch (c) {
-        case 'e':   runflags |= eval_exitonfalse;   break;
+        case 'e':   runflags |= eval_throwonfalse;  break;
         case 'i':   runflags |= run_interactive;    break;
-        case 'n':   runflags |= run_noexec;     break;
-        case 'v':   runflags |= run_echoinput;  break;
-        case 'x':   runflags |= run_printcmds;  break;
+        case 'n':   runflags |= run_noexec;         break;
+        case 'v':   runflags |= run_echoinput;      break;
+        case 'x':   runflags |= run_printcmds;      break;
         }
 
     Ref(List *, result, NULL);
@@ -179,8 +179,8 @@ PRIM(parse) {
     return result;
 }
 
-PRIM(exitonfalse) {
-    return eval(list, NULL, evalflags | eval_exitonfalse);
+PRIM(throwonfalse) {
+    return eval(list, NULL, evalflags | eval_throwonfalse);
 }
 
 PRIM(batchloop) {
@@ -302,7 +302,7 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(internals);
     X(result);
     X(isinteractive);
-    X(exitonfalse);
+    X(throwonfalse);
     X(noreturn);
     X(setmaxevaldepth);
 #if READLINE

@@ -151,7 +151,7 @@ static struct{
     char *name;
 } flagarr[NRUNFLAGS] = {
     {eval_inchild, "inchild"},
-    {eval_exitonfalse, "exitonfalse"},
+    {eval_throwonfalse, "throwonfalse"},
     {run_interactive, "interactive"},
     {run_noexec, "noexec"},
     {run_echoinput, "echoinput"},
