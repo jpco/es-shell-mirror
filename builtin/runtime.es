@@ -181,13 +181,13 @@ noexport = $noexport fn-%dispatch
 #   printcmds    - print commands                -x
 #   lisptrees    - print commands as lisp trees  -L
 #
-#   inchild      - internal, readonly
-#   throwonfalse - internal, so things like $&if can disable/reenable for each block
-#   interactive  - internal, to control things like readline enabling
+#   inchild      - internal (rw), NOT exported, very evil
+#   throwonfalse - internal (rw), so things like $&if can disable/reenable for each block
+#   interactive  - internal (ro), to control things like readline enabling
 #   noexec       - not internal
-#   echoinput    - internal, requires input support
+#   echoinput    - internal (ro), requires input support
 #   printcmds    - not internal
-#   lisptrees    - internal, requires input support
+#   lisptrees    - internal (ro), requires input support
 #
 # other flags:
 #   -l  - login shell (also if $0[0] == '-')

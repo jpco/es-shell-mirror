@@ -694,7 +694,7 @@ noexport = noexport pid signals apid status bqstatus path home
 
 
 # source outside init scripts.
-. runtime.es
+. ./builtin/runtime.es
 
 #
 # Title
