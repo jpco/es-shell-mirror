@@ -50,11 +50,18 @@ extern Tree *treeconsend2(Tree *head, Tree *tail) {
 
 /* thunkify -- wrap a tree in thunk braces if it isn't already a thunk */
 extern Tree *thunkify(Tree *tree) {
-    if (tree != NULL && (
-           (tree->kind == nThunk)
-        || (tree->kind == nList && tree->CAR->kind == nThunk && tree->CDR == NULL)
-    ))
-        return tree;
+    if (tree != NULL) {
+        if (tree->kind == nThunk)
+            return tree;
+        if (tree->CAR != NULL && tree->CDR == NULL) {
+            if (tree->CAR->kind == nThunk)
+                return tree->CAR;
+            if (tree->CAR->kind == nList)
+                if (tree->CAR->CAR != NULL && tree->CAR->CDR == NULL)
+                    if (tree->CAR->CAR->kind == nThunk)
+                        return tree->CAR->CAR;
+        }
+    }
     return mk(nThunk, tree);
 }
 
