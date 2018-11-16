@@ -83,24 +83,26 @@ static char *dumplist(List *list);
 
 static const char *nodename(NodeKind k) {
     switch(k) {
-    default:    panic("nodename: bad node kind %d", k);
+    default:        panic("nodename: bad node kind %d", k);
     case nAssign:   return "Assign";
-    case nCall: return "Call";
+    case nCall:     return "Call";
     case nClosure:  return "Closure";
     case nConcat:   return "Concat";
-    case nFor:  return "For";
+    case nFor:      return "For";
     case nLambda:   return "Lambda";
-    case nLet:  return "Let";
-    case nList: return "List";
+    case nLet:      return "Let";
+    case nList:     return "List";
     case nLocal:    return "Local";
     case nMatch:    return "Match";
     case nExtract:  return "Extract";
-    case nPrim: return "Prim";
+    case nPrim:     return "Prim";
     case nQword:    return "Qword";
     case nThunk:    return "Thunk";
-    case nVar:  return "Var";
+    case nVar:      return "Var";
     case nVarsub:   return "Varsub";
-    case nWord: return "Word";
+    case nWord:     return "Word";
+    case nInt:      return "Int";
+    case nFloat:    return "Float";
     }
 }
 
@@ -111,19 +113,27 @@ static char *dumptree(Tree *tree) {
     name = str("&T_%ulx", tree);
     if (dictget(cvars, name) == NULL) {
         switch (tree->kind) {
-            default:
+        default:
             panic("dumptree: bad node kind %d", tree->kind);
-            case nWord: case nQword: case nPrim:
+        case nWord: case nQword: case nPrim:
             print("static const Tree_s %s = { n%s, { { (char *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumpstring(tree->u[0].s));
             break;
-            case nCall: case nThunk: case nVar:
+        case nInt:
+            print("static const Tree_i %s = { n%s, { { (long long) %s } } };\n",
+                    name + 1, nodename(tree->kind), str("%d", tree->u[0].i));
+            break;
+        case nFloat:
+            print("static const Tree_f %s = { n%s, { { (double) %s } } };\n",
+                    name + 1, nodename(tree->kind), str("%f", tree->u[0].f));
+            break;
+        case nCall: case nThunk: case nVar:
             print("static const Tree_p %s = { n%s, { { (Tree *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumptree(tree->u[0].p));
             break;
-            case nAssign:  case nConcat: case nClosure: case nFor:
-            case nLambda: case nLet: case nList:  case nLocal:
-            case nVarsub: case nMatch: case nExtract:
+        case nAssign:  case nConcat: case nClosure: case nFor:
+        case nLambda: case nLet: case nList:  case nLocal:
+        case nVarsub: case nMatch: case nExtract:
             print("static const Tree_pp %s = { n%s, { { (Tree *) %s }, { (Tree *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumptree(tree->u[0].p), dumptree(tree->u[1].p));
         }
@@ -226,8 +236,15 @@ static void dumpvariables(void *ignore, char *key, void *value) {
         dumpdef(key, value);
 }
 
+/*
+ * FIXME: "long long" and "double" may not be the same size as "char *"
+ * or "Tree *" -- in which case, es won't build.
+ */
+
 #define TreeTypes \
     typedef struct { NodeKind k; struct { char *s; } u[1]; } Tree_s; \
+    typedef struct { NodeKind k; struct { long long i; } u[1]; } Tree_i; \
+    typedef struct { NodeKind k; struct { double f; } u[1]; } Tree_f; \
     typedef struct { NodeKind k; struct { Tree *p; } u[1]; } Tree_p; \
     typedef struct { NodeKind k; struct { Tree *p; } u[2]; } Tree_pp;
 TreeTypes
@@ -236,6 +253,8 @@ TreeTypes
 static void printheader(List *title) {
     if (
            offsetof(Tree, u[0].s) != offsetof(Tree_s,  u[0].s)
+        || offsetof(Tree, u[0].i) != offsetof(Tree_i,  u[0].i)
+        || offsetof(Tree, u[0].f) != offsetof(Tree_f,  u[0].f)
         || offsetof(Tree, u[0].p) != offsetof(Tree_p,  u[0].p)
         || offsetof(Tree, u[0].p) != offsetof(Tree_pp, u[0].p)
         || offsetof(Tree, u[1].p) != offsetof(Tree_pp, u[1].p)
@@ -248,7 +267,7 @@ static void printheader(List *title) {
 
 extern void runinitial(void) {
     List *title = runfd(0, "initial.es", 0);
-    
+
     gcdisable();
 
     cvars = mkdict();

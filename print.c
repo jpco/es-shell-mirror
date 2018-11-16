@@ -78,7 +78,7 @@ static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) 
 }
 
 static Boolean fconv(Format *format) {
-    long double f = va_arg(format->args, long double);
+    double f = va_arg(format->args, double);
 
     // It might make sense that fconv would respect things
     // like FMT_leftside.  Interesting how things don't
@@ -123,7 +123,8 @@ static Boolean fconv(Format *format) {
 static void intconv(Format *format, unsigned int radix, int upper, char *altform) {
     char padchar;
     size_t len, pre, zeroes, padding, width;
-    long n, flags;
+    long long n;
+    long flags;
     unsigned long u;
     char number[64], prefix[20];
 
@@ -132,7 +133,7 @@ static void intconv(Format *format, unsigned int radix, int upper, char *altform
 
     flags = format->flags;
     if (flags & FMT_long)
-        n = va_arg(format->args, long);
+        n = va_arg(format->args, long long);
     else
         n = va_arg(format->args, int);
 

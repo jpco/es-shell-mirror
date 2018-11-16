@@ -177,43 +177,12 @@ top:
         }
         return FALSE;
 
-    case nArith:
-        fmtprint(f, "`(%T)", n->u[0].p);
+    case nInt:
+        fmtprint(f, "%ld", n->u[0].i);
         return FALSE;
 
-    case nOp: {
-        char *op = n->u[0].s;
-        Boolean first = TRUE;
-        Tree *operand = n->u[1].p;
-        Tree *curr;
-        for (; operand->u[1].p != NULL; operand = operand->u[1].p) {
-            curr = operand->u[0].p;
-            if (first && *op == '-' && curr->kind == nInt
-                    && *curr->u[0].s == '0' && (curr->u[0].s)[1] == '\0')
-                fmtprint(f, "-");
-            else if (curr->kind == nOp)
-                fmtprint(f, "(%T)%s", curr, op);
-            else
-                fmtprint(f, "%T%s", curr, op);
-
-            first = FALSE;
-        }
-
-        curr = operand->u[0].p;
-        if (curr->kind == nOp)
-            fmtprint(f, "(%T)", curr, op);
-        else
-            fmtprint(f, "%T", curr, op);
-
-        return FALSE;
-    }
-
-    case nCmp:
-        fmtprint(f, "%T%s%T", n->u[1].p->u[0].p, n->u[0].s, n->u[1].p->u[1].p->u[0].p);
-        return FALSE;
-
-    case nInt: case nFloat:
-        fmtprint(f, "%s", n->u[0].s);
+    case nFloat:
+        fmtprint(f, "%f", n->u[0].f);
         return FALSE;
 
     default:
@@ -422,11 +391,11 @@ static Boolean Bconv(Format *f) {
         break;
 
     case nInt:
-        fmtprint(f, "(int \"%s\")", n->u[0].s);
+        fmtprint(f, "(int %ld)", n->u[0].i);
         break;
 
     case nFloat:
-        fmtprint(f, "(float \"%s\")", n->u[0].s);
+        fmtprint(f, "(float %f)", n->u[0].f);
         break;
 
     case nPrim:
@@ -440,17 +409,6 @@ static Boolean Bconv(Format *f) {
     case nThunk:
         fmtprint(f, "(thunk %B)", n->u[0].p);
         break;
-
-    case nArith:
-        fmtprint(f, "(arith %B)", n->u[0].p);
-        break;
-
-    case nOp:
-        fmtprint(f, "(op \"%s\" %B)", n->u[0].s, n->u[1].p);
-        break;
-
-    case nCmp:
-        fmtprint(f, "(cmp \"%s\" %B)", n->u[0].s, n->u[1].p);
 
     case nVar:
         fmtprint(f, "(var %B)", n->u[0].p);

@@ -13,6 +13,7 @@
 typedef enum { NW, RW, KW } State;  /* "nonword", "realword", "keyword" */
 
 static State w = NW;
+static Boolean numeric_tokens_enabled = FALSE;
 static Boolean newline = FALSE;
 static Boolean goterror = FALSE;
 static Boolean skipequals = FALSE;
@@ -77,26 +78,6 @@ const char dnw[] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 208 - 223 */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 224 - 239 */
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 240 - 255 */
-};
-
-/* Non-words for arithmetic variables */
-const char adnw[] = {
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*   0 -  15 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/*  16 -  32 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* ' ' - '/' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,		/* '0' - '?' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '@' - 'O' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,		/* 'P' - '_' */
-	1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/* '`' - 'o' */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,		/* 'p' - DEL */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 128 - 143 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 144 - 159 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 160 - 175 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 176 - 191 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 192 - 207 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 208 - 223 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 224 - 239 */
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 240 - 255 */
 };
 
 /* print_prompt2 -- called before all continuation lines */
@@ -192,11 +173,6 @@ static inline void bufput(char **buf, int pos, char val) {
     (*buf)[pos] = val;
 }
 
-static int yylex_arithmetic();
-static int yylex_normal();
-
-static int (*fn_yylex)() = yylex_normal;
-
 extern int yylex(void) {
     if (goterror) {
         goterror = FALSE;
@@ -209,12 +185,6 @@ extern int yylex(void) {
         newline = FALSE;
     }
 
-    int result = fn_yylex();
-    if (result == ERROR) fn_yylex = yylex_normal;
-    return result;
-}
-
-static int yylex_normal(void) {
     static Boolean dollar = FALSE;
     int c;
     size_t i;           /* The purpose of all these local assignments is to */
@@ -239,9 +209,35 @@ top:
         i = 0;
         do {
             bufput(&buf, i++, c);
-        } while ((c = GETC()) != EOF && (!meta[(unsigned char) c] || skip(FALSE, c)));
+        } while ((c = GETC()) != EOF &&
+                 (!meta[(unsigned char) c] || skip(FALSE, c)));
         UNGETC(c);
         bufput(&buf, i, '\0');
+
+        if (numeric_tokens_enabled) {
+            errno = 0;
+            char *end;
+            long long ival = strtoll(buf, &end, 0);
+            if (*end == '\0') {
+                if (errno == ERANGE) {
+                    scanerror("integer value too large");
+                    return ERROR;
+                }
+                y->ival = ival;
+                return INT;
+            }
+
+            double fval = strtod(buf, &end);
+            if (*end == '\0') {
+                if (errno == ERANGE) {
+                    scanerror("float value too large");
+                    return ERROR;
+                }
+                y->fval = fval;
+                return FLOAT;
+            }
+        }
+
         w = KW;
         setskip(FALSE);
         if (buf[1] == '\0') {
@@ -276,10 +272,6 @@ top:
         c = GETC();
         if (c == '`')
             return BACKBACK;
-        else if (c == '(') {
-            fn_yylex = yylex_arithmetic;
-            return ARITH_BEGIN;
-        }
         UNGETC(c);
         return '`';
     case '$':
@@ -489,95 +481,6 @@ top:
         assert(c != '\0');
         w = NW;
         return c; /* don't know what it is, let yacc barf on it */
-    }
-}
-
-static int yylex_arithmetic(void) {
-    static int pdepth = 1;
-    int c;
-    char *buf = tokenbuf;
-    YYSTYPE *y = &yylval;
-
-    while (c = GETC(), c == ' ' || c == '\t' || c == '\n')
-        if (c == '\n') print_prompt2();
-
-    if (isdigit(c) || c == '.') {
-        Boolean isfloat = FALSE;
-        Boolean radix   = FALSE;
-        Boolean digits  = FALSE;
-        size_t i = 0;
-
-        do {
-            if (c == '.') radix = TRUE;
-            if (isdigit(c)) digits = TRUE;
-            bufput(&buf, i++, c);
-        } while (c = GETC(), isdigit(c) || (!radix && c == '.'));
-        UNGETC(c);
-        bufput(&buf, i, '\0');
-        if (radix && digits) isfloat = TRUE;
-        if (!isfloat && !digits) {
-            scanerror("invalid arithmetic token");
-            return ERROR;
-        }
-
-        y->str = gcdup(buf);
-        return isfloat ? FLOAT : INT;
-    }
-    switch (c) {
-    case '(':
-        ++pdepth;
-        /* fallthrough */
-    case '+': case '-': case '/': case '*': case '%':
-        return c;
-    case ')':
-        if (--pdepth == 0) {
-            pdepth = 1;
-            fn_yylex = yylex_normal;
-        }
-        return c;
-    case '$': {
-        size_t i = 0;
-        while (c = GETC(), c != EOF && !adnw[c])
-            bufput(&buf, i++, c);
-        UNGETC(c);
-        if (i == 0) {
-            scanerror("empty variable in arithmetic expression");
-            return ERROR;
-        }
-
-        bufput(&buf, i, '\0');
-        y->str = gcdup(buf);
-        return ARITH_VAR;
-    }
-    case '=':
-        c = GETC();
-        if (c != '=')
-            UNGETC(c);
-        return EQ;
-
-    case '<':
-        c = GETC();
-        if (c == '=')
-            return LEQ;
-        UNGETC(c);
-        return LESS;
-
-    case '>':
-        c = GETC();
-        if (c == '=')
-            return GEQ;
-        UNGETC(c);
-        return GREATER;
-
-    case '!':
-        c = GETC();
-        if (c == '=')
-            return NEQ;
-        UNGETC(c);
-
-    default:
-        assert (c != '\0');
-        return c;  /* shrug; let yacc fail on it, I guess */
     }
 }
 

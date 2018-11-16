@@ -45,8 +45,7 @@ struct Closure {
 typedef enum {
     nAssign, nCall, nClosure, nConcat, nFor, nLambda, nLet, nList, nLocal,
     nMatch, nExtract, nPrim, nQword, nThunk, nVar, nVarsub, nWord,
-    nArith, nOp, nCmp, nInt, nFloat,
-    nRedir, nPipe       /* only appear during construction */
+    nInt, nFloat, nRedir, nPipe       /* only appear during construction */
 } NodeKind;
 
 struct Tree {
@@ -54,7 +53,8 @@ struct Tree {
     union {
         Tree *p;
         char *s;
-        int i;
+        long long i;
+        double f;
     } u[2];
 };
 

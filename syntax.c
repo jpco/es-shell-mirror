@@ -206,45 +206,6 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     return prefix("%pass", treecons(t1, tail));
 }
 
-extern Tree *mkneg(Tree *t) {
-    return mkop("N", t, NULL);
-    if (t->kind == nInt || t->kind == nFloat) {
-        char buf[31] = "-";
-        return mk(t->kind, gcdup(strncat(buf, t->u[0].s, 28)));
-    }
-    return mkop("-", mk(nInt, "0"), t);
-}
-
-extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
-    Tree *tail = NULL;
-
-    if (t2->kind == nOp && *(t2->u[0].s) == *op)
-        tail = t2->CDR;
-    else if (t2->kind == nList)
-        tail = t2;
-    else
-        tail = treecons(t2, NULL);
-
-    // Flatten repeated associative ops
-    // i.e., "+ (1 1 1)" rather than "+ ((+ (1 1)) 1)"
-    if (t1->kind == nOp && *(t1->u[0].s) == *op) {
-        t1->CDR = treeappend(t1->CDR, tail);
-        return t1;
-    }
-
-    if (t1->kind != nList)
-        return mk(nOp, op, treecons(t1, tail));
-    else
-        return mk(nOp, op, treeconsend2(t1, t2));
-}
-
-extern Tree *mkcmp(char *cmp, Tree *t1, Tree *t2) {
-    // TODO: enable chained comparisons! `($a < $b <= $c)
-    if (t2->kind != nList)
-        t2 = treecons(t2, NULL);
-    return mk(nCmp, cmp, treecons(t1, t2));
-}
-
 /*
  * redirections -- these involve queueing up redirection in the prefix of a
  *  tree and then rewriting the tree to include the appropriate commands

@@ -160,184 +160,6 @@ static List *subscript(List *list, List *subs) {
     RefReturn(r);
 }
 
-static long double todouble(char *s) {
-    char *end;
-    long double res = strtold(s, &end);
-
-    if (*end != '\0')
-        fail("es:arith", "failed to fully convert input string to number");
-
-    return res;
-}
-
-static int parse_int_or_float(char *str, long double *dptr) {
-    // This duplicates logic in token.c :/
-    Boolean isfloat = FALSE;
-    Boolean radix   = FALSE;
-    int rdepth      = 0;
-    int mul         = 1;
-    Boolean digits  = FALSE;
-
-    char c;
-    char *buf = str;
-    long double result = 0;
-
-    if (*buf == '-') {
-        ++buf;
-        mul = -1;
-    }
-
-    for (; c = *buf, isdigit(c) || (!radix && c == '.'); ++buf) {
-        if (c == '.') {
-            radix = TRUE;
-        } else {
-            digits = TRUE;
-            if (radix) rdepth++;
-            result = (result * 10.0) + ((long double)(c - '0'));
-        }
-    }
-
-    if (*buf != '\0')
-        goto fail;
-
-    result *= mul;
-    for (; rdepth > 0; rdepth--) result /= 10.0;
-
-    if (radix && digits) isfloat = TRUE;
-    if (!isfloat && !digits)
-        goto fail;
-
-    *dptr = result;
-    return (isfloat ? nFloat : nInt);
-
-fail:
-    fail("es:arith", "token cannot be parsed as number");
-    NOTREACHED;
-    return 0;
-}
-
-static int arithmefy_inner(Tree *expr, Binding *binding, long double *dptr) {
-    if (expr == NULL) {
-        *dptr = 0;
-        return nInt;
-    }
-
-    switch (expr->kind) {
-    case nInt: case nFloat:
-        *dptr = todouble(expr->u[0].s);
-        return expr->kind;
-    case nVar: {
-        List *var = glom(expr->u[0].p, binding, FALSE);
-        List *value = varlookup(getstr(var->term), binding);
-        if (value == NULL) {
-            *dptr = 0.0;
-            return nInt;
-        }
-        if (value->next != NULL) {
-            fail("es:arith", "multi-term variable in arithmetic statement");
-        }
-        return parse_int_or_float(getstr(value->term), dptr);
-    }
-    case nCmp: {
-        char cmptype = (expr->u[0].s)[0];
-        char orequal = (expr->u[0].s)[1];
-
-        long double leftval, rightval;
-        arithmefy_inner(expr->u[1].p->u[0].p, binding, &leftval);
-        arithmefy_inner(expr->u[1].p->u[1].p->u[0].p, binding, &rightval);
-
-        switch (cmptype) {
-        case '<':
-            *dptr = orequal ? (leftval <= rightval) : (leftval < rightval);
-            break;
-        case '>':
-            *dptr = orequal ? (leftval >= rightval) : (leftval > rightval);
-            break;
-        case '!':
-            *dptr = leftval != rightval;
-            break;
-        case '=':
-            *dptr = leftval == rightval;
-            break;
-        }
-
-        return nCmp;
-    }
-    case nOp: {
-        char optype = *(expr->u[0].s);
-
-        long double accum;
-        int accumtype;
-
-        Ref(Tree *, lp, expr->u[1].p);
-
-        accumtype = arithmefy_inner(lp->u[0].p, binding, &accum);
-
-        for (lp = lp->u[1].p; lp != NULL; lp = lp->u[1].p) {
-            assert(lp->kind == nList);
-
-            long double curr;
-            accumtype = (arithmefy_inner(lp->u[0].p, binding, &curr) == nFloat)
-                ? nFloat : accumtype;
-
-#define DOOWOP(OP) \
-            ((accumtype == nFloat) ? \
-             accum OP curr : (long double)((long long)accum OP (long double)curr))
-
-            switch (optype) {
-            case '+':
-                accum = DOOWOP(+);
-                break;
-            case '-':
-                accum = DOOWOP(-);
-                break;
-            case '*':
-                accum = DOOWOP(*);
-                break;
-            case '/':
-                if (curr == 0.0 || (accumtype == nInt && (long long)curr == 0))
-                    fail("es:arith", "divide by zero");
-                accum = DOOWOP(/);
-                break;
-            case '%':
-                if ((long double)((long long)accum) != accum)
-                    fail("es:arith", "left-hand side of %% is not int-valued");
-                if ((long double)((long long)curr) != curr)
-                    fail("es:arith", "right-hand side of %% is not int-valued");
-
-                accum = (long double)((long long)accum % (long long)curr);
-            }
-        }
-
-        RefEnd(lp);
-        *dptr = accum;
-        return accumtype;
-    }
-    default:
-        fail("es:arith", "bad expr kind %d", expr->kind);
-    }
-
-    NOTREACHED;
-    return 0;
-}
-
-static List *arithmefy(Tree *expr, Binding *binding) {
-    long double result;
-    switch (arithmefy_inner(expr, binding, &result)) {
-    case nInt:
-        return mklist(mkstr(str("%ld", (long long)result)), NULL);
-    case nFloat:
-        return mklist(mkstr(str("%f", result)), NULL);
-    case nCmp:
-        return mklist(mkstr(str(result ? "true" : "false")), NULL);
-    default:
-        fail("es:arith", "bad expr kind %d", expr->kind);
-    }
-
-    NOTREACHED;
-    return NULL;
-}
-
 /* glom1 -- glom when we don't need to produce a quote list */
 static List *glom1(Tree *tree, Binding *binding) {
     Ref(List *, result, NULL);
@@ -357,6 +179,14 @@ static List *glom1(Tree *tree, Binding *binding) {
             break;
         case nWord:
             list = mklist(mkterm(tp->u[0].s, NULL), NULL);
+            tp = NULL;
+            break;
+        case nInt:
+            list = mklist(mkstr(str("%ld", tp->u[0].i)), NULL);
+            tp = NULL;
+            break;
+        case nFloat:
+            list = mklist(mkstr(str("%f", tp->u[0].f)), NULL);
             tp = NULL;
             break;
         case nThunk:
@@ -397,10 +227,6 @@ static List *glom1(Tree *tree, Binding *binding) {
             tp = NULL;
             list = subscript(list, sub);
             RefEnd2(sub, name);
-            break;
-        case nArith:
-            list = arithmefy(tp->u[0].p, binding);
-            tp = NULL;
             break;
         case nCall:
             list = listcopy(walk(tp->u[0].p, bp, 0));

@@ -11,8 +11,7 @@
 %token  LOCAL LET FOR CLOSURE FN
 %token  ANDAND BACKBACK EXTRACT CALL COUNT DUP FLAT OROR PRIM REDIR SUB
 %token  NL ENDFILE ERROR
-%token  INT FLOAT ARITH_BEGIN ARITH_VAR
-%token  LEQ GEQ NEQ LESS GREATER EQ
+%token  INT FLOAT
 
 %left   LOCAL LET FOR CLOSURE ')'
 %left   ANDAND OROR NL
@@ -23,23 +22,21 @@
 %left   SUB
 %right  '$'
 
-%nonassoc   LESS GREATER LEQ GEQ EQ
-%left       '+' '-'
-%left       '*' '/' '%'
-%nonassoc   NEG
-
 %union {
-        Tree *tree;
-        char *str;
-        NodeKind kind;
+        Tree        *tree;
+        char        *str;
+        long long   ival;
+        double      fval;
+        NodeKind    kind;
 }
 
 %type <str>     WORD QWORD keyword
-                ARITH_VAR INT FLOAT
+%type <ival>    INT /* OP */
+%type <fval>    FLOAT
 %type <tree>    REDIR PIPE DUP
                 body cmd cmdsa cmdsan comword first fn line word param assign
-                binding bindings params nlwords words simple redir sword vword vsword
-                arith cmparith cmp
+                binding bindings params nlwords words simple redir sword vword
+                avword vsword
 %type <kind>    binder
 
 %start es
@@ -128,11 +125,15 @@ vsword  : vword                         { $$ = $1; }
 
 /* a 'vword' is a word which can appear in a variable */
 vword   : param                         { $$ = $1; }
+        | avword                        { $$ = $1; }
         | '(' nlwords ')'               { $$ = $2; }
         | '{' body '}'                  { $$ = thunkify($2); }
         | '@' params '{' body '}'       { $$ = mklambda($2, $4); }
+
+/* an 'avword' is a vword which may appear in arithmetic */
+avword  : INT                           { $$ = mk(nInt, $1); }
+        | FLOAT                         { $$ = mk(nFloat, $1); }
         | '$' vsword      %prec VWORD   { $$ = mk(nVar, $2); }
-        | ARITH_BEGIN cmparith ')'      { $$ = mk(nArith, $2); }
         | CALL sword                    { $$ = mk(nCall, $2); }
         | COUNT sword                   { $$ = mk(nCall, prefix("%count", treecons(mk(nVar, $2), NULL))); }
         | FLAT sword                    { $$ = flatten(mk(nVar, $2), " "); }
@@ -183,28 +184,11 @@ keyword : '!'           { $$ = "!"; }
         | FN            { $$ = "fn"; }
         | CLOSURE       { $$ = "%closure"; }
 
-arith   : arith '-' arith      { $$ = mkop("-", $1, $3); }
-        | arith '+' arith      { $$ = mkop("+", $1, $3); }
-        | arith '*' arith      { $$ = mkop("*", $1, $3); }
-        | arith '/' arith      { $$ = mkop("/", $1, $3); }
-        | arith '%' arith      { $$ = mkop("%", $1, $3); }
-        | '-' arith  %prec NEG { $$ = mkneg($2); }
-        | '(' arith ')'        { $$ = $2; }
-        | ARITH_VAR            { $$ = mk(nVar, mk(nWord, $1)); }
-        | INT                  { $$ = mk(nInt, $1); }
-        | FLOAT                { $$ = mk(nFloat, $1); }
-
-cmp : arith LESS arith      { $$ = mkcmp("<", $1, $3); }
-    | arith GREATER arith   { $$ = mkcmp(">", $1, $3); }
-    | arith EQ arith        { $$ = mkcmp("=", $1, $3); }
-    | arith LEQ arith       { $$ = mkcmp("<=", $1, $3); }
-    | arith GEQ arith       { $$ = mkcmp(">=", $1, $3); }
-    | arith NEQ arith       { $$ = mkcmp("!=", $1, $3); }
-
-cmparith    : arith                 { $$ = $1; }
-            | cmp                   { $$ = $1; }
-
 /*
-arithlogic  : cmp ANDAND cmp    { $$ = ???; }
-            | cmp OROR cmp      { $$ = ???; }
+cmparith    : arith                 { $$ = $1; }
+            | cmparith CMP arith    { $$ = mkcmp($2, $1, $3); }
+
+arith   : avword            { $$ = $1; }
+        | '(' arith ')'     { $$ = $2; }
+        | arith OP arith    { $$ = mkop($2, $1, $3); }
 */
