@@ -13,7 +13,7 @@
 typedef enum { NW, RW, KW } State;  /* "nonword", "realword", "keyword" */
 
 static State w = NW;
-static Boolean numeric_tokens_enabled = FALSE;
+Boolean numeric = FALSE;
 static Boolean newline = FALSE;
 static Boolean goterror = FALSE;
 static Boolean skipequals = FALSE;
@@ -57,6 +57,27 @@ const char nw[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     /* 208 - 223 */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     /* 224 - 239 */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     /* 240 - 255 */
+};
+
+/* Non-word in numeric context */
+const char nnw[] = {
+//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 0.  0 -  15 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 1.  16 -  32 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1,     /* 2. ' ' - '/' */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,     /* 3. '0' - '?' */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 4. '@' - 'O' */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 5. 'P' - '_' */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 6. '`' - 'o' */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 7. 'p' - DEL */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 8. 128 - 143 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* 9. 144 - 159 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* A. 160 - 175 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* B. 176 - 191 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* C. 192 - 207 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* D. 208 - 223 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* E. 224 - 239 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,     /* F. 240 - 255 */
 };
 
 /* "dollar non-word", i.e., invalid variable characters */
@@ -193,7 +214,7 @@ extern int yylex(void) {
     YYSTYPE *y = &yylval;       /* win, in code size *and* execution time       */
 
     /* rc variable-names may contain only alnum, '*' and '_', so use dnw if we are scanning one. */
-    meta = (dollar ? dnw : nw);
+    meta = (numeric ? nnw : dollar ? dnw : nw);
     dollar = FALSE;
 
 top:
@@ -203,7 +224,7 @@ top:
     if (c == EOF)
         return ENDFILE;
 
-    if (!meta[(unsigned char) c] || skip(TRUE, c)) {    /* it's a word or keyword. */
+    if ((!meta[(unsigned char) c] || skip(TRUE, c))) {    /* it's a word or keyword. */
         InsertFreeCaret();
         w = RW;
         i = 0;
@@ -214,7 +235,7 @@ top:
         UNGETC(c);
         bufput(&buf, i, '\0');
 
-        if (numeric_tokens_enabled) {
+        if (numeric) {
             errno = 0;
             char *end;
             long long ival = strtoll(buf, &end, 0);
@@ -236,6 +257,9 @@ top:
                 y->fval = fval;
                 return FLOAT;
             }
+
+            scanerror("invalid number");
+            return ERROR;
         }
 
         w = KW;
@@ -259,6 +283,14 @@ top:
         return WORD;
     }
 
+    if (numeric) {
+        switch (c) {
+        case '-': case '+': case '*': case '/':
+            w = NW;
+            return c;
+        }
+    }
+
     if (c == '`' || c == '!' || c == '$' || c == '\'') {
         InsertFreeCaret();
         if (c == '!')
@@ -270,12 +302,18 @@ top:
         return '!';
     case '`':
         c = GETC();
+        numeric = FALSE;
         if (c == '`')
             return BACKBACK;
+        if (c == '(') {
+            numeric = TRUE;
+            return ARITH_BEGIN;
+        }
         UNGETC(c);
         return '`';
     case '$':
         dollar = TRUE;
+        numeric = FALSE;
         switch (c = GETC()) {
         case '#':   return COUNT;
         case '^':   return FLAT;
@@ -444,9 +482,10 @@ top:
                 cmd = "%here";
             } else
                 cmd = "%heredoc";
-        else if (c == '=')
+        else if (c == '=') {
+            numeric = FALSE;
             return CALL;
-        else
+        } else
             cmd = "%open";
         goto redirection;
     case '>':

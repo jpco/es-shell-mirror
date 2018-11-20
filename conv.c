@@ -185,6 +185,21 @@ top:
         fmtprint(f, "%f", n->u[0].f);
         return FALSE;
 
+    case nArith:
+        fmtprint(f, "`(%T)", n->u[0].p);
+        return FALSE;
+
+    case nOp: {
+        char *op = n->u[0].s;
+        Tree *operand = n->u[1].p;
+        for (; operand->u[1].p != NULL; operand = operand->u[1].p) {
+            fmtprint(f, "(%T) %s ", operand->u[0].p, op);
+        }
+        fmtprint(f, "(%T)", operand->u[0].p);
+
+        return FALSE;
+    }
+
     default:
         panic("conv: bad node kind: %d", n->kind);
 
@@ -396,6 +411,14 @@ static Boolean Bconv(Format *f) {
 
     case nFloat:
         fmtprint(f, "(float %f)", n->u[0].f);
+        break;
+
+    case nArith:
+        fmtprint(f, "(arith %B)", n->u[0].p);
+        break;
+
+    case nOp:
+        fmtprint(f, "(op \"%s\" %B)", n->u[0].s, n->u[1].p);
         break;
 
     case nPrim:

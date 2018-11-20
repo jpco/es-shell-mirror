@@ -11,7 +11,7 @@
 %token  LOCAL LET FOR CLOSURE FN
 %token  ANDAND BACKBACK EXTRACT CALL COUNT DUP FLAT OROR PRIM REDIR SUB
 %token  NL ENDFILE ERROR
-%token  INT FLOAT
+%token  ARITH_BEGIN INT FLOAT
 
 %left   LOCAL LET FOR CLOSURE ')'
 %left   ANDAND OROR NL
@@ -21,6 +21,10 @@
 %right  VWORD
 %left   SUB
 %right  '$'
+
+%left       '+' '-'
+%left       '*' '/'
+%nonassoc   NEG
 
 %union {
         Tree        *tree;
@@ -36,7 +40,7 @@
 %type <tree>    REDIR PIPE DUP
                 body cmd cmdsa cmdsan comword first fn line word param assign
                 binding bindings params nlwords words simple redir sword vword
-                avword vsword
+                arith avword vsword
 %type <kind>    binder
 
 %start es
@@ -44,7 +48,7 @@
 %%
 
 es      : line end              { parsetree = $1; YYACCEPT; }
-        | error end             { yyerrok; parsetree = NULL; YYABORT; }
+        | error end             { yyerrok; parsetree = NULL; numeric = FALSE; YYABORT; }
 
 end     : NL                    { unsetskip(); if (!readheredocs(FALSE)) YYABORT; }
         | ENDFILE               { unsetskip(); if (!readheredocs(TRUE)) YYABORT; }
@@ -129,6 +133,7 @@ vword   : param                         { $$ = $1; }
         | '(' nlwords ')'               { $$ = $2; }
         | '{' body '}'                  { $$ = thunkify($2); }
         | '@' params '{' body '}'       { $$ = mklambda($2, $4); }
+        | ARITH_BEGIN arith ')'         { $$ = mk(nArith, $2); numeric = FALSE; }
 
 /* an 'avword' is a vword which may appear in arithmetic */
 avword  : INT                           { $$ = mk(nInt, $1); }
@@ -187,8 +192,11 @@ keyword : '!'           { $$ = "!"; }
 /*
 cmparith    : arith                 { $$ = $1; }
             | cmparith CMP arith    { $$ = mkcmp($2, $1, $3); }
-
-arith   : avword            { $$ = $1; }
-        | '(' arith ')'     { $$ = $2; }
-        | arith OP arith    { $$ = mkop($2, $1, $3); }
 */
+arith   : avword                { $$ = $1; numeric = TRUE; }
+        | '(' arith ')'         { $$ = $2; }
+        | arith '-' arith       { $$ = mkop("-", $1, $3); }
+        | arith '+' arith       { $$ = mkop("+", $1, $3); }
+        | arith '*' arith       { $$ = mkop("*", $1, $3); }
+        | arith '/' arith       { $$ = mkop("/", $1, $3); }
+        | '-' arith  %prec NEG  { $$ = mkneg($2); }

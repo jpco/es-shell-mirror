@@ -34,6 +34,7 @@ extern void yyerror(char *s);
 /* token.c */
 
 extern const char dnw[];
+extern Boolean numeric;
 extern int yylex(void);
 extern void setskip(Boolean);
 extern void unsetskip(void);

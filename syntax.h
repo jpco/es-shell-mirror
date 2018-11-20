@@ -26,7 +26,7 @@ extern Tree *mkpass(Tree *t1, Tree *t2);
 
 extern Tree *mkneg(Tree *t);
 extern Tree *mkop(char *op, Tree *t1, Tree *t2);
-extern Tree *mkcmp(char *op, Tree *t1, Tree *t2);
+// extern Tree *mkcmp(char *op, Tree *t1, Tree *t2);
 
 extern Tree *mkclose(int fd);
 extern Tree *mkdup(int fd0, int fd1);

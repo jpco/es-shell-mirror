@@ -206,6 +206,33 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     return prefix("%pass", treecons(t1, tail));
 }
 
+extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
+    if (t1->kind == nList)
+        return mk(nOp, op, treeconsend2(t1, t2));
+    else
+        if (t2->kind == nList)
+            return mk(nOp, op, treecons(t1, t2));
+        else
+            return mk(nOp, op, treecons(t1, treecons(t2, NULL)));
+}
+
+extern Tree *mkneg(Tree *t) {
+    if (t->kind == nInt) {
+        long long i = t->u[0].i;
+        if (i == LLONG_MIN) {
+            yyerror("integer underflow");
+            return NULL;
+        }
+        t->u[0].i = -i;
+        return t;
+    }
+    if (t->kind == nFloat) {
+        t->u[0].f = -(t->u[0].f);
+        return t;
+    }
+    return mkop("-", mk(nInt, 0), t);
+}
+
 /*
  * redirections -- these involve queueing up redirection in the prefix of a
  *  tree and then rewriting the tree to include the appropriate commands

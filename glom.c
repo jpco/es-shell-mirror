@@ -160,6 +160,161 @@ static List *subscript(List *list, List *subs) {
     RefReturn(r);
 }
 
+typedef union {
+    long long i;
+    double f;
+} es_num;
+
+static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
+    int res_t = (val_t == nFloat || *accum_t == nFloat) ? nFloat : nInt;
+
+    // TODO: FP error handling
+    //  - https://www.gnu.org/software/libc/manual/html_node/FP-Exceptions.html#FP-Exceptions
+
+    // TODO: Any risk of overflows in these conversions?
+    if (res_t == nFloat && *accum_t == nInt) {
+        double v = (double) accum->i;
+        accum->f = v;
+        *accum_t = nFloat;
+    }
+    if (res_t == nFloat && val_t == nInt) {
+        double v = (double) val.i;
+        val.f = v;
+        val_t = nFloat;
+    }
+
+    switch (op) {
+    case '+':
+        if (res_t == nInt) {
+            if (accum->i > 0 && val.i > LLONG_MAX - accum->i)
+                fail("es:arith", "integer overflow");
+            if (accum->i < 0 && val.i < LLONG_MIN - accum->i)
+                fail("es:arith", "integer overflow");
+            accum->i += val.i;
+        } else {
+            // OVERFLOW?
+            accum->f += val.f;
+        }
+        break;
+    case '-':
+        if (res_t == nInt) {
+            if (accum->i > 0 && val.i < LLONG_MIN + accum->i)
+                fail("es:arith", "integer overflow");
+            if (accum->i < 0 && val.i > LLONG_MAX + accum->i + 1)
+                fail("es:arith", "integer overflow");
+            accum->i -= val.i;
+        } else {
+            // OVERFLOW??
+            accum->f -= val.f;
+        }
+        break;
+    case '*':
+        if (res_t == nInt) {
+            if (val.i > 0 &&
+                    (accum->i > LLONG_MAX / val.i ||
+                     accum->i < LLONG_MIN / val.i))
+                fail("es:arith", "integer overflow");
+            if (val.i < 0 &&
+                    (accum->i < LLONG_MAX / val.i ||
+                     accum->i > LLONG_MIN / val.i))
+                fail("es:arith", "integer overflow");
+            accum->i *= val.i;
+        } else {
+            // OVERFLOW???
+            accum->f *= val.f;
+        }
+        break;
+    case '/':
+        if (res_t == nInt) {
+            if (val.i == 0)
+                fail("es:arith", "divide by zero");
+            if (accum->i == LLONG_MIN && val.i == -1)
+                fail("es:arith", "integer overflow");
+            accum->i /= val.i;
+        } else {
+            if (val.f == 0.0)
+                fail("es:arith", "divide by zero");
+            // UNDERFLOW????
+            accum->f /= val.f;
+        }
+        break;
+    default:
+        panic("es:arith: bad operator type %c", op);
+    }
+    if (*accum_t == nFloat && accum->f != accum->f)
+        fail("es:arith", "NaN");
+}
+
+// Turns an nArith tree into an int or float, or dies trying
+static int arithmefy(Tree *t, es_num *ret, Binding *b) {
+    switch (t->kind) {
+    case nInt:
+        ret->i = t->u[0].i;
+        return nInt;
+    case nFloat:
+        ret->f = t->u[0].f;
+        return nFloat;
+    case nOp: {
+        char op = *(t->u[0].s);
+        int accum_t;
+        es_num accum;
+        Boolean first = TRUE;
+        Ref(Tree *, cl, t->u[1].p);
+        for (; cl != NULL; cl = cl->u[1].p) {
+            assert(cl->kind == nList);
+            Ref(Tree *, elt, cl->u[0].p);
+            es_num val;
+            int val_t = arithmefy(elt, &val, b);
+            if (first) {
+                accum = val;
+                accum_t = val_t;
+                first = FALSE;
+            } else {
+                do_op(op, val_t, val, &accum_t, &accum);
+            }
+            RefEnd(elt);
+        }
+        RefEnd(cl);
+        *ret = accum;
+        return accum_t;
+    }
+    default: {
+        char *end;
+        Ref(List *, lp, glom(t, b, TRUE));
+        if (lp == NULL)
+            fail("es:arith", "null list in arithmetic");
+
+        if (lp->next != NULL)
+            fail("es:arith", "multiple-term list in arithmetic");
+
+        char *nstr = getstr(lp->term);
+        errno = 0;
+
+        long long ival = strtoll(nstr, &end, 0);
+        if (*end == '\0') {
+            if (errno == ERANGE)
+                fail("es:arith", "integer value too large");
+            ret->i = ival;
+            RefPop(lp);
+            return nInt;
+        }
+
+        double fval = strtod(nstr, &end);
+        if (*end == '\0') {
+            if (errno == ERANGE)
+                fail("es:arith", "float value too large");
+            ret->f = fval;
+            RefPop(lp);
+            return nFloat;
+        }
+
+        RefEnd(lp);
+        fail("es:arith", "could not convert element to number");
+    }}
+
+    return 0;
+}
+
 /* glom1 -- glom when we don't need to produce a quote list */
 static List *glom1(Tree *tree, Binding *binding) {
     Ref(List *, result, NULL);
@@ -189,6 +344,19 @@ static List *glom1(Tree *tree, Binding *binding) {
             list = mklist(mkstr(str("%f", tp->u[0].f)), NULL);
             tp = NULL;
             break;
+        case nArith: {
+            es_num ret;
+            switch (arithmefy(tp->u[0].p, &ret, bp)) {
+            case nInt:
+                list = mklist(mkstr(str("%ld", ret.i)), NULL);
+                break;
+            case nFloat:
+                list = mklist(mkstr(str("%f", ret.f)), NULL);
+                break;
+            }
+            tp = NULL;
+            break;
+        }
         case nThunk:
         case nLambda:
             list = mklist(mkterm(NULL, mkclosure(tp, bp)), NULL);
