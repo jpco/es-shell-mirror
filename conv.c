@@ -450,7 +450,7 @@ static Boolean Bconv(Format *f) {
         break;
 
     case nCmp:
-        fmtprint(f, "(cmp \"%s\", %B)", n->u[0].s, n->u[1].p);
+        fmtprint(f, "(cmp \"%s\" %B)", n->u[0].s, n->u[1].p);
         break;
 
     case nPrim:
