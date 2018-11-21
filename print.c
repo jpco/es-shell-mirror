@@ -78,7 +78,7 @@ static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) 
 }
 
 static Boolean fconv(Format *format) {
-    double f = va_arg(format->args, double);
+    es_float_t f = va_arg(format->args, es_float_t);
 
     // It might make sense that fconv would respect things
     // like FMT_leftside.  Interesting how things don't
@@ -93,7 +93,7 @@ static Boolean fconv(Format *format) {
 
     unsigned long long whole = (unsigned long long)f;
     unsigned long prec        = PRECISION;
-    unsigned long dec         = (unsigned long)(((f - (long double)whole)) * PRECISION);
+    unsigned long dec         = (unsigned long)(((f - (es_float_t)whole)) * PRECISION);
     while (dec != 0 && dec % 10 == 0) {
         prec /= 10;
         dec /= 10;

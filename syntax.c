@@ -218,9 +218,9 @@ extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
 
 extern Tree *mkneg(Tree *t) {
     if (t->kind == nInt) {
-        long long i = t->u[0].i;
-        if (i == LLONG_MIN) {
-            yyerror("integer underflow");
+        es_int_t i = t->u[0].i;
+        if (i < -ES_INT_MAX) {
+            yyerror("integer overflow");
             return NULL;
         }
         t->u[0].i = -i;

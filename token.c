@@ -238,7 +238,7 @@ top:
         if (numeric) {
             errno = 0;
             char *end;
-            long long ival = strtoll(buf, &end, 0);
+            es_int_t ival = STR_TO_EI(buf, &end, 0);
             if (*end == '\0') {
                 if (errno == ERANGE) {
                     scanerror("integer value too large");
@@ -248,7 +248,7 @@ top:
                 return INT;
             }
 
-            double fval = strtod(buf, &end);
+            es_float_t fval = STR_TO_EF(buf, &end);
             if (*end == '\0') {
                 if (errno == ERANGE) {
                     scanerror("float value too large");

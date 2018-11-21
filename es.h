@@ -11,6 +11,23 @@
 #define ENV_ESCAPE  '\016'      /* control-N */
 
 
+/**
+ * es number type macros.
+ *
+ * For memory layout reasons, these should be the same size as pointers on the
+ * target platform (TODO: Auto-configure these types.)
+ */
+
+#define es_int_t    long long
+#define es_float_t  double
+
+#define STR_TO_EI(s, ep, r)  (strtoll((s), (ep), (r)))
+#define STR_TO_EF(s, ep)  (strtod((s), (ep)))
+
+#define ES_INT_MAX  LLONG_MAX
+#define ES_INT_MIN  LLONG_MIN
+
+
 /*
  * the fundamental es data structures.
  */
@@ -54,8 +71,8 @@ struct Tree {
     union {
         Tree *p;
         char *s;
-        long long i;
-        double f;
+        es_int_t i;
+        es_float_t f;
     } u[2];
 };
 

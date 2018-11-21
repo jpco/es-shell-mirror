@@ -120,11 +120,11 @@ static char *dumptree(Tree *tree) {
                   name + 1, nodename(tree->kind), dumpstring(tree->u[0].s));
             break;
         case nInt:
-            print("static const Tree_i %s = { n%s, { { (long long) %s } } };\n",
+            print("static const Tree_i %s = { n%s, { { (es_int_t) %s } } };\n",
                     name + 1, nodename(tree->kind), str("%d", tree->u[0].i));
             break;
         case nFloat:
-            print("static const Tree_f %s = { n%s, { { (double) %s } } };\n",
+            print("static const Tree_f %s = { n%s, { { (es_float_t) %s } } };\n",
                     name + 1, nodename(tree->kind), str("%f", tree->u[0].f));
             break;
         case nCall: case nThunk: case nVar:
@@ -236,15 +236,11 @@ static void dumpvariables(void *ignore, char *key, void *value) {
         dumpdef(key, value);
 }
 
-/*
- * FIXME: "long long" and "double" may not be the same size as "char *"
- * or "Tree *" -- in which case, es won't build.
- */
 
 #define TreeTypes \
     typedef struct { NodeKind k; struct { char *s; } u[1]; } Tree_s; \
-    typedef struct { NodeKind k; struct { long long i; } u[1]; } Tree_i; \
-    typedef struct { NodeKind k; struct { double f; } u[1]; } Tree_f; \
+    typedef struct { NodeKind k; struct { es_int_t i; } u[1]; } Tree_i; \
+    typedef struct { NodeKind k; struct { es_float_t f; } u[1]; } Tree_f; \
     typedef struct { NodeKind k; struct { Tree *p; } u[1]; } Tree_p; \
     typedef struct { NodeKind k; struct { Tree *p; } u[2]; } Tree_pp;
 TreeTypes

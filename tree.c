@@ -27,11 +27,11 @@ extern Tree *mk VARARGS1(NodeKind, t) {
         break;
     case nInt:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
-        n->u[0].i = va_arg(ap, long long);
+        n->u[0].i = va_arg(ap, es_int_t);
         break;
     case nFloat:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
-        n->u[0].f = va_arg(ap, double);
+        n->u[0].f = va_arg(ap, es_float_t);
         break;
     case nCall: case nThunk: case nVar: case nArith:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);

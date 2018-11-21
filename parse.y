@@ -29,8 +29,8 @@
 %union {
         Tree        *tree;
         char        *str;
-        long long   ival;
-        double      fval;
+        es_int_t    ival;
+        es_float_t  fval;
         NodeKind    kind;
 }
 

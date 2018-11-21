@@ -161,8 +161,8 @@ static List *subscript(List *list, List *subs) {
 }
 
 typedef union {
-    long long i;
-    double f;
+    es_int_t i;
+    es_float_t f;
 } es_num;
 
 static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
@@ -173,12 +173,12 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
 
     // TODO: Any risk of overflows in these conversions?
     if (res_t == nFloat && *accum_t == nInt) {
-        double v = (double) accum->i;
+        es_float_t v = (es_float_t) accum->i;
         accum->f = v;
         *accum_t = nFloat;
     }
     if (res_t == nFloat && val_t == nInt) {
-        double v = (double) val.i;
+        es_float_t v = (es_float_t) val.i;
         val.f = v;
         val_t = nFloat;
     }
@@ -186,9 +186,9 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
     switch (op) {
     case '+':
         if (res_t == nInt) {
-            if (accum->i > 0 && val.i > LLONG_MAX - accum->i)
+            if (accum->i > 0 && val.i > ES_INT_MAX - accum->i)
                 fail("es:arith", "integer overflow");
-            if (accum->i < 0 && val.i < LLONG_MIN - accum->i)
+            if (accum->i < 0 && val.i < ES_INT_MIN - accum->i)
                 fail("es:arith", "integer overflow");
             accum->i += val.i;
         } else {
@@ -198,9 +198,9 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
         break;
     case '-':
         if (res_t == nInt) {
-            if (accum->i > 0 && val.i < LLONG_MIN + accum->i)
+            if (accum->i > 0 && val.i < ES_INT_MIN + accum->i)
                 fail("es:arith", "integer overflow");
-            if (accum->i < 0 && val.i > LLONG_MAX + accum->i + 1)
+            if (accum->i < 0 && val.i > ES_INT_MAX + accum->i + 1)
                 fail("es:arith", "integer overflow");
             accum->i -= val.i;
         } else {
@@ -211,12 +211,12 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
     case '*':
         if (res_t == nInt) {
             if (val.i > 0 &&
-                    (accum->i > LLONG_MAX / val.i ||
-                     accum->i < LLONG_MIN / val.i))
+                    (accum->i > ES_INT_MAX / val.i ||
+                     accum->i < ES_INT_MIN / val.i))
                 fail("es:arith", "integer overflow");
             if (val.i < 0 &&
-                    (accum->i < LLONG_MAX / val.i ||
-                     accum->i > LLONG_MIN / val.i))
+                    (accum->i < ES_INT_MAX / val.i ||
+                     accum->i > ES_INT_MIN / val.i))
                 fail("es:arith", "integer overflow");
             accum->i *= val.i;
         } else {
@@ -228,7 +228,7 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
         if (res_t == nInt) {
             if (val.i == 0)
                 fail("es:arith", "divide by zero");
-            if (accum->i == LLONG_MIN && val.i == -1)
+            if (accum->i == ES_INT_MIN && val.i == -1)
                 fail("es:arith", "integer overflow");
             accum->i /= val.i;
         } else {
@@ -290,7 +290,7 @@ static int arithmefy(Tree *t, es_num *ret, Binding *b) {
         char *nstr = getstr(lp->term);
         errno = 0;
 
-        long long ival = strtoll(nstr, &end, 0);
+        es_int_t ival = STR_TO_EI(nstr, &end, 0);
         if (*end == '\0') {
             if (errno == ERANGE)
                 fail("es:arith", "integer value too large");
@@ -299,7 +299,7 @@ static int arithmefy(Tree *t, es_num *ret, Binding *b) {
             return nInt;
         }
 
-        double fval = strtod(nstr, &end);
+        es_float_t fval = STR_TO_EF(nstr, &end);
         if (*end == '\0') {
             if (errno == ERANGE)
                 fail("es:arith", "float value too large");
@@ -311,7 +311,7 @@ static int arithmefy(Tree *t, es_num *ret, Binding *b) {
         RefEnd(lp);
         fail("es:arith", "could not convert element to number");
     }}
-
+    NOTREACHED;
     return 0;
 }
 
@@ -353,6 +353,8 @@ static List *glom1(Tree *tree, Binding *binding) {
             case nFloat:
                 list = mklist(mkstr(str("%f", ret.f)), NULL);
                 break;
+            default:
+                NOTREACHED;
             }
             tp = NULL;
             break;
