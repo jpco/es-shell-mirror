@@ -167,9 +167,7 @@ typedef union {
 
 static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
     int res_t = (val_t == nFloat || *accum_t == nFloat) ? nFloat : nInt;
-
-    // TODO: FP error handling
-    //  - https://www.gnu.org/software/libc/manual/html_node/FP-Exceptions.html#FP-Exceptions
+    feclearexcept(FE_ALL_EXCEPT);
 
     // TODO: Any risk of overflows in these conversions?
     if (res_t == nFloat && *accum_t == nInt) {
@@ -240,6 +238,11 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
         break;
     default:
         panic("es:arith: bad operator type %c", op);
+    }
+    int ex = fetestexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
+    if (ex) {
+        feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
+        fail("es:arith", "floating point exception: %d", ex);
     }
     if (*accum_t == nFloat && accum->f != accum->f)
         fail("es:arith", "NaN");

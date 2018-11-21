@@ -80,42 +80,13 @@ static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) 
 static Boolean fconv(Format *format) {
     es_float_t f = va_arg(format->args, es_float_t);
 
-    // It might make sense that fconv would respect things
-    // like FMT_leftside.  Interesting how things don't
-    // always happen the sensical way.
+    char out[64];
+    char *last = out + STR_FROM_EF(out, 63, "%f", f) - 1;
+    for (; last > (out + 1) && *last == '0' && last[-1] != '.'; last--)
+        *last = '\0';
+    out[63] = '\0';
 
-    if (f < 0) {
-        fmtputc(format, '-');
-        f = -f;
-    }
-
-#define PRECISION 10000000
-
-    unsigned long long whole = (unsigned long long)f;
-    unsigned long prec        = PRECISION;
-    unsigned long dec         = (unsigned long)(((f - (es_float_t)whole)) * PRECISION);
-    while (dec != 0 && dec % 10 == 0) {
-        prec /= 10;
-        dec /= 10;
-    }
-
-    char num[64];
-    char *end = es_utoa(whole, num, 10, chartable[0]);
-    *end = '\0';
-    fmtcat(format, num);
-
-    fmtputc(format, '.');
-
-    // Padding 0s
-    if (dec > 0) {
-        prec /= 10;
-        for (; prec > dec; prec /= 10)
-            fmtputc(format, '0');
-    }
-
-    end = es_utoa(dec, num, 10, chartable[0]);
-    *end = '\0';
-    fmtcat(format, num);
+    fmtcat(format, out);
 
     return FALSE;
 }

@@ -46,6 +46,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <limits.h>
+#include <fenv.h>
 
 /* #if REQUIRE_STAT || REQUIRE_IOCTL */
 /* We need sys/types.h for the prototype of gid_t on Linux */

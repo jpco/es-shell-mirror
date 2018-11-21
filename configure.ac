@@ -60,6 +60,8 @@ dnl Checks for libraries.
 
 AC_CHECK_LIB(sun, getpwuid)
 
+AC_SEARCH_LIBS([fetestexcept, feclearexcept], [m])
+
 if test "$use_readline" = yes || test "$use_editline" = yes
 then
 	AC_CHECK_LIB(terminfo, main)
@@ -73,7 +75,6 @@ then
 	fi
 
 fi
-
 
 dnl Checks for header files.
 AC_HEADER_DIRENT

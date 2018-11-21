@@ -21,8 +21,9 @@
 #define es_int_t    long long
 #define es_float_t  double
 
-#define STR_TO_EI(s, ep, r)  (strtoll((s), (ep), (r)))
-#define STR_TO_EF(s, ep)  (strtod((s), (ep)))
+#define STR_TO_EI(s, ep, r)             (strtoll((s), (ep), (r)))
+#define STR_TO_EF(s, ep)                (strtod((s), (ep)))
+#define STR_FROM_EF(str, n, fmt, fp)    (strfromd((str), (n), (fmt), (fp)))
 
 #define ES_INT_MAX  LLONG_MAX
 #define ES_INT_MIN  LLONG_MIN
