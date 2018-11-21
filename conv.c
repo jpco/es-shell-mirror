@@ -191,12 +191,31 @@ top:
 
     case nOp: {
         char *op = n->u[0].s;
+        int op_prec = (*op == '*' || *op == '/' ? 2 : 1);
         Tree *operand = n->u[1].p;
-        for (; operand->u[1].p != NULL; operand = operand->u[1].p) {
-            fmtprint(f, "(%T) %s ", operand->u[0].p, op);
+        if (operand->u[0].p->kind == nOp) {
+            char *k = operand->u[0].p->u[0].s;
+            int k_prec = (*k == '*' || *k == '/' ? 2 : 1);
+            if (k_prec < op_prec)
+                fmtprint(f, "(%T)", operand->u[0].p);
+            else
+                fmtprint(f, "%T", operand->u[0].p);
+        } else {
+            fmtprint(f, "%T", operand->u[0].p);
         }
-        fmtprint(f, "(%T)", operand->u[0].p);
-
+        for (operand = operand->u[1].p; operand != NULL; operand = operand->u[1].p) {
+            int k = operand->u[0].p->kind;
+            if (k == nOp) {
+                char *k = operand->u[0].p->u[0].s;
+                int k_prec = (*k == '*' || *k == '/' ? 2 : 1);;
+                if (k_prec <= op_prec)
+                    fmtprint(f, " %s (%T)", op, operand->u[0].p);
+                else
+                    fmtprint(f, " %s %T", op, operand->u[0].p);
+            } else {
+                fmtprint(f, " %s %T", op, operand->u[0].p);
+            }
+        }
         return FALSE;
     }
 
