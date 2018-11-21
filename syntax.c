@@ -206,6 +206,10 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     return prefix("%pass", treecons(t1, tail));
 }
 
+extern Tree *mkcmp(char *op, Tree *t1, Tree *t2) {
+    return mk(nCmp, op, treecons(t1, treecons(t2, NULL)));
+}
+
 extern Tree *mkop(char *op, Tree *t1, Tree *t2) {
     if (t1->kind == nList)
         return mk(nOp, op, treeconsend2(t1, t2));

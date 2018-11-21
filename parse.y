@@ -22,6 +22,7 @@
 %left   SUB
 %right  '$'
 
+%nonassoc   '<' LEQ '=' GEQ '>' NEQ
 %left       '+' '-'
 %left       '*' '/'
 %nonassoc   NEG
@@ -40,7 +41,7 @@
 %type <tree>    REDIR PIPE DUP
                 body cmd cmdsa cmdsan comword first fn line word param assign
                 binding bindings params nlwords words simple redir sword vword
-                arith avword vsword
+                arith cmparith avword vsword
 %type <kind>    binder
 
 %start es
@@ -133,7 +134,7 @@ vword   : param                         { $$ = $1; }
         | '(' nlwords ')'               { $$ = $2; }
         | '{' body '}'                  { $$ = thunkify($2); }
         | '@' params '{' body '}'       { $$ = mklambda($2, $4); }
-        | ARITH_BEGIN arith ')'         { $$ = mk(nArith, $2); numeric = FALSE; }
+        | ARITH_BEGIN cmparith ')'         { $$ = mk(nArith, $2); numeric = FALSE; }
 
 /* an 'avword' is a vword which may appear in arithmetic */
 avword  : INT                           { $$ = mk(nInt, $1); }
@@ -189,10 +190,14 @@ keyword : '!'           { $$ = "!"; }
         | FN            { $$ = "fn"; }
         | CLOSURE       { $$ = "%closure"; }
 
-/*
-cmparith    : arith                 { $$ = $1; }
-            | cmparith CMP arith    { $$ = mkcmp($2, $1, $3); }
-*/
+cmparith    : arith             { $$ = $1; }
+            | arith '<' arith   { $$ = mkcmp("<",  $1, $3); }
+            | arith LEQ arith   { $$ = mkcmp("<=", $1, $3); }
+            | arith '=' arith   { $$ = mkcmp("=",  $1, $3); }
+            | arith NEQ arith   { $$ = mkcmp("!=", $1, $3); }
+            | arith GEQ arith   { $$ = mkcmp(">=", $1, $3); }
+            | arith '>' arith   { $$ = mkcmp(">",  $1, $3); }
+
 arith   : avword                { $$ = $1; numeric = TRUE; }
         | '(' arith ')'         { $$ = $2; }
         | arith '-' arith       { $$ = mkop("-", $1, $3); }

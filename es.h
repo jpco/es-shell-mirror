@@ -63,7 +63,7 @@ struct Closure {
 typedef enum {
     nAssign, nCall, nClosure, nConcat, nFor, nLambda, nLet, nList, nLocal,
     nMatch, nExtract, nPrim, nQword, nThunk, nVar, nVarsub, nWord,
-    nInt, nFloat, nOp, nArith,
+    nInt, nFloat, nOp, nArith, nCmp,
     nRedir, nPipe       /* only appear during construction */
 } NodeKind;
 

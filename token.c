@@ -285,6 +285,29 @@ top:
 
     if (numeric) {
         switch (c) {
+        case '!':
+            w = NW;
+            c = GETC();
+            if (c == '=')
+                return NEQ;
+            UNGETC(c);
+            c = '!';
+            break;
+        case '<': case '=': case '>': {
+            w = NW;
+            char cmp = c;
+            c = GETC();
+            if (c == '=') {
+                switch (cmp) {
+                case '<': return LEQ;
+                case '=': return '=';
+                case '>': return GEQ;
+                }
+            } else {
+                UNGETC(c);
+                return cmp;
+            }
+        }
         case '-': case '+': case '*': case '/':
             w = NW;
             return c;

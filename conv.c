@@ -189,6 +189,15 @@ top:
         fmtprint(f, "`(%T)", n->u[0].p);
         return FALSE;
 
+    case nCmp: {
+        char *cmp = n->u[0].s;
+        Tree *operand = n->u[1].p;
+        for (; operand->u[1].p != NULL; operand = operand->u[1].p)
+            fmtprint(f, "%T %s ", operand->u[0].p, cmp);
+        fmtprint(f, "%T", operand);
+        return FALSE;
+    }
+
     case nOp: {
         char *op = n->u[0].s;
         int op_prec = (*op == '*' || *op == '/' ? 2 : 1);
@@ -438,6 +447,10 @@ static Boolean Bconv(Format *f) {
 
     case nOp:
         fmtprint(f, "(op \"%s\" %B)", n->u[0].s, n->u[1].p);
+        break;
+
+    case nCmp:
+        fmtprint(f, "(cmp \"%s\", %B)", n->u[0].s, n->u[1].p);
         break;
 
     case nPrim:

@@ -165,22 +165,29 @@ typedef union {
     es_float_t f;
 } es_num;
 
-static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
-    int res_t = (val_t == nFloat || *accum_t == nFloat) ? nFloat : nInt;
-    feclearexcept(FE_ALL_EXCEPT);
+// Coerces both operands to be either nInt or nFloat, and returns the
+// coerced-to type.
+static int coerce_operands(es_num *lhs, int *lhs_t, es_num *rhs, int *rhs_t) {
+    int res_t = (*lhs_t == nFloat || *rhs_t == nFloat) ? nFloat : nInt;
 
     // TODO: Any risk of overflows in these conversions?
-    if (res_t == nFloat && *accum_t == nInt) {
-        es_float_t v = (es_float_t) accum->i;
-        accum->f = v;
-        *accum_t = nFloat;
+    if (res_t == nFloat && *lhs_t == nInt) {
+        es_float_t v = (es_float_t) lhs->i;
+        lhs->f = v;
+        *lhs_t = nFloat;
     }
-    if (res_t == nFloat && val_t == nInt) {
-        es_float_t v = (es_float_t) val.i;
-        val.f = v;
-        val_t = nFloat;
+    if (res_t == nFloat && *rhs_t == nInt) {
+        es_float_t v = (es_float_t) rhs->i;
+        rhs->f = v;
+        *rhs_t = nFloat;
     }
 
+    return res_t;
+}
+
+static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
+    int res_t = coerce_operands(&val, &val_t, accum, accum_t);
+    feclearexcept(FE_ALL_EXCEPT);
     switch (op) {
     case '+':
         if (res_t == nInt) {
@@ -248,7 +255,7 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
         fail("es:arith", "NaN");
 }
 
-// Turns an nArith tree into an int or float, or dies trying
+// Turns an nArith tree into an int, float, or bool (for nCmp), or dies trying
 static int arithmefy(Tree *t, es_num *ret, Binding *b) {
     switch (t->kind) {
     case nInt:
@@ -280,6 +287,38 @@ static int arithmefy(Tree *t, es_num *ret, Binding *b) {
         RefEnd(cl);
         *ret = accum;
         return accum_t;
+    }
+    case nCmp: {
+        char cmp = *(t->u[0].s);
+        Boolean or_eq = (t->u[0].s[1] == '=' ? TRUE : FALSE);
+
+        es_num lhs, rhs;
+        int lhs_t = arithmefy(t->u[1].p->u[0].p, &lhs, b);
+        int rhs_t = arithmefy(t->u[1].p->u[1].p->u[0].p, &rhs, b);
+        int cmp_t = coerce_operands(&lhs, &lhs_t, &rhs, &rhs_t);
+
+        switch (cmp) {
+        case '<':
+            if (or_eq)
+                ret->i = (cmp_t == nInt ? lhs.i <= rhs.i : lhs.f <= rhs.f);
+            else
+                ret->i = (cmp_t == nInt ? lhs.i < rhs.i : lhs.i <= rhs.i);
+            break;
+        case '!':
+            // TODO: float cmps might need some error margin
+            ret->i = (cmp_t == nInt ? lhs.i != rhs.i : lhs.f != rhs.f);
+            break;
+        case '>':
+            if (or_eq)
+                ret->i = (cmp_t == nInt ? lhs.i >= rhs.i : lhs.f >= rhs.f);
+            else
+                ret->i = (cmp_t == nInt ? lhs.i > rhs.i : lhs.i >= rhs.i);
+            break;
+        case '=':
+            ret->i = (cmp_t == nInt ? lhs.i == rhs.i : lhs.f == rhs.f);
+            break;
+        }
+        return nCmp;
     }
     default: {
         char *end;
@@ -355,6 +394,9 @@ static List *glom1(Tree *tree, Binding *binding) {
                 break;
             case nFloat:
                 list = mklist(mkstr(str("%f", ret.f)), NULL);
+                break;
+            case nCmp:
+                list = mklist(mkstr(str(ret.i ? "true" : "false")), NULL);
                 break;
             default:
                 NOTREACHED;
