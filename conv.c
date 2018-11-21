@@ -200,7 +200,7 @@ top:
 
     case nOp: {
         char *op = n->u[0].s;
-        int op_prec = (*op == '*' || *op == '/' ? 2 : 1);
+        int op_prec = (*op == '%' ? 3 : *op == '*' || *op == '/' ? 2 : 1);
         Tree *operand = n->u[1].p;
         if (operand->u[0].p->kind == nOp) {
             char *k = operand->u[0].p->u[0].s;

@@ -31,7 +31,7 @@ case '-(3-3) != (-3)-3'   ; want true
 
 # error handling
 case '3.0 % 2.0'    ; want 1.0
-case '1.5 % 2'      ; want 'error code 1: left-hand side of % is not int-valued'
+case '1.5 % 2'      ; want 'error code 1: left-hand side of modulo is not int-valued'
 case '3 / 0'        ; want 'error code 1: divide by zero'
 
 # (in)equality tests

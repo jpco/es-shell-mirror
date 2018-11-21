@@ -25,6 +25,7 @@
 %nonassoc   '<' LEQ '=' GEQ '>' NEQ
 %left       '+' '-'
 %left       '*' '/'
+%left       '%'
 %nonassoc   NEG
 
 %union {
@@ -204,4 +205,5 @@ arith   : avword                { $$ = $1; numeric = TRUE; }
         | arith '+' arith       { $$ = mkop("+", $1, $3); }
         | arith '*' arith       { $$ = mkop("*", $1, $3); }
         | arith '/' arith       { $$ = mkop("/", $1, $3); }
+        | arith '%' arith       { $$ = mkop("%", $1, $3); }
         | '-' arith  %prec NEG  { $$ = mkneg($2); }

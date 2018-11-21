@@ -308,7 +308,7 @@ top:
                 return cmp;
             }
         }
-        case '-': case '+': case '*': case '/':
+        case '-': case '+': case '*': case '/': case '%':
             w = NW;
             return c;
         }

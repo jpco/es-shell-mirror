@@ -243,6 +243,28 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
             accum->f /= val.f;
         }
         break;
+    case '%': {
+        // TODO: Handle overflows
+        es_int_t lhs;
+        es_int_t rhs;
+        if (res_t == nInt) {
+            lhs = accum->i;
+            rhs = val.i;
+        } else {
+            if ((es_float_t) (es_int_t) accum->f != accum->f)
+                fail("es:arith", "left-hand side of modulo is not int-valued");
+            if ((es_float_t) (es_int_t) val.f != val.f)
+                fail("es:arith", "right-hand side of modulo is not int-valued");
+            lhs = (es_int_t) accum->f;
+            rhs = (es_int_t) val.f;
+        }
+        es_int_t res = lhs % rhs;
+        if (res_t == nInt)
+            accum->i = res;
+        else
+            accum->f = (es_float_t) res;
+        break;
+    }
     default:
         panic("es:arith: bad operator type %c", op);
     }
