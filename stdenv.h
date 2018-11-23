@@ -46,6 +46,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <limits.h>
+#include <math.h>
 #include <fenv.h>
 
 /* #if REQUIRE_STAT || REQUIRE_IOCTL */

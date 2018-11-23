@@ -197,7 +197,6 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
                 fail("es:arith", "integer overflow");
             accum->i += val.i;
         } else {
-            // OVERFLOW?
             accum->f += val.f;
         }
         break;
@@ -209,7 +208,6 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
                 fail("es:arith", "integer overflow");
             accum->i -= val.i;
         } else {
-            // OVERFLOW??
             accum->f -= val.f;
         }
         break;
@@ -225,7 +223,6 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
                 fail("es:arith", "integer overflow");
             accum->i *= val.i;
         } else {
-            // OVERFLOW???
             accum->f *= val.f;
         }
         break;
@@ -239,42 +236,46 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
         } else {
             if (val.f == 0.0)
                 fail("es:arith", "divide by zero");
-            // UNDERFLOW????
             accum->f /= val.f;
         }
         break;
     case '%': {
-        // TODO: Handle overflows
-        es_int_t lhs;
-        es_int_t rhs;
         if (res_t == nInt) {
-            lhs = accum->i;
-            rhs = val.i;
+            if (val.i == 0)
+                fail("es:arith", "modulus by zero");
+            accum->i %= val.i;
         } else {
-            if ((es_float_t) (es_int_t) accum->f != accum->f)
-                fail("es:arith", "left-hand side of modulo is not int-valued");
-            if ((es_float_t) (es_int_t) val.f != val.f)
-                fail("es:arith", "right-hand side of modulo is not int-valued");
-            lhs = (es_int_t) accum->f;
-            rhs = (es_int_t) val.f;
+            if (val.f == 0.0)
+                fail("es:arith", "modulus by zero");
+            accum->f = fmod(accum->f, val.f);
         }
-        es_int_t res = lhs % rhs;
-        if (res_t == nInt)
-            accum->i = res;
-        else
-            accum->f = (es_float_t) res;
         break;
     }
     default:
         panic("es:arith: bad operator type %c", op);
     }
-    int ex = fetestexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
-    if (ex) {
-        feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW);
-        fail("es:arith", "floating point exception: %d", ex);
+
+#define TEST_EXCEPTION(x, s) \
+    if (0); else { \
+        if (fetestexcept(x)) { \
+            feclearexcept(x); \
+            fail("es:arith", "floating point exception: " s); \
+        } \
     }
-    if (*accum_t == nFloat && accum->f != accum->f)
-        fail("es:arith", "NaN");
+
+    TEST_EXCEPTION(FE_DIVBYZERO, "division by zero");
+    TEST_EXCEPTION(FE_INVALID, "invalid operation");
+    TEST_EXCEPTION(FE_OVERFLOW, "overflow");
+    TEST_EXCEPTION(FE_UNDERFLOW, "underflow");
+
+    if (*accum_t == nFloat) {
+        switch (fpclassify(accum->f)) {
+        case FP_NAN:
+            fail("es:arith", "NaN");
+        case FP_INFINITE:
+            fail("es:arith", "infinite");
+        }
+    }
 }
 
 // Turns an nArith tree into an int, float, or bool (for nCmp), or dies trying
