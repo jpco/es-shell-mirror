@@ -132,10 +132,6 @@
  *      the signal handler after it is invoked.  This behavior
  *      is also known as ``unreliable signals.''
  *
- *  USE_CONST
- *      allow const declarations.  if your compiler supports 'em,
- *      use 'em.
- *
  *  USE_DIRENT
  *      if on, <dirent.h> is used; if off, <sys/direct.h>.
  *
@@ -159,10 +155,6 @@
  *      define this if you have an ansi compiler and the <stdarg.h>
  *      header file.  if not, es will try to use <varargs.h>, but
  *      you may need to hack a bit to get that working.
- *
- *  USE_VOLATILE
- *      allow volatile declarations.  if your compiler
- *      supports 'em, use 'em.
  *
  *  USE_UNISTD
  *      define this if you have the include file <unistd.h>
