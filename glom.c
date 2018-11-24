@@ -243,7 +243,12 @@ static void do_op(char op, int val_t, es_num val, int *accum_t, es_num *accum) {
         if (res_t == nInt) {
             if (val.i == 0)
                 fail("es:arith", "modulus by zero");
-            accum->i %= val.i;
+            if (accum->i == LLONG_MIN && val.i == -1)
+                // Manually set to 0, which is the correct value, even if Intel
+                // won't admit it.
+                accum->i = 0;
+            else
+                accum->i %= val.i;
         } else {
             if (val.f == 0.0)
                 fail("es:arith", "modulus by zero");
