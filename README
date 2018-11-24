@@ -1,8 +1,8 @@
 Preface
 -------
 
-This is a personal extension of es.  There are a few ways this differs
-from the 'canonical' es:
+This is a fork of es.  There are a few ways this differs from the
+'canonical' es:
 
  - (Many cases of) embedded '=' in arguments result in no syntax error.
    This is ongoing; the optimal behavior is a bit sophisticated.
@@ -13,10 +13,7 @@ from the 'canonical' es:
    is to have variants on 'fork' for non-blocking semantics, and
    'subshell' for blocking semantics.
 
- - The precedence of '$$foo(1)' is no longer equivalent to '$($a(1))'.
-
- - Two new primitives, $&add and $&negate, and two new functions, %+ and
-   %-, for basic arithmetic.
+ - The precedence of '$$foo(1)' is no longer equivalent to '$($foo(1))'.
 
  - 'a | b | c' now executes 'c' in the local shell, rather than a subshell.
    This is a bit awkward in terms of return values, since a pipeline of n
@@ -24,12 +21,12 @@ from the 'canonical' es:
    the price you pay, I guess.
 
  - Added '%pass' and syntax 'a => b', equivalent to 'b <={a}'.
-   This is a warm-up to CPS and tail call optimization.
+
+ - Added arithmetic, of the form '`(ARITH)'.  These statements support
+   floating-point and integer arithmetic (+, -, *, /, %) and comparisons (<,
+   <=, ==, !=, >=, >).
 
 Still to do:
-
- - Related to 'pass':
-    - Do not append '$pass' if '$pass' is already present
 
  - `echo a b | {cat | rev}` echoes the correct output, but also echoes
    `wait: <PID> is not a child of this shell`
@@ -38,11 +35,28 @@ Still to do:
 
  - A proper unit- and regression-testing suite.
 
- - Interactive features, potentially?
-
  - Proper tail recursion (or more general tail call optimization).
 
- - First-class environments. (equivalent to associative arrays? awkward)
+ - First-class environments/associative arrays.
+
+SUPPORTED PLATFORMS
+-------------------
+
+Given the much-reduced diversity of operating systems and platforms since the
+heyday of es, we support the following combinations of targets:
+
+ - C standards: Es depends on C99 plus POSIX; anything else is a bug.
+ - OS: Es specifically supports BSD, Linux, and macOS, though other Unices
+   should be reasonably well-supported as well.
+ - Compiler: GCC and Clang, as well as the native compiler of any
+   supported OSes if different, are supported.
+ - yacc: Bison and byacc are supported.  Other yaccs should work okay as well.
+ - line editing: Readline and editline are both supported, as well as a no-
+   editing-library configuration.
+ - CPUs: x86 and amd64 architectures.
+
+Bugs that manifest on other targets won't be actively pursued, though
+patches are always welcome.  Additional targets should probably be supported.
 
 README
 ------
