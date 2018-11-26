@@ -77,11 +77,13 @@ extern Dirent *readdir(DIR *);
 #endif
 
 /* stdlib */
-#if __GNUC__
-typedef volatile void noreturn;
+/* Only possible after the 'noreturn' primitive is removed */
+/* #if __GNUC__
+#define noreturn void __attribute__ ((noreturn))
 #else
+#define noreturn void
+#endif */
 typedef void noreturn;
-#endif
 
 #if STDC_HEADERS
 # include <stdlib.h>
