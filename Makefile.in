@@ -43,20 +43,7 @@ MKDIR_P = @MKDIR_P@
 ## Bison is generating incorrect parsers.  So do not use, for now
 # YACC = @YACC@
 
-OPT = 0
-OPTFLAGS = @CFLAGS@
-ifeq "$(OPT)" "release"
-	OPTFLAGS = -O3 -DASSERTIONS=0
-else
-ifeq "$(OPT)" "debug"
-ifeq "$(CC)" "gcc"
-	OPTFLAGS = -ggdb -DGCDEBUG=1 -DLISPTREES=1
-else
-	OPTFLAGS = -g -DGCDEBUG=1 -DLISPTREES=1
-endif
-endif
-endif
-CFLAGS	= $(ADDCFLAGS) -I. -I$(srcdir) -W -Wall -Wno-missing-field-initializers -Wno-unused-parameter -Wno-clobbered -Wno-implicit-fallthrough ${OPTFLAGS}
+CFLAGS	= $(ADDCFLAGS) -I. -I$(srcdir) -W -Wall -Wno-missing-field-initializers -Wno-unused-parameter -Wno-clobbered -Wno-implicit-fallthrough @CFLAGS@
 LDFLAGS	= $(ADDLDFLAGS) @LDFLAGS@
 LIBS	= $(ADDLIBS) @LIBS@
 
