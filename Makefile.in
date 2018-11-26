@@ -45,11 +45,11 @@ MKDIR_P = @MKDIR_P@
 
 OPT = 0
 OPTFLAGS = @CFLAGS@
-ifeq (${OPT},release)
+ifeq "$(OPT)" "release"
 	OPTFLAGS = -O3 -DASSERTIONS=0
 else
-ifeq (${OPT},debug)
-ifeq (${CC},gcc)
+ifeq "$(OPT)" "debug"
+ifeq "$(CC)" "gcc"
 	OPTFLAGS = -ggdb -DGCDEBUG=1 -DLISPTREES=1
 else
 	OPTFLAGS = -g -DGCDEBUG=1 -DLISPTREES=1

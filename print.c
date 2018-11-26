@@ -80,8 +80,10 @@ static char *es_utoa(unsigned long u, char *t, unsigned int radix, char *digit) 
 static Boolean fconv(Format *format) {
     es_float_t f = va_arg(format->args, es_float_t);
 
+    // FIXME: Respect format flags.
+
     char out[512];
-    char *last = out + STR_FROM_EF(out, 511, "%f", f) - 1;
+    char *last = out + snprintf(out, 511, "%.5f", f) - 1;
     for (; last > (out + 1) && *last == '0' && last[-1] != '.'; last--)
         *last = '\0';
     out[511] = '\0';

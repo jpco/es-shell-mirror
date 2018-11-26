@@ -45,7 +45,7 @@ SUPPORTED PLATFORMS
 Given the much-reduced diversity of operating systems and platforms since the
 heyday of es, we support the following combinations of targets:
 
- - C standards: Es depends on C99 plus POSIX; anything else is a bug.
+ - C standards: Es should work on any system that can handle C99 plus POSIX.
  - OS: Es specifically supports BSD, Linux, and macOS, though other Unices
    should be reasonably well-supported as well.
  - Compiler: GCC and Clang, as well as the native compiler of any

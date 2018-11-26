@@ -79,7 +79,7 @@ extern Dirent *readdir(DIR *);
 /* stdlib */
 /* Only possible after the 'noreturn' primitive is removed */
 /* #if __GNUC__
-#define noreturn void __attribute__ ((noreturn))
+#define noreturn __attribute__ ((noreturn)) void
 #else
 #define noreturn void
 #endif */
@@ -221,8 +221,13 @@ typedef GETGROUPS_T gidset_t;
 
 enum { UNREACHABLE = 0 };
 
-
+#if ASSERTIONS
 #define NOTREACHED  STMT(assert(UNREACHABLE))
+#elif __GNUC__
+#define NOTREACHED  STMT(__builtin_unreachable ())
+#else
+#define NOTREACHED  NOP
+#endif
 
 /*
  * system calls -- can we get these from some standard header uniformly?
