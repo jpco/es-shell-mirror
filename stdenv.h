@@ -85,18 +85,8 @@ extern Dirent *readdir(DIR *);
 #endif */
 typedef void noreturn;
 
-#if STDC_HEADERS
-# include <stdlib.h>
-#else
-extern noreturn exit(int);
-extern noreturn abort(void);
-extern long strtol(const char *num, char **end, int base);
-extern void *qsort(
-    void *base, size_t nmemb, size_t size,
-    int (*compar)(const void *, const void *)
-);
-#endif /* !STDC_HEADERS */
-
+#include <stdlib.h>
+#include <stdio.h>
 #include <sys/wait.h>
 #include <time.h>
 

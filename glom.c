@@ -294,8 +294,9 @@ static int arithmefy(Tree *t, es_num *ret, Binding *b) {
         return nFloat;
     case nOp: {
         char op = *(t->u[0].s);
-        int accum_t;
+        int accum_t = 0;
         es_num accum;
+        accum.i = 0;
         Boolean first = TRUE;
         Ref(Tree *, cl, t->u[1].p);
         for (; cl != NULL; cl = cl->u[1].p) {
