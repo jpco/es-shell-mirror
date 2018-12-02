@@ -105,7 +105,7 @@ typedef void noreturn;
 /* setjmp */
 
 #if defined sigsetjmp || HAVE_SIGSETJMP
-/* under linux, sigsetjmp and setjmp are both macros 
+/* under linux, sigsetjmp and setjmp are both macros
  * -- need to undef setjmp to avoid problems
  */
 # ifdef setjmp

@@ -100,7 +100,7 @@ extern Closure *extractbindings(Tree *tree0) {
     gcdisable();
 
     if (tree->kind == nList && tree->u[1].p == NULL)
-        tree = tree->u[0].p; 
+        tree = tree->u[0].p;
 
     me.closure = mkclosure(NULL, NULL);
     me.next = chain;
@@ -112,11 +112,11 @@ extern Closure *extractbindings(Tree *tree0) {
             bindings = extract(tree->u[0].p, bindings);
             tree = tree->u[1].p;
             if (tree->kind == nList && tree->u[1].p == NULL)
-                tree = tree->u[0].p; 
+                tree = tree->u[0].p;
         }
 
     CatchException (e)
-    
+
         chain = chain->next;
         throw(e);
 

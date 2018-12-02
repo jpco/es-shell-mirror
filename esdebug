@@ -73,7 +73,7 @@ _debug-trace	= @ functions {
 				} {
 					noexport = $noexport _untraced-$func
 				} {
-					fn $func args {  
+					fn $func args {
 						$&seq {
 							_print $func $args
 						} {
@@ -121,7 +121,7 @@ _debug-break	= @ functions {
 				} {
 					noexport = $noexport _unbroken-$func
 				} {
-					fn $func args {  
+					fn $func args {
 						$&seq {
 							_print break in $func $args
 						} {

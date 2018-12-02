@@ -277,7 +277,7 @@ static char *esgetenv(const char *name) {
     List *value = varlookup(name, NULL);
     if (value == NULL)
         return NULL;
-    else { 
+    else {
         char *export;
         static Dict *envdict;
         static Boolean initialized = FALSE;

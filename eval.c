@@ -142,7 +142,7 @@ static List *localbind(Binding *dynamic0, Binding *lexical0,
         RefReturn(result);
     }
 }
-    
+
 /* local -- build, recursively, one layer of local assignment */
 static List *local(Tree *defn, Tree *body0,
            Binding *bindings0, int evalflags) {
@@ -310,7 +310,7 @@ top:
 
     case nFor:
         return forloop(tree->u[0].p, tree->u[1].p, binding, flags);
-    
+
     case nMatch:
         return matchpattern(tree->u[0].p, tree->u[1].p, binding);
 
@@ -414,7 +414,7 @@ restart:
                 if (funcname != NULL)
                     varpop(&p);
                 RefEnd2(context, tree);
-    
+
             CatchException (e)
 
                 if (termeq(e->term, "return")) {
