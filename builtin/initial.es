@@ -63,7 +63,6 @@
 # These builtin functions are straightforward calls to primitives.
 # See the manual page for details on what they do.
 
-fn-.    = $&dot
 fn-access = $&access
 fn-catch  = $&catch
 fn-echo   = $&echo
@@ -692,6 +691,7 @@ max-eval-depth  = 640
 
 noexport = noexport pid signals apid status bqstatus path home
 
+fn-. = $&runinput $&batchloop
 
 # source outside init scripts.
 . ./builtin/runtime.es

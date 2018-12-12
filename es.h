@@ -301,12 +301,13 @@ extern char *prompt, *prompt2;
 extern Tree *parse(char *esprompt1, char *esprompt2);
 extern Tree *parsestring(const char *str);
 extern void sethistory(char *file);
-extern Boolean isinteractive(void);
+extern void setrunflags(int flags);
 extern void initinput(void);
 extern void resetparser(void);
 
-extern List *runfd(int fd, const char *name, int flags);
-extern List *runstring(const char *str, const char *name, int flags);
+extern List *export_runflags(int);
+extern List *runinput(char *name, List *cmd);
+extern List *runfd(int fd, const char *name, List *cmd);
 
 /* eval_* flags are also understood as runflags */
 #define run_interactive      4  /* -i or $0[0] = '-' */

@@ -49,25 +49,29 @@ static void initpid(void) {
     vardef("pid", NULL, mklist(mkstr(str("%d", getpid())), NULL));
 }
 
+/* initrunflags -- set $runflags for this shell */
+static void initrunflags(int flags) {
+    Ref(List *, runflags, export_runflags(flags));
+    vardef("runflags", NULL, runflags);
+    RefEnd(runflags);
+}
+
 /* runesrc -- run the user's profile, if it exists */
 static void runesrc(void) {
     char *esrc = str("%L/.esrc", varlookup("home", NULL), "\001");
-    int fd = eopen(esrc, oOpen);
-    if (fd != -1) {
-        ExceptionHandler
-            runfd(fd, esrc, 0);
-        CatchException (e)
-            if (termeq(e->term, "exit"))
-                exit(exitstatus(e->next));
-            else if (termeq(e->term, "error"))
-                eprint("%L\n",
-                       e->next == NULL ? NULL : e->next->next,
-                       " ");
-            else if (!issilentsignal(e))
-                eprint("uncaught exception: %L\n", e, " ");
-            return;
-        EndExceptionHandler
-    }
+    ExceptionHandler
+        runinput(esrc, mklist(mkstr("$&batchloop"), NULL));
+    CatchException (e)
+        if (termeq(e->term, "exit"))
+            exit(exitstatus(e->next));
+        else if (termeq(e->term, "error"))
+            eprint("%L\n",
+                   e->next == NULL ? NULL : e->next->next,
+                   " ");
+        else if (!issilentsignal(e))
+            eprint("uncaught exception: %L\n", e, " ");
+        return;
+    EndExceptionHandler
 }
 
 /* usage -- print usage message and die */
@@ -111,7 +115,7 @@ int main(int argc, char **argv) {
     volatile Boolean cmd_stdin = FALSE;     /* -s */
     volatile Boolean loginshell = FALSE;    /* -l or $0[0] == '-' */
     Boolean keepclosed = FALSE;     /* -o */
-    const char *volatile cmd = NULL;    /* -c */
+    char *volatile cmd = NULL;    /* -c */
 
     initgc();
     initconv();
@@ -177,9 +181,10 @@ getopt_done:
     ExceptionHandler
         roothandler = &_localhandler;   /* unhygeinic */
 
-        initinput();
         initprims();
         initvars();
+        initrunflags(runflags);
+        initinput();
 
         runinitial();
 
@@ -192,23 +197,19 @@ getopt_done:
         if (loginshell)
             runesrc();
 
-        if (cmd == NULL && !cmd_stdin && optind < ac) {
-            int fd;
-            char *file = av[optind++];
-            if ((fd = eopen(file, oOpen)) == -1) {
-                eprint("%s: %s\n", file, esstrerror(errno));
-                return 1;
-            }
-            vardef("*", NULL, listify(ac - optind, av + optind));
-            vardef("0", NULL, mklist(mkstr(file), NULL));
-            return exitstatus(runfd(fd, file, runflags));
-        }
-
-        vardef("*", NULL, listify(ac - optind, av + optind));
         vardef("0", NULL, mklist(mkstr(av[0]), NULL));
+        Ref(List *, args, listify(ac - optind, av + optind));
+
         if (cmd != NULL)
-            return exitstatus(runstring(cmd, NULL, runflags));
-        return exitstatus(runfd(0, "stdin", runflags));
+            args = mklist(mkstr(cmd), args);
+
+        args = mklist(mkstr(cmd_stdin ? "true" : "false"), args);
+        args = mklist(mkstr(cmd != NULL ? "true" : "false"), args);
+        args = append(varlookup("es:main", NULL), args);
+
+        return exitstatus(eval(args, NULL, runflags));
+
+        RefEnd(args);
 
     CatchException (e)
 

@@ -40,41 +40,36 @@ PRIM(exec) {
     return eval(list, NULL, evalflags | eval_inchild);
 }
 
-PRIM(dot) {
-    int c, fd;
-    Push zero, star;
-    volatile int runflags = (evalflags & eval_inchild);
-    const char * const usage = ". [-einvx] file [arg ...]";
+PRIM(setrunflags) {
+    char *s;
+    int flags = 0;
+    Ref(List *, lp, list);
+    for (; lp != NULL; lp = lp->next) {
+        s = getstr(lp->term);
+        if (streq(s, "interactive"))
+            flags |= run_interactive;
+        else if (streq(s, "echoinput"))
+            flags |= run_echoinput;
+        else if (streq(s, "lisptrees"))
+            flags |= run_lisptrees;
+    }
+    RefEnd(lp);
+    setrunflags(flags);
+    return list;
+}
 
-    esoptbegin(list, "$&dot", usage);
-    while ((c = esopt("einvx")) != EOF)
-        switch (c) {
-        case 'e':   runflags |= eval_throwonfalse;  break;
-        case 'i':   runflags |= run_interactive;    break;
-        case 'n':   runflags |= run_noexec;         break;
-        case 'v':   runflags |= run_echoinput;      break;
-        case 'x':   runflags |= run_printcmds;      break;
-        }
-
+PRIM(runinput) {
+    if (list == NULL)
+        fail("$&runinput", "usage: $&runinput command [file]");
     Ref(List *, result, NULL);
-    Ref(List *, lp, esoptend());
-    if (lp == NULL)
-        fail("$&dot", "usage: %s", usage);
+    Ref(List *, cmd, mklist(list->term, NULL));
 
-    Ref(char *, file, getstr(lp->term));
-    lp = lp->next;
-    fd = eopen(file, oOpen);
-    if (fd == -1)
-        fail("$&dot", "%s: %s", file, esstrerror(errno));
+    result = runinput((list->next == NULL
+                ? NULL
+                : getstr(list->next->term)),
+            cmd);
 
-    varpush(&star, "*", lp);
-    varpush(&zero, "0", mklist(mkstr(file), NULL));
-
-    result = runfd(fd, file, runflags);
-
-    varpop(&zero);
-    varpop(&star);
-    RefEnd2(file, lp);
+    RefEnd(cmd);
     RefReturn(result);
 }
 
@@ -233,10 +228,6 @@ PRIM(internals) {
     return listvars(TRUE);
 }
 
-PRIM(isinteractive) {
-    return isinteractive() ? true : false;
-}
-
 PRIM(noreturn) {
     if (list == NULL)
         fail("$&noreturn", "usage: $&noreturn lambda args ...");
@@ -286,7 +277,8 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(count);
     X(version);
     X(exec);
-    X(dot);
+    X(setrunflags);
+    X(runinput);
     X(flatten);
     X(whatis);
     X(sethistory);
@@ -301,7 +293,6 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(vars);
     X(internals);
     X(result);
-    X(isinteractive);
     X(throwonfalse);
     X(noreturn);
     X(setmaxevaldepth);

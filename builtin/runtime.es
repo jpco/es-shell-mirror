@@ -45,7 +45,9 @@
 # result gets set to zero when it should not be.
 
 fn-%parse = $&parse
-fn-%is-interactive = $&isinteractive
+fn %is-interactive {
+  ~ $runflags interactive
+}
 
 fn %batch-loop {
   let (result = <=true) {
@@ -115,9 +117,7 @@ fn %noeval-print     { echo $* >[1=2] }      # -n -x
 fn-%throw-on-false = $&throwonfalse          # -e
 
 
-# Likely migration path:
-#
-# State 0 (Current state):
+# State 0 (initial state):
 #
 # - main() calls runfd() or runstring(); those set the correct input, then they call:
 # - runinput(), which sets the dispatcher up, and calls either fn-%interactive-loop,
@@ -141,35 +141,122 @@ fn-%throw-on-false = $&throwonfalse          # -e
 # Run an input file.  Initially, this fn does not actually set the input file itself,
 # but does take runflags as args.  In the future, this will have signature
 # `fn %run-input file`, and if ~ $#file 0, it will run stdin; runflags will be a special global.
-fn %run-input runflags {
-  let (
-    dispatch-p = <={if {~ $runflags printcmds} {result 'print'} {result 'noprint'}}
-    dispatch-e = <={if {~ $runflags noexec}    {result 'noeval'} {result 'eval'}}
-    on-false   = <={if {~ $runflags throwonfalse} {result $fn-%throw-on-false} {result ()}}
-    loop       = <={if {~ $runflags interactive} {result %interactive-loop} {result %batch-loop}}
-  ) {
-    local (fn-%dispatch = $on-false $(fn-%^$(dispatch-e)^-^$(dispatch-p))) {
-      $loop
-    }
-  }
-}
+# fn %run-input runflags {
+#   let (
+#     dispatch-p = <={if {~ $runflags printcmds} {result 'print'} {result 'noprint'}}
+#     dispatch-e = <={if {~ $runflags noexec}    {result 'noeval'} {result 'eval'}}
+#     on-false   = <={if {~ $runflags throwonfalse} {result $fn-%throw-on-false} {result ()}}
+#     loop       = <={if {~ $runflags interactive} {result %interactive-loop} {result %batch-loop}}
+#   ) {
+#     local (fn-%dispatch = $on-false $(fn-%^$(dispatch-e)^-^$(dispatch-p))) {
+#       $loop
+#     }
+#   }
+# }
 
-noexport = $noexport fn-%dispatch
+# noexport = $noexport fn-%dispatch
 
 
 # State 2:
 #
-# - ~all runflags are exposed to es as a global, with appropriate settor logic
-# - standard es dispatch changes behavior live based on runflags
+# - ~all runflags are exposed to es as:
+#   x inchild: NOT exported
+#   x throwonfalse: within set-runflags (which redefines fn-%dispatch)
+#   x interactive: (which calls $&setrunflags)
+#   x noexec: within set-runflags (which redefines fn-%dispatch)
+#   x echoinput: (which calls $&setrunflags)
+#   x printcmds: within set-runflags (which redefines fn-%dispatch)
+#   x lisptrees: (which calls $&setrunflags)
+# - standard es dispatch changes behavior live (as much as possible) based on runflags
 # - main() calls es:main, which calls fn-%run-input, which calls the $&setinput primitive &c.
 # - $&dot is replaced with an es wrapper for fn-%run-input
-#
+
+set-runflags = @ new {
+  let (nf = ()) {
+    for (flag = $new) {
+      if {!~ $nf $flag} {nf = $nf $flag}
+    }
+    let (
+      dp-p = <={if {~ $nf printcmds} {result 'print'} {result 'noprint'}}
+      dp-e = <={if {~ $nf noexec} {result 'noeval'} {result 'eval'}}
+      dp-f = <={if {~ $nf throwonfalse} {result '%throw-on-false'} {result ()}}
+    ) fn-%dispatch = $dp-f $(fn-%^$(dp-e)^-^$(dp-p))
+    $&setrunflags $nf
+  }
+}
+
+noexport = $noexport fn-%dispatch runflags
+
+fn %dot args {
+  let (
+    fn usage {
+      throw error %dot 'usage: . [-einvx] file [arg ...]'
+    }
+    flags = ()
+  ) {
+    for (a = $args) {
+      if {!~ $a -*} {
+        break
+      }
+      args = $args(2 ...)
+      if {~ $a --} {
+        break
+      }
+      for (f = <={%fsplit '' <={~~ $a -*}}) {
+        if (
+          {~ $f e} {flags = $flags throwonfalse}
+          {~ $f i} {flags = $flags interactive}
+          {~ $f n} {flags = $flags noexec}
+          {~ $f v} {flags = $flags echoinput}
+          {~ $f x} {flags = $flags printcmds}
+            {usage}
+        )
+      }
+    }
+    if {~ $#args 0} {usage}
+    local (
+      0 = $args(1)
+      * = $args(2 ...)
+      runflags = $flags
+    ) $fn-%run-input $args(1)
+  }
+}
+
+fn-. = %dot
+
+fn %run-input file {
+  $&runinput {
+    # FIXME: Make this assignment unnecessary, and remove it
+    runflags = $runflags
+    if %is-interactive {
+      $fn-%interactive-loop
+    } {
+      $fn-%batch-loop
+    }
+  } $file
+}
 
 # State 3 (sort of a state):
 #
 # - main() is migrated, bottom to top, into es:main
 # - eventually including arg parsing
 #
+
+# es:main takes bools 'cmd' and 'stdin' and args.
+# if ~ $stdin true, then $args becomes $* and stdin is run.
+# if ~ $cmd true, then $args(1) is the command to be run.
+es:main = @ cmd stdin args {
+  if {!$cmd && !$stdin && !~ $#args 0} {
+    local ((0 *) = $args)
+      $fn-%run-input $0
+  } {$cmd} {
+    local (* = $args(2 ...))
+      $fn-eval $args(1)
+  } {
+    local (* = $args)
+      $fn-%run-input
+  }
+}
 
 # runflags:
 #
@@ -183,7 +270,7 @@ noexport = $noexport fn-%dispatch
 #
 #   inchild      - internal (rw), NOT exported, very evil
 #   throwonfalse - internal (rw), so things like $&if can disable/reenable for each block
-#   interactive  - internal (ro), to control things like readline enabling
+#   interactive  - internal (ro), to control things like readline enablement
 #   noexec       - not internal
 #   echoinput    - internal (ro), requires input support
 #   printcmds    - not internal
