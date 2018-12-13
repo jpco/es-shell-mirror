@@ -158,11 +158,6 @@ static struct{
     {run_lisptrees, "lisptrees"}
 };
 
-extern void setrunflags(int flags) {
-    if (input != NULL)
-        input->runflags = flags;
-}
-
 /* runflags_from_int -- make runflags into an es list */
 extern List *runflags_from_int(int flags) {
     int len = 0;
@@ -412,6 +407,13 @@ static int fdfill(Input *in) {
     in->buf = in->bufbegin;
     in->bufend = &in->buf[nread];
     return *in->buf++;
+}
+
+extern void setrunflags(int flags) {
+    if (input != NULL) {
+        input->runflags = flags;
+        input->get = (flags & run_echoinput) ? getverbose : get;
+    }
 }
 
 
