@@ -41,20 +41,7 @@ PRIM(exec) {
 }
 
 PRIM(setrunflags) {
-    char *s;
-    int flags = 0;
-    Ref(List *, lp, list);
-    for (; lp != NULL; lp = lp->next) {
-        s = getstr(lp->term);
-        if (streq(s, "interactive"))
-            flags |= run_interactive;
-        else if (streq(s, "echoinput"))
-            flags |= run_echoinput;
-        else if (streq(s, "lisptrees"))
-            flags |= run_lisptrees;
-    }
-    RefEnd(lp);
-    setrunflags(flags);
+    setrunflags(runflags_to_int(list));
     return list;
 }
 

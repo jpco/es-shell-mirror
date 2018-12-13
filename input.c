@@ -163,8 +163,8 @@ extern void setrunflags(int flags) {
         input->runflags = flags;
 }
 
-/* export_runflags -- make runflags into an es list */
-extern List *export_runflags(int flags) {
+/* runflags_from_int -- make runflags into an es list */
+extern List *runflags_from_int(int flags) {
     int len = 0;
     char *flagstrs[NRUNFLAGS];
 
@@ -176,6 +176,26 @@ extern List *export_runflags(int flags) {
     }
 
     return listify(len, flagstrs);
+}
+
+/* runflags_to_int -- import an es list of runflags into an int */
+extern int runflags_to_int(List *list) {
+    char *s;
+    int flags = 0;
+    Ref(List *, lp, list);
+    for (; lp != NULL; lp = lp->next) {
+        s = getstr(lp->term);
+        if (streq(s, "interactive"))
+            flags |= run_interactive;
+        else if (streq(s, "echoinput"))
+            flags |= run_echoinput;
+#if LISPTREES
+        else if (streq(s, "lisptrees"))
+            flags |= run_lisptrees;
+#endif
+    }
+    RefEnd(lp);
+    return flags;
 }
 
 /*
@@ -472,15 +492,15 @@ extern List *runfd(int fd, const char *name, List *cmd) {
     in.fd = fd;
     if (input != NULL)
         in.runflags = input->runflags;
+    else
+        in.runflags = runflags_to_int(varlookup("runflags", NULL));
     registerfd(&in.fd, TRUE);
     in.buflen = BUFSIZE;
     in.bufbegin = in.buf = ealloc(in.buflen);
     in.bufend = in.bufbegin;
     in.name = (name == NULL) ? "stdin" : name;
 
-    int flags = 0;
-    if (input != NULL)
-        flags = input->runflags;
+    int flags = in.runflags;
     result = NULL;
 
     flags &= ~eval_inchild;

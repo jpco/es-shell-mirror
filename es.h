@@ -305,7 +305,8 @@ extern void setrunflags(int flags);
 extern void initinput(void);
 extern void resetparser(void);
 
-extern List *export_runflags(int);
+extern List *runflags_from_int(int);
+extern int runflags_to_int(List *);
 extern List *runinput(char *name, List *cmd);
 extern List *runfd(int fd, const char *name, List *cmd);
 

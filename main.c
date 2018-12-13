@@ -51,7 +51,7 @@ static void initpid(void) {
 
 /* initrunflags -- set $runflags for this shell */
 static void initrunflags(int flags) {
-    Ref(List *, runflags, export_runflags(flags));
+    Ref(List *, runflags, runflags_from_int(flags));
     vardef("runflags", NULL, runflags);
     RefEnd(runflags);
 }

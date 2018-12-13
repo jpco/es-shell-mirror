@@ -45,6 +45,7 @@
 # result gets set to zero when it should not be.
 
 fn-%parse = $&parse
+
 fn %is-interactive {
   ~ $runflags interactive
 }
@@ -116,60 +117,14 @@ fn %noeval-noprint   { }                     # -n
 fn %noeval-print     { echo $* >[1=2] }      # -n -x
 fn-%throw-on-false = $&throwonfalse          # -e
 
-
-# State 0 (initial state):
 #
-# - main() calls runfd() or runstring(); those set the correct input, then they call:
-# - runinput(), which sets the dispatcher up, and calls either fn-%interactive-loop,
-#   fn-%batch-loop, or $&batchloop
-# - $&dot does some argument/runflags stuff, opens a file, then calls runfd()
-# - $&exec just calls eval() internally
-# - fn-eval just causes some glom/eval stuff to happen internally
+# Es entry points
 #
 
-# State 1:
-#
-# - runflags are exposed to es as fn args
-# - main() calls runfd() or runstring(), which set the corect input, and call
-# - fn-%run-input, which sets the dispatcher up, and calls either fn-%interactive-loop or
-#   fn-%batch-loop
-# - $&dot calls runfd(), which calls %run-input transitively
-# - ./esdump uses a simplified $&batchloop to operate (TODO: give ./esdump private
-#   bootstrapping prims?)
-
-
-# Run an input file.  Initially, this fn does not actually set the input file itself,
-# but does take runflags as args.  In the future, this will have signature
-# `fn %run-input file`, and if ~ $#file 0, it will run stdin; runflags will be a special global.
-# fn %run-input runflags {
-#   let (
-#     dispatch-p = <={if {~ $runflags printcmds} {result 'print'} {result 'noprint'}}
-#     dispatch-e = <={if {~ $runflags noexec}    {result 'noeval'} {result 'eval'}}
-#     on-false   = <={if {~ $runflags throwonfalse} {result $fn-%throw-on-false} {result ()}}
-#     loop       = <={if {~ $runflags interactive} {result %interactive-loop} {result %batch-loop}}
-#   ) {
-#     local (fn-%dispatch = $on-false $(fn-%^$(dispatch-e)^-^$(dispatch-p))) {
-#       $loop
-#     }
-#   }
-# }
-
-# noexport = $noexport fn-%dispatch
-
-
-# State 2:
-#
-# - ~all runflags are exposed to es as:
-#   x inchild: NOT exported
-#   x throwonfalse: within set-runflags (which redefines fn-%dispatch)
-#   x interactive: (which calls $&setrunflags)
-#   x noexec: within set-runflags (which redefines fn-%dispatch)
-#   x echoinput: (which calls $&setrunflags)
-#   x printcmds: within set-runflags (which redefines fn-%dispatch)
-#   x lisptrees: (which calls $&setrunflags)
-# - standard es dispatch changes behavior live (as much as possible) based on runflags
-# - main() calls es:main, which calls fn-%run-input, which calls the $&setinput primitive &c.
-# - $&dot is replaced with an es wrapper for fn-%run-input
+# Es execution is configured with the $runflags variable.  $runflags
+# can contain arbitrary terms, but only 'throwonfalse', 'interactive',
+# 'noexec', 'echoinput', 'printcmds', and 'lisptrees' (if support is
+# compiled in) do anything by default.
 
 set-runflags = @ new {
   let (nf = ()) {
@@ -226,8 +181,6 @@ fn-. = %dot
 
 fn %run-input file {
   $&runinput {
-    # FIXME: Make this assignment unnecessary, and remove it
-    runflags = $runflags
     if %is-interactive {
       $fn-%interactive-loop
     } {
@@ -235,12 +188,6 @@ fn %run-input file {
     }
   } $file
 }
-
-# State 3 (sort of a state):
-#
-# - main() is migrated, bottom to top, into es:main
-# - eventually including arg parsing
-#
 
 # es:main takes bools 'cmd' and 'stdin' and args.
 # if ~ $stdin true, then $args becomes $* and stdin is run.
@@ -257,29 +204,3 @@ es:main = @ cmd stdin args {
       $fn-%run-input
   }
 }
-
-# runflags:
-#
-#   inchild      - currently in child (e.g., don't fork on fork/exec)
-#   throwonfalse - exit on false                 -e
-#   interactive  - forced to interactive         -i
-#   noexec       - don't execute commands        -n
-#   echoinput    - echoinput to stderr           -v
-#   printcmds    - print commands                -x
-#   lisptrees    - print commands as lisp trees  -L
-#
-#   inchild      - internal (rw), NOT exported, very evil
-#   throwonfalse - internal (rw), so things like $&if can disable/reenable for each block
-#   interactive  - internal (ro), to control things like readline enablement
-#   noexec       - not internal
-#   echoinput    - internal (ro), requires input support
-#   printcmds    - not internal
-#   lisptrees    - internal (ro), requires input support
-#
-# other flags:
-#   -l  - login shell (also if $0[0] == '-')
-#   -p  - protected shell (do not load fns from env)
-#   -d  - do not catch SIGINT or SIGQUIT
-#   -s  - read cmds from stdin, stop parsing args
-#   -o  - keep stdout, stdin, and stderr closed if not already open
-#   -c  - cmd to run, babey
