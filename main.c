@@ -50,11 +50,18 @@ static void initpid(void) {
 }
 
 /* initrunflags -- set $runflags for this shell */
-static void initrunflags(int flags) {
+static void initrunflags(int flags, Boolean noexec, Boolean printcmds, Boolean loginshell) {
     Ref(List *, runflags, runflags_from_int(flags));
+    if (noexec)
+        runflags = mklist(mkstr("noexec"), runflags);
+    if (printcmds)
+        runflags = mklist(mkstr("printcmds"), runflags);
+    if (loginshell)
+        runflags = mklist(mkstr("login"), runflags);
     vardef("runflags", NULL, runflags);
     RefEnd(runflags);
 }
+
 
 /* runesrc -- run the user's profile, if it exists */
 static void runesrc(void) {
@@ -109,13 +116,15 @@ int main(int argc, char **argv) {
     volatile int ac;
     char **volatile av;
 
-    volatile int runflags = 0;      /* -[einvxL] */
-    volatile Boolean protected = FALSE; /* -p */
-    volatile Boolean allowquit = FALSE; /* -d */
+    volatile int runflags = 0;              /* -[eivL] */
+    volatile Boolean protected = FALSE;     /* -p */
+    volatile Boolean allowquit = FALSE;     /* -d */
     volatile Boolean cmd_stdin = FALSE;     /* -s */
     volatile Boolean loginshell = FALSE;    /* -l or $0[0] == '-' */
-    Boolean keepclosed = FALSE;     /* -o */
-    char *volatile cmd = NULL;    /* -c */
+    Boolean printcmds = FALSE;              /* -x */
+    Boolean noexec = FALSE;                 /* -n */
+    Boolean keepclosed = FALSE;             /* -o */
+    char *volatile cmd = NULL;              /* -c */
 
     initgc();
     initconv();
@@ -134,12 +143,12 @@ int main(int argc, char **argv) {
         case 'c':   cmd = optarg;                   break;
         case 'e':   runflags |= eval_throwonfalse;  break;
         case 'i':   runflags |= run_interactive;    break;
-        case 'n':   runflags |= run_noexec;         break;
         case 'v':   runflags |= run_echoinput;      break;
-        case 'x':   runflags |= run_printcmds;      break;
 #if LISPTREES
         case 'L':   runflags |= run_lisptrees;      break;
 #endif
+        case 'x':   printcmds = TRUE;               break;
+        case 'n':   noexec = TRUE;                  break;
         case 'l':   loginshell = TRUE;              break;
         case 'p':   protected = TRUE;               break;
         case 'o':   keepclosed = TRUE;              break;
@@ -183,7 +192,7 @@ getopt_done:
 
         initprims();
         initvars();
-        initrunflags(runflags);
+        initrunflags(runflags, noexec, printcmds, loginshell);
         initinput();
 
         runinitial();

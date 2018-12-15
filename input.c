@@ -145,16 +145,14 @@ extern void sethistory(char *file) {
     history = file;
 }
 
-#define NRUNFLAGS 6
+#define NRUNFLAGS 4
 static struct{
     int   mask;
     char *name;
 } flagarr[NRUNFLAGS] = {
     {eval_throwonfalse, "throwonfalse"},
     {run_interactive, "interactive"},
-    {run_noexec, "noexec"},         // flag value only used for arg parsing now
     {run_echoinput, "echoinput"},
-    {run_printcmds, "printcmds"},   // flag value only used for arg parsing now
     {run_lisptrees, "lisptrees"}
 };
 

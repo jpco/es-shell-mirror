@@ -46,10 +46,6 @@
 
 fn-%parse = $&parse
 
-fn %is-interactive {
-  ~ $runflags interactive
-}
-
 fn %batch-loop {
   let (result = <=true) {
     catch @ e rest {
@@ -107,24 +103,26 @@ fn %interactive-loop {
   }
 }
 
-# These functions are potentially passed to a REPL as the %dispatch
-# function.  (For %eval-noprint, note that an empty list prepended
-# to a command just causes the command to be executed.)
-
-fn %eval-noprint                             # <default>
-fn %eval-print       { echo $* >[1=2]; $* }  # -x
-fn %noeval-noprint   { }                     # -n
-fn %noeval-print     { echo $* >[1=2] }      # -n -x
-fn-%throw-on-false = $&throwonfalse          # -e
-
 #
 # Es entry points
 #
 
-# Es execution is configured with the $runflags variable.  $runflags
-# can contain arbitrary terms, but only 'throwonfalse', 'interactive',
-# 'noexec', 'echoinput', 'printcmds', and 'lisptrees' (if support is
-# compiled in) do anything by default.
+# Es execution is configured with the $runflags variable, which is
+# similar to '$-' in POSIX shells.  Unlike '$-', the value of
+# $runflags may be modified, and will (typically) modify the shell's
+# behavior when changed.
+#
+# $runflags may contain arbitrary words, but only 'throwonfalse',
+# 'interactive', 'noexec', 'echoinput', 'printcmds', and 'lisptrees'
+# (if support is compiled in) do anything by default.
+#
+# In several of the following functions, we call '$fn-<foo>' instead
+# of the usual '<foo>'.  This is to prevent these infrastructural
+# functions from mangling the expected value of '$0'.
+
+fn %is-interactive {
+  ~ $runflags interactive
+}
 
 set-runflags = @ new {
   let (nf = ()) {
@@ -140,7 +138,36 @@ set-runflags = @ new {
   }
 }
 
+# These functions are potentially passed to the REPL as the %dispatch
+# function.  (For %eval-noprint, note that an empty list prepended
+# to a command just causes the command to be executed.)
+
+fn %eval-noprint                             # <default>
+fn %eval-print       { echo $* >[1=2]; $* }  # -x
+fn %noeval-noprint   { }                     # -n
+fn %noeval-print     { echo $* >[1=2] }      # -n -x
+fn-%throw-on-false = $&throwonfalse          # -e
+
 noexport = $noexport fn-%dispatch runflags
+
+# %run-input wraps the '$&runinput' primitive with a default command
+# (which calls one of the REPL functions defined above).  When called
+# on its own, the function is a worse (but technically passable)
+# version of %dot.
+
+fn %run-input file {
+  $&runinput {
+    if %is-interactive {
+      $fn-%interactive-loop
+    } {
+      $fn-%batch-loop
+    }
+  } $file
+}
+
+# %dot is the engine for running outside scipts in the current shell.
+# It manages runflags based on args passed to it, sets $0 and $*, and
+# calls '%run-input'.
 
 fn %dot args {
   let (
@@ -179,20 +206,15 @@ fn %dot args {
 
 fn-. = %dot
 
-fn %run-input file {
-  $&runinput {
-    if %is-interactive {
-      $fn-%interactive-loop
-    } {
-      $fn-%batch-loop
-    }
-  } $file
-}
+# es:main takes bools $cmd and $stdin and the shell's args.
+# $stdin is 'true' iff the -s flag was passed, and 'cmd' is 'true' iff
+# the -c flag was passed -- in which case, the opt of -c is $args(1).
+# TODO: Handle arg parsing and runflags directly in es:main.
 
-# es:main takes bools 'cmd' and 'stdin' and args.
-# if ~ $stdin true, then $args becomes $* and stdin is run.
-# if ~ $cmd true, then $args(1) is the command to be run.
 es:main = @ cmd stdin args {
+  # Mild hack, which ensures 'set-runflags' has been run.
+  runflags = $runflags
+
   if {!$cmd && !$stdin && !~ $#args 0} {
     local ((0 *) = $args)
       $fn-%run-input $0

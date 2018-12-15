@@ -312,10 +312,8 @@ extern List *runfd(int fd, const char *name, List *cmd);
 
 /* eval_* flags are also understood as runflags */
 #define run_interactive      4  /* -i or $0[0] = '-' */
-#define run_noexec       8  /* -n */
-#define run_echoinput       16  /* -v */
-#define run_printcmds       32  /* -x */
-#define run_lisptrees       64  /* -L and defined(LISPTREES) */
+#define run_echoinput        8  /* -v */
+#define run_lisptrees       16  /* -L and defined(LISPTREES) */
 
 #if READLINE
 extern Boolean resetterminal;
