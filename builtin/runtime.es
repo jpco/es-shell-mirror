@@ -215,6 +215,20 @@ es:main = @ cmd stdin args {
   # Mild hack, which ensures 'set-runflags' has been run.
   runflags = $runflags
 
+  if {~ $runflags login} {
+    catch @ e type msg {
+      if {~ $e exit} {
+        throw $e $type $msg
+      } {~ $e error} {
+        echo >[1=2] $msg
+      } {
+        echo >[1=2] uncaught exception: $e $type $msg
+      }
+    } {
+      . ~/.esrc
+    }
+  }
+
   if {!$cmd && !$stdin && !~ $#args 0} {
     local ((0 *) = $args)
       $fn-%run-input $0

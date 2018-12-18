@@ -62,25 +62,6 @@ static void initrunflags(int flags, Boolean noexec, Boolean printcmds, Boolean l
     RefEnd(runflags);
 }
 
-
-/* runesrc -- run the user's profile, if it exists */
-static void runesrc(void) {
-    char *esrc = str("%L/.esrc", varlookup("home", NULL), "\001");
-    ExceptionHandler
-        runinput(esrc, mklist(mkstr("$&batchloop"), NULL));
-    CatchException (e)
-        if (termeq(e->term, "exit"))
-            exit(exitstatus(e->next));
-        else if (termeq(e->term, "error"))
-            eprint("%L\n",
-                   e->next == NULL ? NULL : e->next->next,
-                   " ");
-        else if (!issilentsignal(e))
-            eprint("uncaught exception: %L\n", e, " ");
-        return;
-    EndExceptionHandler
-}
-
 /* usage -- print usage message and die */
 static noreturn usage(void) {
     eprint(
@@ -202,9 +183,6 @@ getopt_done:
         initsignals(runflags & run_interactive, allowquit);
         hidevariables();
         initenv(environ, protected);
-
-        if (loginshell)
-            runesrc();
 
         vardef("0", NULL, mklist(mkstr(av[0]), NULL));
         Ref(List *, args, listify(ac - optind, av + optind));
