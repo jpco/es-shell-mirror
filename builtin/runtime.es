@@ -142,11 +142,13 @@ fn-%throw-on-false = $&throwonfalse          # -e
 # but does take runflags as args.  In the future, this will have signature
 # `fn %run-input file`, and if ~ $#file 0, it will run stdin; runflags will be a special global.
 fn %run-input runflags {
+  # Here we manually use $fn-<whatever>-loop rather than <whatever>-loop, to
+  # prevent messing with $0
   let (
     dispatch-p = <={if {~ $runflags printcmds} {result 'print'} {result 'noprint'}}
     dispatch-e = <={if {~ $runflags noexec}    {result 'noeval'} {result 'eval'}}
     on-false   = <={if {~ $runflags throwonfalse} {result $fn-%throw-on-false} {result ()}}
-    loop       = <={if {~ $runflags interactive} {result %interactive-loop} {result %batch-loop}}
+    loop       = <={if {~ $runflags interactive} {result $fn-%interactive-loop} {result $fn-%batch-loop}}
   ) {
     local (fn-%dispatch = $on-false $(fn-%^$(dispatch-e)^-^$(dispatch-p))) {
       $loop
