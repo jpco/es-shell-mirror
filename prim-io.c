@@ -439,7 +439,10 @@ PRIM(read) {
 }
 
 PRIM(isatty) {
-    int fd = getnumber(getstr(list->term));
+    int fd;
+    if (list == NULL)
+        fail("$&isatty", "usage: $&isatty fd");
+    fd = getnumber(getstr(list->term));
     if (isatty(fd))
         return true;
     return false;
