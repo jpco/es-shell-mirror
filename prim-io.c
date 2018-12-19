@@ -438,6 +438,13 @@ PRIM(read) {
     }
 }
 
+PRIM(isatty) {
+    int fd = getnumber(getstr(list->term));
+    if (isatty(fd))
+        return true;
+    return false;
+}
+
 extern Dict *initprims_io(Dict *primdict) {
     X(openfile);
     X(close);
@@ -451,5 +458,6 @@ extern Dict *initprims_io(Dict *primdict) {
     X(writeto);
 #endif
     X(read);
+    X(isatty);
     return primdict;
 }

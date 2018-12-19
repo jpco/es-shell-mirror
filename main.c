@@ -157,19 +157,11 @@ getopt_done:
         checkfd(2, oCreate);
     }
 
-    if (
-        cmd == NULL
-         && (optind == argc || cmd_stdin)
-         && (runflags & run_interactive) == 0
-         && isatty(0)
-    )
-        runflags |= run_interactive;
-
     ac = argc;
     av = argv;
 
     ExceptionHandler
-        roothandler = &_localhandler;   /* unhygeinic */
+        roothandler = &_localhandler;   /* unhygienic */
 
         initprims();
         initvars();

@@ -212,8 +212,15 @@ fn-. = %dot
 # TODO: Handle arg parsing and runflags directly in es:main.
 
 es:main = @ cmd stdin args {
-  # Mild hack, which ensures 'set-runflags' has been run.
-  runflags = $runflags
+  # Don't call me -- I'll call you!
+  es:main = ()
+
+  if {!$cmd && {$stdin || ~ $#args 0}} {
+    runflags = $runflags interactive
+  } {
+    # Mild hack, which ensures 'set-runflags' has been run.
+    runflags = $runflags
+  }
 
   if {~ $runflags login} {
     catch @ e type msg {
