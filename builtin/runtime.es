@@ -215,7 +215,7 @@ es:main = @ cmd stdin args {
   # Don't call me -- I'll call you!
   es:main = ()
 
-  if {!$cmd && {$stdin || ~ $#args 0}} {
+  if {!$cmd && {$stdin || ~ $#args 0} && $&isatty 0} {
     runflags = $runflags interactive
   } {
     # Mild hack, which ensures 'set-runflags' has been run.
