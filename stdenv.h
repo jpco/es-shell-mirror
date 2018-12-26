@@ -136,13 +136,8 @@ typedef void noreturn;
 #define NOP         do {} while (0)
 #endif
 
-#if REISER_CPP
-#define CONCAT(a,b) a/**/b
-#define STRING(s)   "s"
-#else
 #define CONCAT(a,b) a ## b
 #define STRING(s)   #s
-#endif
 
 
 /*
