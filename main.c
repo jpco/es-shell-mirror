@@ -49,19 +49,6 @@ static void initpid(void) {
     vardef("pid", NULL, mklist(mkstr(str("%d", getpid())), NULL));
 }
 
-/* initrunflags -- set $runflags for this shell */
-static void initrunflags(int flags, Boolean noexec, Boolean printcmds, Boolean loginshell) {
-    Ref(List *, runflags, runflags_from_int(flags));
-    if (noexec)
-        runflags = mklist(mkstr("noexec"), runflags);
-    if (printcmds)
-        runflags = mklist(mkstr("printcmds"), runflags);
-    if (loginshell)
-        runflags = mklist(mkstr("login"), runflags);
-    vardef("runflags", NULL, runflags);
-    RefEnd(runflags);
-}
-
 /* usage -- print usage message and die */
 static noreturn usage(void) {
     eprint(
@@ -90,105 +77,79 @@ static noreturn usage(void) {
     exit(1);
 }
 
-
 /* main -- initialize, parse command arguments, and start running */
 int main(int argc, char **argv) {
     int c;
-    volatile int ac;
-    char **volatile av;
 
-    volatile int runflags = 0;              /* -[eivL] */
+    Boolean interactive = FALSE;            /* -i */
     volatile Boolean protected = FALSE;     /* -p */
     volatile Boolean allowquit = FALSE;     /* -d */
-    volatile Boolean cmd_stdin = FALSE;     /* -s */
-    volatile Boolean loginshell = FALSE;    /* -l or $0[0] == '-' */
-    Boolean printcmds = FALSE;              /* -x */
-    Boolean noexec = FALSE;                 /* -n */
     Boolean keepclosed = FALSE;             /* -o */
-    char *volatile cmd = NULL;              /* -c */
 
     initgc();
     initconv();
 
-    if (argc == 0) {
-        argc = 1;
-        argv = ealloc(2 * sizeof (char *));
-        argv[0] = "es";
-        argv[1] = NULL;
-    }
-    if (*argv[0] == '-')
-        loginshell = TRUE;
-
     while ((c = getopt(argc, argv, "eilxvnpodsc:?GIL")) != EOF)
         switch (c) {
-        case 'c':   cmd = optarg;                   break;
-        case 'e':   runflags |= eval_throwonfalse;  break;
-        case 'i':   runflags |= run_interactive;    break;
-        case 'v':   runflags |= run_echoinput;      break;
-#if LISPTREES
-        case 'L':   runflags |= run_lisptrees;      break;
-#endif
-        case 'x':   printcmds = TRUE;               break;
-        case 'n':   noexec = TRUE;                  break;
-        case 'l':   loginshell = TRUE;              break;
+        case 'i':   interactive = TRUE;             break;
         case 'p':   protected = TRUE;               break;
         case 'o':   keepclosed = TRUE;              break;
         case 'd':   allowquit = TRUE;               break;
-        case 's':   cmd_stdin = TRUE;               goto getopt_done;
 #if GCVERBOSE
         case 'G':   gcverbose = TRUE;               break;
 #endif
 #if GCINFO
         case 'I':   gcinfo = TRUE;                  break;
 #endif
+        case 's': goto getopt_done;
+        case 'c':  // The following cases are vestigial, while we
+        case 'e':  // migrate argument parsing into es:main.
+        case 'v':
+#if LISPTREES
+        case 'L':
+#endif
+        case 'x':
+        case 'n':
+        case 'l':
+            break;
         default:
             usage();
         }
 
 getopt_done:
-    if (cmd_stdin && cmd != NULL) {
-        eprint("es: -s and -c are incompatible\n");
-        exit(1);
-    }
-
     if (!keepclosed) {
         checkfd(0, oOpen);
         checkfd(1, oCreate);
         checkfd(2, oCreate);
     }
 
-    ac = argc;
-    av = argv;
-
     ExceptionHandler
         roothandler = &_localhandler;   /* unhygienic */
 
         initprims();
         initvars();
-        initrunflags(runflags, noexec, printcmds, loginshell);
         initinput();
 
         runinitial();
 
         initpath();
         initpid();
-        initsignals(runflags & run_interactive, allowquit);
+        initsignals(interactive, allowquit);
         hidevariables();
         initenv(environ, protected);
 
-        vardef("0", NULL, mklist(mkstr(av[0]), NULL));
-        Ref(List *, args, listify(ac - optind, av + optind));
+        Ref(List *, args, listify(argc, argv));
 
-        if (cmd != NULL)
-            args = mklist(mkstr(cmd), args);
+        Ref(List *, esmain, varlookup("es:main", NULL));
+        if (esmain == NULL) {
+            eprint("es:main not set\n");
+            return 1;
+        }
 
-        args = mklist(mkstr(cmd_stdin ? "true" : "false"), args);
-        args = mklist(mkstr(cmd != NULL ? "true" : "false"), args);
-        args = append(varlookup("es:main", NULL), args);
+        esmain = append(esmain, args);
+        return exitstatus(eval(esmain, NULL, 0));
 
-        return exitstatus(eval(args, NULL, runflags));
-
-        RefEnd(args);
+        RefEnd2(esmain, args);
 
     CatchException (e)
 

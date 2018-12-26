@@ -206,44 +206,88 @@ fn %dot args {
 
 fn-. = %dot
 
-# es:main takes bools $cmd and $stdin and the shell's args.
-# $stdin is 'true' iff the -s flag was passed, and 'cmd' is 'true' iff
-# the -c flag was passed -- in which case, the opt of -c is $args(1).
-# TODO: Handle arg parsing and runflags directly in es:main.
+#
+# es:main is the entry point to the shell.  It parses the binary's argv,
+# intitializes runflags, runs .esrc (if appropriate), and starts the
+# correct run loop.
+#
 
-es:main = @ cmd stdin args {
+es:main = @ argv {
   # Don't call me -- I'll call you!
   es:main = ()
 
-  if {!$cmd && {$stdin || ~ $#args 0} && $&isatty 0} {
-    runflags = $runflags interactive
-  } {
-    # Mild hack, which ensures 'set-runflags' has been run.
-    runflags = $runflags
-  }
-
-  if {~ $runflags login} {
-    catch @ e type msg {
-      if {~ $e exit} {
-        throw $e $type $msg
-      } {~ $e error} {
-        echo >[1=2] $msg
-      } {
-        echo >[1=2] uncaught exception: $e $type $msg
-      }
-    } {
-      . ~/.esrc
+  let (
+    es = es
+    flags = ()
+    cmd = ()
+    stdin = false
+  ) {
+    if {!~ $#argv 0} {
+      (es argv) = $argv
     }
-  }
+    if {~ $es -*} {
+      flags = $flags login
+    }
 
-  if {!$cmd && !$stdin && !~ $#args 0} {
-    local ((0 *) = $args)
-      $fn-%run-input $0
-  } {$cmd} {
-    local (* = $args(2 ...))
-      $fn-eval $args(1)
-  } {
-    local (* = $args)
-      $fn-%run-input
+    for (a = $argv) {
+      if {!~ $a -*} {
+        break
+      }
+      argv = $argv(2 ...)
+      if {~ $a --} {
+        break
+      }
+      for (f = <={%fsplit '' <={~~ $a -*}}) {
+        if (
+          {~ $f c} {(cmd argv) = $argv}
+          {~ $f e} {flags = $flags throwonfalse}
+          {~ $f i} {flags = $flags interactive}
+          {~ $f v} {flags = $flags echoinput}
+          {~ $f L} {flags = $flags lisptrees}
+          {~ $f x} {flags = $flags printcmds}
+          {~ $f n} {flags = $flags noexec}
+          {~ $f l} {flags = $flags login}
+          {~ $f s} {stdin = true; break}
+        )
+      }
+    }
+
+    if {$stdin && !~ $cmd ()} {
+      echo >[1=2] 'es: -s and -c are incompatible'
+      exit 1
+    }
+
+    if {~ $cmd () && {$stdin || ~ $#argv 0} && $&isatty 0} {
+      flags = $flags interactive
+    }
+    runflags = $flags
+
+    # TODO: initsignals
+    # TODO: initenv
+
+    if {~ $runflags login} {
+      catch @ e type msg {
+        if {~ $e exit} {
+          throw $e $type $msg
+        } {~ $e error} {
+          echo >[1=2] $msg
+        } {
+          echo >[1=2] uncaught exception: $e $type $msg
+        }
+      } {
+        . ~/.esrc
+      }
+    }
+
+    if {~ $cmd () && !$stdin && !~ $#argv 0} {
+      local ((0 *) = $argv)
+        $fn-%run-input $0
+    } {!~ $cmd ()} {
+      local ((0 *) = $es $argv)
+        $fn-eval $cmd
+    } {
+      local ((0 *) = $es $argv)
+        $fn-%run-input
+    }
   }
 }
