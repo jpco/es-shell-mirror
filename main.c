@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     if (*argv[0] == '-')
         loginshell = TRUE;
 
-    while ((c = getopt(argc, argv, "eilxvnpodsc:?GIL")) != EOF)
+    while ((c = getopt(argc, argv, "+eilxvnpodsc:?GIL")) != EOF)
         switch (c) {
         case 'c':   cmd = optarg;                   break;
         case 'e':   runflags |= eval_throwonfalse;  break;
