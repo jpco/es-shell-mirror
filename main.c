@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     initgc();
     initconv();
 
-    while ((c = getopt(argc, argv, "eilxvnpodsc:?GIL")) != EOF)
+    while ((c = getopt(argc, argv, "+eilxvnpodsc:?GIL")) != EOF)
         switch (c) {
         case 'i':   interactive = TRUE;             break;
         case 'p':   protected = TRUE;               break;
