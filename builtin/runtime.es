@@ -221,6 +221,7 @@ es:main = @ argv {
     flags = ()
     cmd = ()
     stdin = false
+    allowdumps = false
   ) {
     if {!~ $#argv 0} {
       (es argv) = $argv
@@ -247,6 +248,7 @@ es:main = @ argv {
           {~ $f x} {flags = $flags printcmds}
           {~ $f n} {flags = $flags noexec}
           {~ $f l} {flags = $flags login}
+          {~ $f d} {allowdumps = true}
           {~ $f s} {stdin = true; break}
         )
       }
@@ -262,7 +264,24 @@ es:main = @ argv {
     }
     runflags = $flags
 
-    # TODO: initsignals
+    # TODO: keepclosed
+
+    let (s = $signals) {
+      if {~ $runflags interactive || !~ $s sigint} {
+        s = $s .sigint
+      }
+      if {!$allowdumps} {
+        if {~ $runflags interactive} {
+          s = $s /sigterm
+        }
+        if {~ $runflags interactive || !~ $signals sigquit} {
+          s = $s /sigquit
+        }
+      }
+      signals = $s
+    }
+
+
     # TODO: initenv
 
     if {~ $runflags login} {

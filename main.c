@@ -81,9 +81,7 @@ static noreturn usage(void) {
 int main(int argc, char **argv) {
     int c;
 
-    Boolean interactive = FALSE;            /* -i */
     volatile Boolean protected = FALSE;     /* -p */
-    volatile Boolean allowquit = FALSE;     /* -d */
     Boolean keepclosed = FALSE;             /* -o */
 
     initgc();
@@ -91,10 +89,8 @@ int main(int argc, char **argv) {
 
     while ((c = getopt(argc, argv, "+eilxvnpodsc:?GIL")) != EOF)
         switch (c) {
-        case 'i':   interactive = TRUE;             break;
         case 'p':   protected = TRUE;               break;
         case 'o':   keepclosed = TRUE;              break;
-        case 'd':   allowquit = TRUE;               break;
 #if GCVERBOSE
         case 'G':   gcverbose = TRUE;               break;
 #endif
@@ -104,6 +100,8 @@ int main(int argc, char **argv) {
         case 's': goto getopt_done;
         case 'c':  // The following cases are vestigial, while we
         case 'e':  // migrate argument parsing into es:main.
+        case 'i':
+        case 'd':
         case 'v':
 #if LISPTREES
         case 'L':
@@ -134,7 +132,7 @@ getopt_done:
 
         initpath();
         initpid();
-        initsignals(interactive, allowquit);
+        initsignals();
         hidevariables();
         initenv(environ, protected);
 

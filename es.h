@@ -357,7 +357,7 @@ extern Sigeffect esignal(int sig, Sigeffect effect);
 extern void setsigeffects(const Sigeffect effects[]);
 extern void getsigeffects(Sigeffect effects[]);
 extern List *mksiglist(void);
-extern void initsignals(Boolean interactive, Boolean allowdumps);
+extern void initsignals(void);
 extern Atomic slow, interrupted;
 extern jmp_buf slowlabel;
 extern Boolean sigint_newline;
