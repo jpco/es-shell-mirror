@@ -220,6 +220,7 @@ es:main = @ argv {
     es = es
     flags = ()
     cmd = ()
+    keepclosed = false
     stdin = false
     allowdumps = false
   ) {
@@ -248,10 +249,17 @@ es:main = @ argv {
           {~ $f x} {flags = $flags printcmds}
           {~ $f n} {flags = $flags noexec}
           {~ $f l} {flags = $flags login}
+          {~ $f o} {keepclosed = true}
           {~ $f d} {allowdumps = true}
           {~ $f s} {stdin = true; break}
         )
       }
+    }
+
+    if {!$keepclosed} {
+      if {!access -c /dev/stdin}  {exec {<    /dev/null}}
+      if {!access -c /dev/stdout} {exec {>    /dev/null}}
+      if {!access -c /dev/stderr} {exec {>[2] /dev/null}}
     }
 
     if {$stdin && !~ $cmd ()} {

@@ -19,17 +19,6 @@ extern char *optarg;
 /* extern int isatty(int fd); */
 extern char **environ;
 
-
-/* checkfd -- open /dev/null on an fd if it is closed */
-static void checkfd(int fd, OpenKind r) {
-    int new;
-    new = dup(fd);
-    if (new != -1)
-        close(new);
-    else if (errno == EBADF && (new = eopen("/dev/null", r)) != -1)
-        mvfd(new, fd);
-}
-
 /* initpath -- set $path based on the configuration default */
 static void initpath(void) {
     int i;
@@ -82,7 +71,6 @@ int main(int argc, char **argv) {
     int c;
 
     volatile Boolean protected = FALSE;     /* -p */
-    Boolean keepclosed = FALSE;             /* -o */
 
     initgc();
     initconv();
@@ -90,7 +78,6 @@ int main(int argc, char **argv) {
     while ((c = getopt(argc, argv, "+eilxvnpodsc:?GIL")) != EOF)
         switch (c) {
         case 'p':   protected = TRUE;               break;
-        case 'o':   keepclosed = TRUE;              break;
 #if GCVERBOSE
         case 'G':   gcverbose = TRUE;               break;
 #endif
@@ -100,6 +87,7 @@ int main(int argc, char **argv) {
         case 's': goto getopt_done;
         case 'c':  // The following cases are vestigial, while we
         case 'e':  // migrate argument parsing into es:main.
+        case 'o':
         case 'i':
         case 'd':
         case 'v':
@@ -115,12 +103,6 @@ int main(int argc, char **argv) {
         }
 
 getopt_done:
-    if (!keepclosed) {
-        checkfd(0, oOpen);
-        checkfd(1, oCreate);
-        checkfd(2, oCreate);
-    }
-
     ExceptionHandler
         roothandler = &_localhandler;   /* unhygienic */
 
