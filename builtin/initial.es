@@ -207,28 +207,13 @@ fn-while = escaped-by break @ cond body {
   }
 }
 
-# The switch function, ported from XS, is a convenience wrapper to test
-# a variable against multiple possible values.  It uses escaped-by to
-# catch switch-break.
-fn-switch = escaped-by switch-break @ value args {
-  if {~ $#args 0} {
-    throw error switch 'usage: switch value [case1 action1] [case2 action2] ... default'
-  }
-  for ((cond action) = $args) {
-    if (
-      {~ $value $cond} {switch-break <=$action}
-      {~ $#action 0}   {$cond}  # this is the default action
-    )
-  }
-}
-
 # The for-each builtin is for operating on streaming data, line-by-line.
 # It is roughly equivalent to the `while read line; do` construct in
 # POSIX shells.
 fn-for-each = $&noreturn @ sep lambda {
   if {~ $lambda ()} {
     lambda = $sep
-    sep = ' '^\t
+    sep = $ifs
   }
   let (line = ())
     while {!~ <={line = <=%read} ()} {
