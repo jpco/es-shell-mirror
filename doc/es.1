@@ -179,7 +179,7 @@
 .nr )P +.5v
 .sp .4v \}
 ..
-.TH ES 1 "5 March 1992"
+.TH ES 1 "25 December 2018"
 .SH NAME
 es \- extensible shell
 .SH SYNOPSIS
@@ -544,7 +544,7 @@ prints
 .De
 .PP
 Subscript ranges are of the form
-.Ic lo ... hi
+.Ic lo " ... " hi
 and refer to all the elements between
 .I lo
 and
@@ -569,6 +569,19 @@ in
 .IR rc (1)
 or
 .IR sh (1).
+Ranges given as
+.Ic hi " ... " lo
+refer to the range in reverse order.
+Thus
+.Ds
+.Cr "a = one two three"
+.Cr "echo $a(3 ... 2)"
+.De
+.PP
+prints
+.Ds
+.Cr "three two"
+.De
 .PP
 The notation
 .Ci "$" n\fR,
@@ -1045,6 +1058,19 @@ use:
 .PP
 The exit status of a pipeline is considered true if and only if every
 command in the pipeline exits true.
+.PP
+The final command in a pipeline executes in the current shell
+process.
+Thus
+.Ds
+.Cr "echo yes please | answer = <=%read
+.Cr "echo $answer"
+.De
+.PP
+prints
+.Ds
+.Cr "yes please"
+.De
 .SS "Input/Output Substitution"
 Some commands, like
 .IR cmp (1)
@@ -1426,6 +1452,11 @@ The following exceptions are known:
 Exit from a loop.
 The return value of the loop is the argument to the exception.
 .TP
+.Cr "continue \fIvalue\fP"
+Skip the rest of the current iteration of a loop.
+If this is the final iteration of the loop, its return value is the
+argument to the exception.
+.TP
 .Cr eof
 Raised by
 .Cr %parse
@@ -1612,6 +1643,38 @@ and can therefore be grabbed by a mouse and placed
 directly into a file for use as a shell script, without further editing
 being necessary.
 .TP
+.Cr runflags
+Similar to
+.Cr $-
+in
+.IR sh (1),
+.Cr $runflags
+contains a list of flags which, if present, modify the execution of
+scripts (or the standard input).
+The majority of these flags correspond with
+.I es
+command-line options.
+.IS
+.TP
+.Cr printcmds
+Set if the current input was invoked with the
+.Cr \-x
+option.
+.TP
+.Cr noexec
+Set if the current input was invoked with the
+.Cr \-n
+option.
+.TP
+.Cr throwonfalse
+Set if the current input was invoked with the
+.Cr \-e
+option.
+.TP
+.Cr interactive
+Set if the shell is interactive.
+.IE
+.TP
 .Cr signals
 Contains a list of the signals which
 .I es
@@ -1710,10 +1773,11 @@ rather than executing them.
 .Ds
 .ft \*(Cf
 ! \fIcmd\fP	%not {\fIcmd\fP}
-\fIcmd\fP &	%fork {\fIcmd\fP}
+\fIcmd\fP &	%background {\fIcmd\fP}
 \fIcmd1\fP ; \fIcmd2\fP	%seq {\fIcmd1\fP} {\fIcmd2\fP}
 \fIcmd1\fP && \fIcmd2\fP	%and {\fIcmd1\fP} {\fIcmd2\fP}
 \fIcmd1\fP || \fIcmd2\fP	%or {\fIcmd1\fP} {\fIcmd2\fP}
+\fIcmd1\fP => \fIcmd2\fP	%pass {\fIcmd1\fP} {\fIcmd2\fP}
 fn \fIname\fP \fIargs\fP { \fIcmd\fP }	fn-^\fIname\fP = @ \fIargs\fP {\fIcmd\fP}
 .ft R
 .De
@@ -1744,7 +1808,7 @@ fn \fIname\fP \fIargs\fP { \fIcmd\fP }	fn-^\fIname\fP = @ \fIargs\fP {\fIcmd\fP}
 $#\fIvar\fP	<={%count $\fIvar\fP}
 $^\fIvar\fP	<={%flatten ' ' $\fIvar\fP}
 \`{\fIcmd args\fP}	<={%backquote <={%flatten '' $ifs} {\fIcmd args\fP}}
-\`\`\fIifs\fP {\fIcmd args\fP}	<={%backquote <={%flatten '' \fIifs\fP} {\fIcmd args\fP}}
+\`\` \fIifs\fP {\fIcmd args\fP}	<={%backquote <={%flatten '' \fIifs\fP} {\fIcmd args\fP}}
 .ft R
 .De
 .SH BUILTINS
@@ -1868,6 +1932,19 @@ then all other arguments are echoed literally;
 this is used for echoing a literal
 .Cr "\-n" .
 .TP
+.Cr "escaped-by \fIexception\fP \fIcmd\fP"
+Run
+.Cr cmd,
+with the
+.Cr exception
+defined which will escape from
+.Cr cmd
+and return the thrown value.
+This is how
+.Cr break
+is implemented within
+.Cr while.
+.TP
 .Cr "eval \fIlist\fP"
 Concatenates the elements of
 .I list
@@ -1907,6 +1984,22 @@ the last command executed.)
 .Cr "false"
 Always returns a false (non-zero) return value.
 .TP
+.Cr "for-each \fR[\fP\fIsep\fP\fR]\fP \fIcmd\fP"
+Reads data from standard input, executing
+.Cr cmd
+for each line read, with the line provided as arguments.
+Lines are split on
+.Cr $ ifs
+unless
+.Cr sep
+is provided, which will override
+.Cr $ ifs.
+Setting
+.Cr sep
+to
+.Cr ''
+prevents splitting altogether.
+.TP
 .Cr "forever \fIcmd\fP"
 Runs the command repeatedly, until the shell exits or the
 command raises an exception.
@@ -1916,6 +2009,11 @@ loop except that
 .Cr forever
 does not catch any exceptions, including
 .Cr break .
+.TP
+.Cr "fork \fR[\fP\fIcmd\fR]\fP ..."
+Runs the provided
+.Cr cmd s
+simultaneously, and waits for all of them to complete.
 .TP
 .Cr "if \fR[\fP\fItest then\fR]\fP ... \fR[\fPelse\fR]\fP"
 Evaluates the command
@@ -2146,7 +2244,7 @@ Runs the command with file descriptor
 set up to append to the
 .IR file .
 .TP
-.Cr "%fork \fIcmd\fP"
+.Cr "%background \fIcmd\fP"
 Runs the command in the background.
 The shell variable
 .Cr apid
@@ -2236,18 +2334,6 @@ Some versions of
 may provide a builtin version of this function to handle
 .Cr #! -style
 shell scripts if the kernel does not.
-.TP
-.Cr "%exit-on-false \fIcmd\fP"
-Runs the command, and exits if any command
-(except those executing as the tests of conditional statements)
-returns a non-zero status.
-(This function is used as an argument to 
-.Cr %batch-loop
-and
-.Cr %interactive-loop
-when the shell is invoked with the
-.Cr \-e
-option.)
 .TP
 .Cr "%flatten \fIseparator list\fP"
 Concatenate the elements of
@@ -2388,6 +2474,16 @@ Raises the exception
 .Cr eof
 on end of input.
 .TP
+.Cr "%pass \fIcmd \fP\fR[\fIcmd\fR] ..."
+Runs the commands in order, with the variable
+.Cr $ -
+appended to all the
+.Cr cmd s
+other than the first, setting each
+.Cr $ -
+to the result of the previous
+.Cr cmd.
+.TP
 .Cr "%pathsearch \fIprogram\fP"
 Looks for an executable file named
 .I program
@@ -2429,6 +2525,18 @@ the command
 .TP
 .Cr "%seq \fIcmd ...\fP"
 Runs the commands, in order.
+.TP
+.Cr "%throw-on-false \fIcmd\fP"
+Runs the command, and exits if any command
+(except those executing as the tests of conditional statements)
+returns a non-zero status.
+(This function is used as an argument to 
+.Cr %batch-loop
+and
+.Cr %interactive-loop
+when the shell is invoked with the
+.Cr \-e
+option.)
 .TP
 .Cr "%whatis \fIprogram ...\fP"
 For each named 
@@ -2484,6 +2592,14 @@ This builtin can be used to set
 (by convention, the name of the program)
 to something other than file name.
 .TP
+.Cr "%run-input \fR[\fIrunflags ...\fR]"
+Execute a new
+.Cr %batch-loop
+or
+.Cr %interactive-loop
+on the current input (either a script or stdin), given the passed
+.Cr runflags.
+.TP
 .Cr "%split \fIseparator \fR[\fPargs ...\fR]"
 Splits its arguments into separate strings at every occurrence
 of any of the characters in the string
@@ -2529,10 +2645,10 @@ builtin functions with the same names:
 .Ds
 .ft \*(Cf
 access	forever	throw
-catch	fork    umask
-echo	if	wait
-exec	newpgrp	
-exit	result	
+catch	umask	wait
+echo	if
+exec	newpgrp
+exit	result
 .ft R
 .De
 .PP
@@ -2579,17 +2695,10 @@ prefixes and internal hyphens:
 .ta 1.75i 3.5i
 .Ds
 .ft \*(Cf
-batchloop	exitonfalse	isinteractive
+batchloop	throwonfalse	isinteractive
 .ft R
 .De
 .PP
-The
-.Cr fork
-primitive is used to implement the
-.Cr %fork
-hook function, but does not print the process ID of the
-background process or set
-.Cr $apid .
 The
 .Cr backquote
 primitive is used to implement the
