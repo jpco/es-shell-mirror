@@ -212,7 +212,7 @@ fn-while = escaped-by break @ cond body {
 fn-for-each = $&noreturn @ sep lambda {
   if {~ $lambda ()} {
     lambda = $sep
-    sep = $ifs
+    sep = $^ifs
   }
   let (line = ())
     while {!~ <={line = <=%read} ()} {
