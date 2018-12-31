@@ -257,9 +257,9 @@ es:main = @ argv {
     }
 
     if {!$keepclosed} {
-      if {!access -c /dev/stdin}  {exec {<    /dev/null}}
-      if {!access -c /dev/stdout} {exec {>    /dev/null}}
-      if {!access -c /dev/stderr} {exec {>[2] /dev/null}}
+      if {!access /dev/stdin}  {exec {<    /dev/null}}
+      if {!access /dev/stdout} {exec {>    /dev/null}}
+      if {!access /dev/stderr} {exec {>[2] /dev/null}}
     }
 
     if {$stdin && !~ $cmd ()} {
