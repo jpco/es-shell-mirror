@@ -96,7 +96,7 @@ fn %interactive-loop {
         }
         let (code = <={%parse $prompt}) {
           if {!~ $#code 0} {
-            status = <={$fn-%dispatch $code}
+            status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
           }
         }
       }
