@@ -361,7 +361,7 @@ static int arithmefy(Tree *t, es_num *ret, Binding *b) {
         char *nstr = getstr(lp->term);
         errno = 0;
 
-        es_int_t ival = STR_TO_EI(nstr, &end, 0);
+        es_int_t ival = STR_TO_EI(nstr, &end);
         if (*end == '\0') {
             if (errno == ERANGE)
                 fail("es:arith", "integer value too large");
