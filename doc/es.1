@@ -2782,10 +2782,10 @@ Returns the current version number and release date for
 .TP
 .Cr \-c
 Run the given
-.IR command ,
-placing the rest of the arguments to
-.I es
-in
+.IR command .
+If arguments are given, the first is assigned to
+.Cr $0 ,
+and the rest of the arguments are
 .Cr $* .
 .TP
 .Cr \-s

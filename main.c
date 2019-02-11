@@ -204,8 +204,12 @@ getopt_done:
             return exitstatus(runfd(fd, file, runflags));
         }
 
+        if (optind < ac)
+            vardef("0", NULL, mklist(mkstr(av[optind++]), NULL));
+        else
+            vardef("0", NULL, mklist(mkstr(av[0]), NULL));
+
         vardef("*", NULL, listify(ac - optind, av + optind));
-        vardef("0", NULL, mklist(mkstr(av[0]), NULL));
         if (cmd != NULL)
             return exitstatus(runstring(cmd, NULL, runflags));
         return exitstatus(runfd(0, "stdin", runflags));
