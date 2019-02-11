@@ -310,8 +310,13 @@ es:main = @ argv {
       local ((0 *) = $argv)
         $fn-%run-input $0
     } {!~ $cmd ()} {
-      local ((0 *) = $es $argv)
-        $fn-eval $cmd
+      if {!~ $#argv 0} {
+        local ((0 *) = $argv)
+          $fn-eval $cmd
+      } {
+        local ((0 *) = $es)
+          $fn-eval $cmd
+      }
     } {
       local ((0 *) = $es $argv)
         $fn-%run-input
