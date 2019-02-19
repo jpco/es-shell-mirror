@@ -41,7 +41,7 @@ extern int read_history(const char *);
 extern int append_history(int, const char *);
 extern void rl_reset_terminal(char *);
 
-#if HAVE_LIBREADLINE
+#if HAVE_RL_RESET_SCREEN_SIZE
 extern void rl_reset_screen_size();
 #endif
 
@@ -270,7 +270,7 @@ static char *callreadline(char *prompt) {
         rl_reset_terminal(NULL);
         resetterminal = FALSE;
     }
-#if HAVE_LIBREADLINE
+#if HAVE_RL_RESET_SCREEN_SIZE
     rl_reset_screen_size();
 #endif
     interrupted = FALSE;

@@ -98,6 +98,9 @@
 /* Define if you have the readline library (-lreadline).  */
 #undef HAVE_LIBREADLINE
 
+/* Define if you have `rl_reset_screen_size`. */
+#undef HAVE_RL_RESET_SCREEN_SIZE
+
 /* Define if you have the sun library (-lsun).  */
 #undef HAVE_LIBSUN
 

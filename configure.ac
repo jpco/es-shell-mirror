@@ -73,7 +73,7 @@ then
 	then
 		AC_CHECK_LIB(edit, readline)
 	fi
-
+    AC_CHECK_FUNCS(rl_reset_screen_size)
 fi
 
 dnl Checks for header files.
