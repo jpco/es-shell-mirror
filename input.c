@@ -32,13 +32,22 @@ static char *history;
 
 #if READLINE
 int rl_meta_chars;  /* for editline; ignored for gnu readline */
+
+static int rl_initialized = FALSE;
+
 extern char *readline(char *);
 extern void add_history(char *);
 extern int read_history(const char *);
 extern int append_history(int, const char *);
 extern void rl_reset_terminal(char *);
+
+#if HAVE_LIBREADLINE
+extern void rl_reset_screen_size();
+#endif
+
 extern char *rl_basic_word_break_characters;
 extern char *rl_completer_quote_characters;
+extern void rl_initialize();
 
 #if ABUSED_GETENV
 static char *stdgetenv(const char *);
@@ -253,10 +262,17 @@ static char *callreadline(char *prompt) {
     char *r;
     if (prompt == NULL)
         prompt = ""; /* bug fix for readline 2.0 */
+    if (!rl_initialized) {
+        rl_initialize();
+        rl_initialized = TRUE;
+    }
     if (resetterminal) {
         rl_reset_terminal(NULL);
         resetterminal = FALSE;
     }
+#if HAVE_LIBREADLINE
+    rl_reset_screen_size();
+#endif
     interrupted = FALSE;
     if (!setjmp(slowlabel)) {
         slow = TRUE;
