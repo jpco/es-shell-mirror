@@ -75,15 +75,34 @@ extern char *gethistory() {
         *histbuf = '\0';
     char *res = histbufbegin;
     histbufbegin = NULL;
+
+    if (res == NULL)
+        return res;
+
+    char *s, *end;
+    long len = strlen(res);
+
+    /* if this command is only whitespace and comments, return NULL */
+    for (s = res, end = s + len; s < end; s++)
+        switch (*s) {
+        case '#': case '\n':    goto retnull;
+        case ' ': case '\t':    break;
+        default:        goto retreal;
+        }
+retnull:
+    efree(res);
+    res = NULL;
+retreal:
     return res;
 }
 
 extern void writehistory(char *cmd) {
-    long len = strlen(cmd);
     if (cmd == NULL)
         return;
+
 #if READLINE
     int err;
+    long len = strlen(cmd);
     if (len > 0 && cmd[len - 1] == '\n')
         cmd[len- 1] = '\0';
     add_history(cmd);
@@ -95,7 +114,6 @@ extern void writehistory(char *cmd) {
         return;
     }
 #else
-    const char *s, *end;
     if (history == NULL)
         return;
     if (historyfd == -1) {
@@ -106,16 +124,6 @@ extern void writehistory(char *cmd) {
             return;
         }
     }
-
-    /* skip empty lines and comments in history */
-    for (s = cmd, end = s + len; s < end; s++)
-        switch (*s) {
-        case '#': case '\n':    return;
-        case ' ': case '\t':    break;
-        default:        goto writeit;
-        }
-    writeit:
-        ;
 
     ewrite(historyfd, cmd, len);
 #endif
