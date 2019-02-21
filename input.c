@@ -25,10 +25,7 @@
 
 Input *input;
 char *prompt, *prompt2;
-
-Boolean disablehistory = FALSE;
 Boolean resetterminal = FALSE;
-static char *history;
 
 #if READLINE
 int rl_meta_chars;  /* for editline; ignored for gnu readline */
@@ -36,9 +33,6 @@ int rl_meta_chars;  /* for editline; ignored for gnu readline */
 static int rl_initialized = FALSE;
 
 extern char *readline(char *);
-extern void add_history(char *);
-extern int read_history(const char *);
-extern int append_history(int, const char *);
 extern void rl_reset_terminal(char *);
 
 #if HAVE_RL_RESET_SCREEN_SIZE
@@ -54,9 +48,7 @@ static char *stdgetenv(const char *);
 static char *esgetenv(const char *);
 static char *(*realgetenv)(const char *) = stdgetenv;
 #endif
-#else /* !READLINE */
-static int historyfd = -1;
-#endif
+#endif /* READLINE */
 
 
 /*
@@ -88,71 +80,6 @@ static void warn(char *s) {
     eprint("warning: %s\n", locate(input, s));
 }
 
-
-/*
- * history
- */
-
-/* loghistory -- write the last command out to a file */
-static void loghistory(const char *cmd, size_t len) {
-#if READLINE
-    int err;
-    if (history == NULL || disablehistory)
-        return;
-    if ((err = append_history(1, history))) {
-        eprint("history(%s): %s\n", history, esstrerror(errno));
-        vardef("history", NULL, NULL);
-        return;
-    }
-#else
-    const char *s, *end;
-    if (history == NULL || disablehistory)
-        return;
-    if (historyfd == -1) {
-        historyfd = eopen(history, oAppend);
-        if (historyfd == -1) {
-            eprint("history(%s): %s\n", history, esstrerror(errno));
-            vardef("history", NULL, NULL);
-            return;
-        }
-    }
-    /* skip empty lines and comments in history */
-    for (s = cmd, end = s + len; s < end; s++)
-        switch (*s) {
-        case '#': case '\n':    return;
-        case ' ': case '\t':    break;
-        default:        goto writeit;
-        }
-    writeit:
-        ;
-    /*
-     * Small unix hack: since read() reads only up to a newline
-     * from a terminal, then presumably this write() will write at
-     * most only one input line at a time.
-     */
-    ewrite(historyfd, cmd, len);
-#endif
-}
-
-/* sethistory -- change the file for the history log */
-extern void sethistory(char *file) {
-#if READLINE
-    if (file != NULL) {
-        int err;
-        if ((err = read_history(file))) {
-            eprint("sethistory(%s): %s\n", file, esstrerror(errno));
-            vardef("history", NULL, NULL);
-            return;
-        }
-    }
-#else
-    if (historyfd != -1) {
-        close(historyfd);
-        historyfd = -1;
-    }
-#endif
-    history = file;
-}
 
 #define NRUNFLAGS 7
 static struct{
@@ -369,8 +296,6 @@ static int fdfill(Input *in) {
         if (rlinebuf == NULL)
             nread = 0;
         else {
-            if (*rlinebuf != '\0')
-                add_history(rlinebuf);
             nread = strlen(rlinebuf) + 1;
             if (in->buflen < (unsigned int)nread) {
                 while (in->buflen < (unsigned int)nread)
@@ -399,7 +324,7 @@ static int fdfill(Input *in) {
     }
 
     if (in->runflags & run_interactive)
-        loghistory((char *) in->bufbegin, nread);
+        addhistory((char *) in->bufbegin, nread);
 
     in->buf = in->bufbegin;
     in->bufend = &in->buf[nread];
@@ -434,6 +359,15 @@ extern Tree *parse(char *pr1, char *pr2) {
     gcdisable();
     result = yyparse();
     gcenable();
+
+    if (input->buf == input->bufend) {
+        char *h = gethistory();
+        if (h != NULL) {
+            if (input->runflags & run_interactive)
+                writehistory(h);
+            efree(h);
+        }
+    }
 
     if (result || error != NULL) {
         char *e;
@@ -626,18 +560,15 @@ extern void initinput(void) {
     input = NULL;
 
     /* declare the global roots */
-    globalroot(&history);       /* history file */
     globalroot(&error);     /* parse errors */
     globalroot(&prompt);        /* main prompt */
     globalroot(&prompt2);       /* secondary prompt */
 
-#if !READLINE
-    /* mark the historyfd as a file descriptor to hold back from forked children */
-    registerfd(&historyfd, TRUE);
-#endif
-
     /* call the parser's initialization */
     initparse();
+
+    /* call history initialization */
+    inithistory();
 
 #if READLINE
     rl_meta_chars = 0;
