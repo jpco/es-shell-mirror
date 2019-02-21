@@ -16,7 +16,6 @@
  * globals
  */
 
-Boolean disablehistory = FALSE;
 static char *history;
 
 #if READLINE
@@ -87,10 +86,8 @@ extern void writehistory(char *cmd) {
     int err;
     if (len > 0 && cmd[len - 1] == '\n')
         cmd[len- 1] = '\0';
-    // FIXME: should disablehistory prevent add_history() from being called?
-    //        Do we even need disablehistory now?
     add_history(cmd);
-    if (history == NULL || disablehistory)
+    if (history == NULL)
         return;
     if ((err = append_history(1, history))) {
         eprint("history(%s): %s\n", history, esstrerror(err));
@@ -99,7 +96,7 @@ extern void writehistory(char *cmd) {
     }
 #else
     const char *s, *end;
-    if (history == NULL || disablehistory)
+    if (history == NULL)
         return;
     if (historyfd == -1) {
         historyfd = eopen(history, oAppend);

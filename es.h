@@ -321,8 +321,6 @@ extern Boolean resetterminal;
 
 /* history.c */
 
-extern Boolean disablehistory;
-
 extern void inithistory(void);
 extern void sethistory(char *file);
 extern void addhistory(char *line, long len);
