@@ -61,10 +61,12 @@ extern void addhistory(char *line, long len) {
         histbuflen = BUFSIZE;
     }
 
-    if (histbuflen < (1 + len + histbuf - histbufbegin)) {
-        while (histbuflen < (1 + len + histbuf - histbufbegin))
+    ptrdiff_t bufpos = histbuf - histbufbegin;
+    if (histbuflen < (1 + len + bufpos)) {
+        while (histbuflen < (1 + len + bufpos))
             histbuflen *= 2;
         histbufbegin = erealloc(histbufbegin, histbuflen);
+        histbuf = histbufbegin + bufpos;
     }
     memcpy(histbuf, line, len);
     histbuf += len;
