@@ -102,9 +102,9 @@ extern void writehistory(char *cmd) {
     if (cmd == NULL)
         return;
 
+    long len = strlen(cmd);
 #if READLINE
     int err;
-    long len = strlen(cmd);
     if (len > 0 && cmd[len - 1] == '\n')
         cmd[len- 1] = '\0';
     add_history(cmd);
