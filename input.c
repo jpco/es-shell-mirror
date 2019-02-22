@@ -28,20 +28,16 @@ char *prompt, *prompt2;
 Boolean resetterminal = FALSE;
 
 #if READLINE
-int rl_meta_chars;  /* for editline; ignored for gnu readline */
-
-static int rl_initialized = FALSE;
-
-extern char *readline(char *);
-extern void rl_reset_terminal(char *);
-
-#if HAVE_RL_RESET_SCREEN_SIZE
-extern void rl_reset_screen_size();
+#if HAVE_LIBREADLINE
+#include <readline/readline.h>
+#include <readline/history.h>
 #endif
 
-extern char *rl_basic_word_break_characters;
-extern char *rl_completer_quote_characters;
-extern void rl_initialize();
+#if HAVE_LIBEDIT
+#include <editline/readline.h>
+#endif
+
+static int rl_initialized = FALSE;
 
 #if ABUSED_GETENV
 static char *stdgetenv(const char *);
@@ -543,6 +539,54 @@ extern Tree *parsestring(const char *str) {
     return result;
 }
 
+
+#if HAVE_LIBREADLINE
+/* Teach readline how to quote a filename in es. "text" is the filename to be
+ * quoted. "type" is either SINGLE_MATCH, if there is only one completion
+ * match, or MULT_MATCH. "qp" is a pointer to any opening quote character the
+ * user typed.
+ */
+static char *quote(char *text, int type, char *qp) {
+	char *p, *r;
+
+    eprint(" >q %s\n", text);
+
+	/* worst case: string is entirely quote characters each of which will
+	 * be doubled, plus the initial and final quotes and \0 */
+	p = r = ealloc(strlen(text) * 2 + 3);
+	/* supply opening quote unless already there */
+	if (*qp != '\'')
+		*p++ = '\'';
+	while (*text) {
+		if (*text == '\'')
+			*p++ = '\''; /* double existing quote */
+		*p++ = *text++;
+	}
+	if (type == SINGLE_MATCH)
+		*p++ = '\'';
+	*p = '\0';
+	return r;
+}
+
+/* "unquote" is called with "text", the text of the word to be dequoted, and
+ * "quote_char", which is the quoting character that delimits the filename.
+ */
+char *unquote(char *text, int quote_char) {
+	char *p, *r;
+
+    eprint(" >u %s\n", text);
+
+	p = r = ealloc(strlen(text) + 1);
+	while (*text) {
+		*p++ = *text++;
+		if (quote_char && *(text - 1) == '\'' && *text == '\'')
+			++text;
+	}
+	*p = '\0';
+	return r;
+}
+#endif
+
 /*
  * initialization
  */
@@ -552,7 +596,7 @@ extern void initinput(void) {
     input = NULL;
 
     /* declare the global roots */
-    globalroot(&error);     /* parse errors */
+    globalroot(&error);         /* parse errors */
     globalroot(&prompt);        /* main prompt */
     globalroot(&prompt2);       /* secondary prompt */
 
@@ -563,8 +607,15 @@ extern void initinput(void) {
     inithistory();
 
 #if READLINE
-    rl_meta_chars = 0;
+    rl_readline_name = "es";
+    rl_completer_word_break_characters=" \t\n\\`$><=;|&{()}";
     rl_basic_word_break_characters=" \t\n\\'`$><=;|&{()}";
     rl_completer_quote_characters="'";
+
+#if HAVE_LIBREADLINE
+    rl_filename_quote_characters = "'";
+    rl_filename_quoting_function = quote;
+    rl_filename_dequoting_function = unquote;
+#endif
 #endif
 }
