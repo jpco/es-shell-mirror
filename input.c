@@ -549,8 +549,6 @@ extern Tree *parsestring(const char *str) {
 static char *quote(char *text, int type, char *qp) {
 	char *p, *r;
 
-    eprint(" >q %s\n", text);
-
 	/* worst case: string is entirely quote characters each of which will
 	 * be doubled, plus the initial and final quotes and \0 */
 	p = r = ealloc(strlen(text) * 2 + 3);
@@ -573,8 +571,6 @@ static char *quote(char *text, int type, char *qp) {
  */
 char *unquote(char *text, int quote_char) {
 	char *p, *r;
-
-    eprint(" >u %s\n", text);
 
 	p = r = ealloc(strlen(text) + 1);
 	while (*text) {
