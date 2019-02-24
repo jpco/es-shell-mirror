@@ -286,7 +286,7 @@ top:
     switch (tree->kind) {
 
     case nConcat: case nList: case nQword: case nVar: case nVarsub:
-    case nWord: case nThunk: case nLambda: case nCall: case nPrim: {
+    case nWord: case nLambda: case nCall: case nPrim: {
         List *list;
         Ref(Binding *, bp, binding);
         list = glom(tree, binding, TRUE);
@@ -328,9 +328,6 @@ top:
 
 /* bindargs -- bind an argument list to the parameters of a lambda */
 extern Binding *bindargs(Tree *params, List *args, Binding *binding) {
-    if (params == NULL)
-        return mkbinding("*", args, binding);
-
     gcdisable();
 
     for (; params != NULL; params = params->u[1].p) {
@@ -393,10 +390,12 @@ restart:
             assert(cp->binding == NULL);
             list = prim(cp->tree->u[0].s, list->next, binding, flags);
             break;
-        case nThunk:
-            list = walk(cp->tree->u[0].p, cp->binding, flags);
-            break;
         case nLambda:
+            if (cp->tree->u[0].p == NULL) {
+                list = walk(cp->tree->u[1].p, cp->binding, flags);
+                break;
+            }
+
             ExceptionHandler
 
                 Push p;

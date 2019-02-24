@@ -70,7 +70,6 @@ static Binding *extract(Tree *tree, Binding *bindings) {
                 NodeKind k = word->kind;
                 assert(defn->kind == nList);
                 switch (k) {
-                case nThunk:
                 case nLambda:
                 case nList:
                 case nPrim:

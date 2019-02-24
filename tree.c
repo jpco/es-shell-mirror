@@ -33,7 +33,7 @@ extern Tree *mk VARARGS1(NodeKind, t) {
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].f = va_arg(ap, es_float_t);
         break;
-    case nCall: case nThunk: case nVar: case nArith:
+    case nCall: case nVar: case nArith:
         n = gcalloc(offsetof(Tree, u[1]), &Tree1Tag);
         n->u[0].p = va_arg(ap, Tree *);
         break;
@@ -90,7 +90,7 @@ static size_t Tree1Scan(void *p) {
     case nPrim: case nWord: case nQword:
         n->u[0].s = forward(n->u[0].s);
         break;
-    case nCall: case nThunk: case nVar: case nArith:
+    case nCall: case nVar: case nArith:
         n->u[0].p = forward(n->u[0].p);
         break;
     case nInt: case nFloat:

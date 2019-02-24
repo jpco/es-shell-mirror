@@ -8,6 +8,8 @@
 Tree errornode;
 Tree *parsetree;
 
+#define IS_THUNK(t)    ((t)->kind == nLambda && (t)->u[0].p == NULL)
+
 /* initparse -- called at the dawn of time */
 extern void initparse(void) {
     globalroot(&parsetree);
@@ -51,18 +53,18 @@ extern Tree *treeconsend2(Tree *head, Tree *tail) {
 /* thunkify -- wrap a tree in thunk braces if it isn't already a thunk */
 extern Tree *thunkify(Tree *tree) {
     if (tree != NULL) {
-        if (tree->kind == nThunk)
+        if (IS_THUNK(tree))
             return tree;
         if (tree->CAR != NULL && tree->CDR == NULL) {
-            if (tree->CAR->kind == nThunk)
+            if (IS_THUNK(tree->CAR))
                 return tree->CAR;
             if (tree->CAR->kind == nList)
                 if (tree->CAR->CAR != NULL && tree->CAR->CDR == NULL)
-                    if (tree->CAR->CAR->kind == nThunk)
+                    if (IS_THUNK(tree->CAR->CAR))
                         return tree->CAR->CAR;
         }
     }
-    return mk(nThunk, tree);
+    return mk(nLambda, NULL, tree);
 }
 
 /* firstis -- check if the first word of a literal command matches a known string */
@@ -101,6 +103,8 @@ extern Tree *fnassign(Tree *name, Tree *defn) {
 
 /* mklambda -- create a lambda */
 extern Tree *mklambda(Tree *params, Tree *body) {
+    if (params == NULL)
+        params = treecons(mk(nWord, "*"), NULL);
     return mk(nLambda, params, body);
 }
 
@@ -163,11 +167,11 @@ static Tree *injectpass(Tree *tree) {
             Tree *body = tree;
             int i;
             for (i = 0; i < 5; i++) {
-                assert(body != NULL && (body->kind == nList || body->kind == nThunk));
+                assert(body != NULL && (body->kind == nList || IS_THUNK(body)));
                 // Artisinally crafted for the peculiar syntax of redirections
                 body = body->u[i < 3].p;
             }
-            if (body->kind == nThunk)
+            if (IS_THUNK(body))
                 body = treecons(body, treecons(nv, NULL));
             else body = treeconsend2(body, nv);
         } else {
@@ -189,7 +193,7 @@ extern Tree *mkpass(Tree *t1, Tree *t2) {
     } else if (t2 != NULL) {
         t2 = injectpass(t2);
 
-        if (t2->CAR->kind == nThunk && t2->CDR == NULL) {
+        if (IS_THUNK(t2->CAR) && t2->CDR == NULL) {
             tail = t2;
         } else {
             tail = treecons(thunkify(t2), NULL);
@@ -275,7 +279,7 @@ extern Tree *mkredircmd(char *cmd, int fd) {
 
 extern Tree *mkredir(Tree *cmd, Tree *file) {
     Tree *word = NULL;
-    if (file != NULL && file->kind == nThunk) { /* /dev/fd operations */
+    if (file != NULL && IS_THUNK(file)) { /* /dev/fd operations */
         char *op;
         Tree *var;
         static int id = 0;

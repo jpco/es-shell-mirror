@@ -173,7 +173,7 @@ PRIM(parse) {
     tree = parse(prompt1, prompt2);
     result = (tree == NULL)
            ? NULL
-           : mklist(mkterm(NULL, mkclosure(mk(nThunk, tree), NULL)),
+           : mklist(mkterm(NULL, mkclosure(mk(nLambda, NULL, tree), NULL)),
                 NULL);
     RefEnd2(prompt2, prompt1);
     return result;

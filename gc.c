@@ -616,7 +616,6 @@ static char *tree1name(NodeKind k) {
     case nPrim: return "Prim";
     case nQword:    return "Qword";
     case nCall: return "Call";
-    case nThunk:    return "Thunk";
     case nVar:  return "Var";
     case nWord: return "Word";
     }
