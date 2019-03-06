@@ -356,15 +356,6 @@ extern Tree *parse(char *pr1, char *pr2) {
     result = yyparse();
     gcenable();
 
-    if (input->buf == input->bufend) {
-        char *h = gethistory();
-        if (h != NULL) {
-            if (input->runflags & run_interactive)
-                writehistory(h);
-            efree(h);
-        }
-    }
-
     if (result || error != NULL) {
         char *e;
         assert(error != NULL);

@@ -158,11 +158,19 @@ PRIM(sethistory) {
     RefReturn(lp);
 }
 
+PRIM(writehistory) {
+    if (list == NULL || list->term == NULL || list->next != NULL)
+        fail("$&writehistory", "usage: $&writehistory command");
+    writehistory(getstr(list->term));
+    return NULL;
+}
+
 PRIM(parse) {
-    List *result;
+    List *result = NULL;
     Tree *tree;
     Ref(char *, prompt1, NULL);
     Ref(char *, prompt2, NULL);
+    Ref(List *, hist, NULL);
     Ref(List *, lp, list);
     if (lp != NULL) {
         prompt1 = getstr(lp->term);
@@ -170,12 +178,19 @@ PRIM(parse) {
             prompt2 = getstr(lp->term);
     }
     RefEnd(lp);
+
     tree = parse(prompt1, prompt2);
-    result = (tree == NULL)
-           ? NULL
-           : mklist(mkterm(NULL, mkclosure(mk(nLambda, NULL, tree), NULL)),
-                NULL);
-    RefEnd2(prompt2, prompt1);
+
+    char *h;
+    if ((h = gethistory()) != NULL) {
+        hist = mklist(mkterm(str("%s", h), NULL), NULL);
+        efree(h);
+    }
+
+    if (tree != NULL)
+        result = mklist(mkterm(NULL, mkclosure(mk(nLambda, NULL, tree), NULL)), hist);
+
+    RefEnd3(hist, prompt2, prompt1);
     return result;
 }
 
@@ -194,6 +209,7 @@ PRIM(batchloop) {
             List *cmd = prim("parse", NULL, NULL, 0);
             SIGCHK();
             if (cmd != NULL) {
+                cmd->next = NULL;
                 result = eval(cmd, NULL, evalflags);
                 SIGCHK();
             }
@@ -290,6 +306,7 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(flatten);
     X(whatis);
     X(sethistory);
+    X(writehistory);
     X(split);
     X(fsplit);
     X(var);

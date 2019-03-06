@@ -19,10 +19,10 @@ extern Term *mkstr(char *str) {
     Term *term;
     Ref(char *, string, str);
     term = gcnew(Term);
-        term->str = string;
+    term->str = string;
     term->closure = NULL;
-        RefEnd(string);
-        return term;
+    RefEnd(string);
+    return term;
 }
 
 extern Closure *getclosure(Term *term) {
