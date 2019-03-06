@@ -2469,10 +2469,23 @@ Reads input from the current input source, printing
 before reading anything and
 .I prompt2
 before reading continued lines.
-Returns a code fragment suitable for execution.
+Returns a code fragment suitable for execution, and if
+.Cr $ runflags
+contains
+.Cr interactive ,
+the input which was parsed.
 Raises the exception
 .Cr eof
 on end of input.
+.TP
+.Cr "%write-history \fIcmd\fR"
+Called by
+.Cr %interactive-loop
+after every call to
+.Cr %parse .
+This function writes the given command string out to the history file
+given by the variable
+.Cr $ history.
 .TP
 .Cr "%pass \fIcmd \fP\fR[\fIcmd\fR] ..."
 Runs the commands in order, with the variable
@@ -2695,7 +2708,8 @@ prefixes and internal hyphens:
 .ta 1.75i 3.5i
 .Ds
 .ft \*(Cf
-batchloop	throwonfalse	isinteractive
+batchloop	throwonfalse
+isinteractive	writehistory
 .ft R
 .De
 .PP

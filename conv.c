@@ -102,10 +102,6 @@ top:
         } else
             return FALSE;
 
-    case nThunk:
-        fmtprint(f, "{%T}", n->u[0].p);
-        return FALSE;
-
     case nVarsub:
         fmtprint(f, "$%#T(%T)", n->u[0].p, n->u[1].p);
         return FALSE;
@@ -130,7 +126,8 @@ top:
     case nCall: {
         Tree *t = n->u[0].p;
         fmtprint(f, "<=");
-        if (t != NULL && (t->kind == nThunk || t->kind == nPrim))
+        if (t != NULL && ((t->kind == nLambda && t->u[0].p == NULL)
+                    || t->kind == nPrim))
             tailcall(t, FALSE);
         fmtprint(f, "{%T}", t);
         return FALSE;
@@ -145,12 +142,9 @@ top:
         return FALSE;
 
     case nLambda:
-        fmtprint(f, "@ ");
-        if (n->u[0].p == NULL)
-            fmtprint(f, "*");
-        else
-            fmtprint(f, "%T", n->u[0].p);
-        fmtprint(f, " {%T}", n->u[1].p);
+        if (n->u[0].p)
+            fmtprint(f, "@ %T ", n->u[0].p);
+        fmtprint(f, "{%T}", n->u[1].p);
         return FALSE;
 
     case nList:
@@ -459,10 +453,6 @@ static Boolean Bconv(Format *f) {
 
     case nCall:
         fmtprint(f, "(call %B)", n->u[0].p);
-        break;
-
-    case nThunk:
-        fmtprint(f, "(thunk %B)", n->u[0].p);
         break;
 
     case nVar:

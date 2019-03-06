@@ -24,6 +24,10 @@
 # that case, the complete command and not just one physical line is
 # returned.
 #
+# If the shell is interactive, %parse also returns the buffered input
+# string which produced the command.  This string can be passed to the
+# %write-history function to be logged in the shell's history.
+#
 # By convention, the REPL must pass commands to the fn %dispatch,
 # which has the actual responsibility for executing the command.
 # Whatever routine invokes the REPL (internal, for now) has
@@ -45,6 +49,7 @@
 # result gets set to zero when it should not be.
 
 fn-%parse = $&parse
+fn-%write-history = $&writehistory
 
 fn %batch-loop {
   let (result = <=true) {
@@ -58,7 +63,7 @@ fn %batch-loop {
       forever {
         let (cmd = <=%parse) {
           if {!~ $#cmd 0} {
-            result = <={$fn-%dispatch $cmd}
+            result = <={$fn-%dispatch $cmd(1)}
           }
         }
       }
@@ -93,8 +98,9 @@ fn %interactive-loop {
             }
           } {%prompt}
         }
-        let (code = <={%parse $prompt}) {
+        let ((code str) = <={%parse $prompt}) {
           if {!~ $#code 0} {
+            %write-history $str
             status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
           }
         }

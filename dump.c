@@ -97,7 +97,6 @@ static const char *nodename(NodeKind k) {
     case nExtract:  return "Extract";
     case nPrim:     return "Prim";
     case nQword:    return "Qword";
-    case nThunk:    return "Thunk";
     case nVar:      return "Var";
     case nVarsub:   return "Varsub";
     case nWord:     return "Word";
@@ -127,7 +126,7 @@ static char *dumptree(Tree *tree) {
             print("static const Tree_f %s = { n%s, { { (es_float_t) %s } } };\n",
                     name + 1, nodename(tree->kind), str("%f", tree->u[0].f));
             break;
-        case nCall: case nThunk: case nVar:
+        case nCall: case nVar:
             print("static const Tree_p %s = { n%s, { { (Tree *) %s } } };\n",
                   name + 1, nodename(tree->kind), dumptree(tree->u[0].p));
             break;

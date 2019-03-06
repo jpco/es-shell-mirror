@@ -433,7 +433,6 @@ static List *glom1(Tree *tree, Binding *binding) {
             tp = NULL;
             break;
         }
-        case nThunk:
         case nLambda:
             list = mklist(mkterm(NULL, mkclosure(tp, bp)), NULL);
             tp = NULL;
