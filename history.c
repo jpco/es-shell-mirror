@@ -105,16 +105,18 @@ extern void writehistory(char *cmd) {
     long len = strlen(cmd);
 #if READLINE
     int err;
-    if (len > 0 && cmd[len - 1] == '\n')
-        cmd[len- 1] = '\0';
+    Boolean renl = FALSE;
+    if (len > 0 && cmd[len - 1] == '\n') {
+        cmd[len - 1] = '\0';
+        renl = TRUE;
+    }
     add_history(cmd);
-    if (history == NULL)
-        return;
-    if ((err = append_history(1, history))) {
+    if (history != NULL && (err = append_history(1, history))) {
         eprint("history(%s): %s\n", history, esstrerror(err));
         vardef("history", NULL, NULL);
-        return;
     }
+    if (renl)
+        cmd[len - 1] = '\n';
 #else
     if (history == NULL)
         return;
