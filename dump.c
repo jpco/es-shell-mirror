@@ -105,10 +105,62 @@ static const char *nodename(NodeKind k) {
     }
 }
 
+static Boolean nstreq(char *a, char *b) {
+    if (a == NULL && b == NULL)
+        return TRUE;
+    else if (a == NULL || b == NULL)
+        return FALSE;
+    else
+        return streq(a, b);
+}
+
+static Boolean deepequal(Tree *t1, Tree *t2) {
+    if (t1 == NULL && t2 == NULL)
+        return TRUE;
+    else if (t1 == NULL || t2 == NULL)
+        return FALSE;
+    if (t1->kind != t2->kind)
+        return FALSE;
+
+    switch (t1->kind) {
+    case nWord: case nQword: case nPrim:
+        return nstreq(t1->u[0].s, t2->u[0].s);
+    case nOp: case nCmp:
+        return (nstreq(t1->u[0].s, t2->u[0].s)
+            && deepequal(t1->u[1].p, t2->u[1].p));
+    case nInt:
+        return t1->u[0].i == t2->u[0].i;
+    case nFloat:
+        return t1->u[0].f == t2->u[0].f;
+    case nCall: case nVar: case nArith:
+        return deepequal(t1->u[0].p, t2->u[0].p);
+    case nAssign: case nConcat: case nClosure: case nFor:
+    case nLambda: case nLet: case nList: case nLocal:
+    case nVarsub: case nMatch: case nExtract:
+        return deepequal(t1->u[0].p, t2->u[0].p) && deepequal(t1->u[1].p, t2->u[1].p);
+    default:
+        // TODO: be an error
+        return FALSE;
+    }
+
+    // TODO: be an error
+    return FALSE;
+}
+
+static void treededup(void *arg, char *unused, void *value) {
+    Tree **new = arg;
+    Tree *old = value;
+    if (deepequal(*new, old))
+        *new = old;
+}
+
 static char *dumptree(Tree *tree) {
     char *name;
     if (tree == NULL)
         return "NULL";
+
+    dictforall(cvars, treededup, &tree);
+
     name = str("&T_%ulx", tree);
     if (dictget(cvars, name) == NULL) {
         switch (tree->kind) {
