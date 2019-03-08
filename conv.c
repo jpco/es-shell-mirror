@@ -239,10 +239,7 @@ static void enclose(Format *f, Binding *binding, const char *sep) {
         if (binding->defn == NULL) {
             fmtprint(f, "%S%s", binding->name, sep);
         } else {
-            char *fmtstr = (binding->defn->term->closure
-                            && binding->defn->term->closure->binding)
-                            ? "%S = %#L%s" : "%S = %L%s";
-            fmtprint(f, fmtstr, binding->name, binding->defn, " ", sep);
+            fmtprint(f, "%S = %#L%s", binding->name, binding->defn, " ", sep);
         }
     }
 }
