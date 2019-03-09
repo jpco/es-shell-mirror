@@ -73,6 +73,7 @@ static Binding *extract(Tree *tree, Binding *bindings) {
                 case nLambda:
                 case nList:
                 case nPrim:
+                case nConcat:
                     term = mkterm(NULL, mkclosure(word, NULL));
                     break;
                 case nWord:
