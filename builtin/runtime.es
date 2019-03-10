@@ -49,7 +49,17 @@
 # result gets set to zero when it should not be.
 
 fn-%parse = $&parse
-fn-%write-history = $&writehistory
+
+if {~ <=$&primitives writehistory} {
+  fn-%write-history = $&writehistory
+} {
+  fn %write-history cmd {
+    if {!~ $history ()} {
+      echo $cmd >> $history
+    }
+  }
+}
+
 fn-%is-interactive = $&isinteractive
 
 fn %batch-loop {

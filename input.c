@@ -611,10 +611,10 @@ extern void initinput(void) {
     /* call the parser's initialization */
     initparse();
 
+#if READLINE
     /* call history initialization */
     inithistory();
 
-#if READLINE
     rl_readline_name = "es";
     rl_completer_word_break_characters=" \t\n\\`$><=;|&{()}";
     rl_basic_word_break_characters=" \t\n\\'`$><=;|&{()}";
