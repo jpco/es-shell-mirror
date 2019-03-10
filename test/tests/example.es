@@ -1,8 +1,8 @@
 #!/usr/local/bin/es --
 
 test = @ {
-  let (res) for (a = $*) {
-    catch @ {res = $res $a} {
+  let (res = ()) for (a = $*) {
+    catch {res = $res $a} {
       res = $res `($a + 1)
     }
   }

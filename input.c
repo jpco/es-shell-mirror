@@ -381,11 +381,25 @@ extern Tree *parse(char *pr1, char *pr2) {
     gcenable();
 
     if (result || error != NULL) {
-        char *e;
+        char *e, *h;
         assert(error != NULL);
         e = error;
         error = NULL;
-        fail("$&parse", "%s", e);
+
+        h = gethistory();
+
+        // Bespoke error-building... :/
+        gcdisable();
+        Ref(List *, exc, mklist(mkstr("error"),
+                         mklist(mkstr("$&parse"),
+                         mklist(mkstr(e),
+                            (h == NULL
+                             ? NULL
+                             : mklist(mkstr(str("%s", h)), NULL))))));
+        while (gcisblocked())
+            gcenable();
+        throw(exc);
+        RefEnd(exc);
     }
 #if LISPTREES
     if (input->runflags & run_lisptrees)
@@ -590,10 +604,10 @@ extern void initinput(void) {
     /* call the parser's initialization */
     initparse();
 
+#if READLINE
     /* call history initialization */
     inithistory();
 
-#if READLINE
     rl_readline_name = "es";
     rl_completer_word_break_characters=" \t\n\\`$><=;|&{()}";
     rl_basic_word_break_characters=" \t\n\\'`$><=;|&{()}";

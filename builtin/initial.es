@@ -636,14 +636,17 @@ set-PATH = @ { local (set-path = ) %fsplit  : $* => path=; result $* }
 # These settor functions call primitives to set data structures used
 # inside of es.
 
-set-history   = $&sethistory
-set-signals   = $&setsignals
-set-noexport    = $&setnoexport
+set-signals         = $&setsignals
+set-noexport        = $&setnoexport
 set-max-eval-depth  = $&setmaxevaldepth
 
-# If the primitive $&resetterminal is defined (meaning that readline
-# or editline is being used), setting the variables $TERM or $TERMCAP
-# should notify the line editor library.
+# If the primitives $&sethistory or $&resetterminal are defined, then
+# readline or editline is being used.  Setting the variables $history,
+# $TERM or $TERMCAP should notify the line editor library.
+
+if {~ <=$&primitives sethistory} {
+  set-history = $&sethistory
+}
 
 if {~ <=$&primitives resetterminal} {
   set-TERM  = @ { $&resetterminal; result $* }

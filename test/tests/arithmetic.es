@@ -31,7 +31,7 @@ case '-(3-3) != (-3)-3'   ; want true
 
 # error handling
 case '3.0 % 2.0'    ; want 1.0
-case '1.5 % 2'      ; want 'error code 1: left-hand side of modulo is not int-valued'
+case '3.5 % 2'      ; want 1.5
 case '3 / 0'        ; want 'error code 1: divide by zero'
 
 # (in)equality tests
@@ -54,11 +54,11 @@ case '1 != 4'       ; want true
 case '-1.0 != 3-4'  ; want false
 
 # logical operators and (in)equality chaining
-case '1 < 2 < 3'      ; want true
-case '1 < 2 > 1'      ; want true
-case '1 < 2 = 2 < 0'  ; want false
+skip case '1 < 2 < 3'      ; # want true
+skip case '1 < 2 > 1'      ; # want true
+skip case '1 < 2 = 2 < 0'  ; # want false
 
-case '1 < 2 && 3 < 2' ; want false
-case '1 > 2 && 3 > 2' ; want false
-case '1 < 2 || 3 < 2' ; want true
-case '3 < 2 || 1 < 2' ; want true
+skip case '1 < 2 && 3 < 2' ; # want false
+skip case '1 > 2 && 3 > 2' ; # want false
+skip case '1 < 2 || 3 < 2' ; # want true
+skip case '3 < 2 || 1 < 2' ; # want true

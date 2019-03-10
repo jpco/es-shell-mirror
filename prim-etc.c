@@ -130,23 +130,6 @@ PRIM(var) {
     return list;
 }
 
-PRIM(sethistory) {
-    if (list == NULL) {
-        sethistory(NULL);
-        return NULL;
-    }
-    Ref(List *, lp, list);
-    sethistory(getstr(lp->term));
-    RefReturn(lp);
-}
-
-PRIM(writehistory) {
-    if (list == NULL || list->term == NULL || list->next != NULL)
-        fail("$&writehistory", "usage: $&writehistory command");
-    writehistory(getstr(list->term));
-    return NULL;
-}
-
 PRIM(parse) {
     List *result = NULL;
     Tree *tree;
@@ -265,6 +248,23 @@ PRIM(setmaxevaldepth) {
 }
 
 #if READLINE
+PRIM(sethistory) {
+    if (list == NULL) {
+        sethistory(NULL);
+        return NULL;
+    }
+    Ref(List *, lp, list);
+    sethistory(getstr(lp->term));
+    RefReturn(lp);
+}
+
+PRIM(writehistory) {
+    if (list == NULL || list->term == NULL || list->next != NULL)
+        fail("$&writehistory", "usage: $&writehistory command");
+    writehistory(getstr(list->term));
+    return NULL;
+}
+
 PRIM(resetterminal) {
     resetterminal = TRUE;
     return true;
@@ -284,8 +284,6 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(runinput);
     X(flatten);
     X(whatis);
-    X(sethistory);
-    X(writehistory);
     X(split);
     X(fsplit);
     X(var);
@@ -301,6 +299,8 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(noreturn);
     X(setmaxevaldepth);
 #if READLINE
+    X(sethistory);
+    X(writehistory);
     X(resetterminal);
 #endif
     return primdict;

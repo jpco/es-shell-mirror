@@ -49,7 +49,17 @@
 # result gets set to zero when it should not be.
 
 fn-%parse = $&parse
-fn-%write-history = $&writehistory
+if {~ <=$&primitives writehistory} {
+  fn-%write-history = $&writehistory
+} {
+  fn %write-history cmd {
+    if {!~ $history ()} {
+      echo $cmd >> $history
+    }
+  }
+}
+
+fn-%is-interactive = $&isinteractive
 
 fn %batch-loop {
   let (result = <=true) {
@@ -98,10 +108,19 @@ fn %interactive-loop {
             }
           } {%prompt}
         }
-        let ((code str) = <={%parse $prompt}) {
-          if {!~ $#code 0} {
-            %write-history $str
-            status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
+        catch @ e type msg cmd {
+          if {~ $e error && ~ $type '$&parse' && ~ $msg 'syntax error'} {
+            %write-history $cmd
+            throw $e $type $msg
+          } {
+            throw $e $type $msg $cmd
+          }
+        } {
+          let ((code str) = <={%parse $prompt}) {
+            if {!~ $#code 0} {
+              %write-history $str
+              status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
+            }
           }
         }
       }
