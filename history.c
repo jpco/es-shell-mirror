@@ -33,7 +33,7 @@ extern void sethistory(char *file) {
     if (file != NULL) {
         int err;
         if ((err = read_history(file))) {
-            eprint("sethistory(%s): %s\n", file, esstrerror(errno));
+            eprint("sethistory(%s): %s (%d)\n", file, esstrerror(err), err);
             vardef("history", NULL, NULL);
             return;
         }
@@ -73,8 +73,12 @@ extern void addhistory(char *line, long len) {
 }
 
 extern char *gethistory() {
-    if (histbufbegin != NULL)
+    if (histbufbegin != NULL) {
         *histbuf = '\0';
+        if (histbufbegin != NULL && histbuf > histbufbegin && histbuf[-1] == '\n')
+            histbuf[-1] = '\0';
+    }
+
     char *res = histbufbegin;
     histbufbegin = NULL;
 
@@ -102,22 +106,15 @@ extern void writehistory(char *cmd) {
     if (cmd == NULL)
         return;
 
-    long len = strlen(cmd);
 #if READLINE
     int err;
-    Boolean renl = FALSE;
-    if (len > 0 && cmd[len - 1] == '\n') {
-        cmd[len - 1] = '\0';
-        renl = TRUE;
-    }
     add_history(cmd);
     if (history != NULL && (err = append_history(1, history))) {
         eprint("history(%s): %s\n", history, esstrerror(err));
         vardef("history", NULL, NULL);
     }
-    if (renl)
-        cmd[len - 1] = '\n';
 #else
+    long len = strlen(cmd);
     if (history == NULL)
         return;
     if (historyfd == -1) {
@@ -130,6 +127,7 @@ extern void writehistory(char *cmd) {
     }
 
     ewrite(historyfd, cmd, len);
+    ewrite(historyfd, "\n", 1);
 #endif
 }
 
