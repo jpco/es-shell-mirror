@@ -99,10 +99,19 @@ fn %interactive-loop {
             }
           } {%prompt}
         }
-        let ((code str) = <={%parse $prompt}) {
-          if {!~ $#code 0} {
-            %write-history $str
-            status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
+        catch @ e type msg cmd {
+          if {~ $e error && ~ $type '$&parse' && ~ $msg 'syntax error'} {
+            %write-history $cmd
+            throw $e $type $msg
+          } {
+            throw $e $type $msg $cmd
+          }
+        } {
+          let ((code str) = <={%parse $prompt}) {
+            if {!~ $#code 0} {
+              %write-history $str
+              status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
+            }
           }
         }
       }
