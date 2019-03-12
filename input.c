@@ -360,6 +360,7 @@ extern void setrunflags(int flags) {
 extern Tree *parse(char *pr1, char *pr2) {
     int result;
     assert(error == NULL);
+    assert(!pendinghistory());
 
     inityy();
     emptyherequeue();
@@ -410,6 +411,10 @@ extern Tree *parse(char *pr1, char *pr2) {
 
 /* resetparser -- clear parser errors in the signal handler */
 extern void resetparser(void) {
+    char *h;
+    if ((h = gethistory()) != NULL)
+        efree(h);
+
     error = NULL;
 }
 
