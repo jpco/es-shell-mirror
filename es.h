@@ -322,6 +322,7 @@ extern Boolean resetterminal;
 /* history.c */
 
 extern void inithistory(void);
+extern Boolean pendinghistory(void);
 extern void sethistory(char *file);
 extern void addhistory(char *line, long len);
 extern char *gethistory(void);

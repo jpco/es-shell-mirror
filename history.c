@@ -27,6 +27,10 @@ static char *history;
 static char *histbuf, *histbufbegin = NULL;
 static long histbuflen;
 
+extern Boolean pendinghistory() {
+    return histbufbegin != NULL;
+}
+
 extern void addhistory(char *line, long len) {
     if (line == NULL || len == 0)
         return;
@@ -49,17 +53,15 @@ extern void addhistory(char *line, long len) {
 }
 
 extern char *gethistory() {
-    if (histbufbegin != NULL) {
-        *histbuf = '\0';
-        if (histbufbegin != NULL && histbuf > histbufbegin && histbuf[-1] == '\n')
-            histbuf[-1] = '\0';
-    }
+    if (histbufbegin == NULL)
+        return NULL;
+
+    *histbuf = '\0';
+    if (histbuf > histbufbegin && histbuf[-1] == '\n')
+        histbuf[-1] = '\0';
 
     char *res = histbufbegin;
     histbufbegin = NULL;
-
-    if (res == NULL)
-        return res;
 
     char *s, *end;
     long len = strlen(res);
@@ -69,11 +71,12 @@ extern char *gethistory() {
         switch (*s) {
         case '#': case '\n':    goto retnull;
         case ' ': case '\t':    break;
-        default:        goto retreal;
+        default:                goto retreal;
         }
 retnull:
     efree(res);
-    res = NULL;
+    return NULL;
+
 retreal:
     return res;
 }
