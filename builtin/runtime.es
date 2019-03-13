@@ -109,19 +109,20 @@ fn %interactive-loop {
             }
           } {%prompt}
         }
-        catch @ e type msg cmd {
-          if {~ $e error && ~ $type '$&parse' && ~ $msg 'syntax error'} {
-            %write-history $cmd
-            throw $e $type $msg
-          } {
-            throw $e $type $msg $cmd
-          }
-        } {
-          let ((code str) = <={%parse $prompt}) {
-            if {!~ $#code 0} {
-              %write-history $str
-              status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
+        let ((code cmd) = <={
+          catch @ e type msg cmd {
+            if {~ $e error} {
+              %write-history $cmd
+              cmd = ()
             }
+            throw $e $type $msg $cmd
+          } {
+            %parse $prompt
+          }
+        }) {
+          if {!~ $#code 0} {
+            %write-history $cmd
+            status = <={$fn-%interactive-dispatch $fn-%dispatch $code}
           }
         }
       }
