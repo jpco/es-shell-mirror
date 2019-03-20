@@ -113,11 +113,11 @@ extern void print_prompt2(void) {
 }
 
 /* scanerror -- called for lexical errors */
-static void scanerror(char *s) {
+static void scanerror(int last, char *s) {
     int c;
-    /* TODO: check previous character? rc's last hack? */
-    while ((c = GETC()) != '\n' && c != EOF)
-        ;
+    if (last != '\n' && last != EOF)
+        while ((c = GETC()) != '\n' && c != EOF)
+            ;
     goterror = TRUE;
     yyerror(s);
 }
@@ -144,7 +144,7 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
         return TRUE;
     }
     if ((unsigned int) (n = GETC() - '0') > 9) {
-        scanerror("expected digit after '['");
+        scanerror(n + '0', "expected digit after '['");
         return FALSE;
     }
 
@@ -156,7 +156,7 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
     case '=':
         if ((unsigned int) (n = GETC() - '0') > 9) {
             if (n != ']' - '0') {
-                scanerror("expected digit or ']' after '='");
+                scanerror(n + '0', "expected digit or ']' after '='");
                 return FALSE;
             }
             fd[1] = CLOSED;
@@ -164,7 +164,7 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
             while ((unsigned int) (c = GETC() - '0') <= 9)
                 n = n * 10 + c;
             if (c != ']' - '0') {
-                scanerror("expected ']' after digit");
+                scanerror(c + '0', "expected ']' after digit");
                 return FALSE;
             }
             fd[1] = n;
@@ -173,7 +173,7 @@ static Boolean getfds(int fd[2], int c, int default0, int default1) {
     case ']':
         break;
     default:
-        scanerror("expected '=' or ']' after digit");
+        scanerror(c, "expected '=' or ']' after digit");
         return FALSE;
     }
     return TRUE;
@@ -208,12 +208,12 @@ extern int yylex(void) {
 
     static Boolean dollar = FALSE;
     int c;
-    size_t i;           /* The purpose of all these local assignments is to */
-    const char *meta;       /* allow optimizing compilers like gcc to load these    */
-    char *buf = tokenbuf;       /* values into registers. On a sparc this is a      */
-    YYSTYPE *y = &yylval;       /* win, in code size *and* execution time       */
+    size_t i;                   /* The purpose of all these local assignments is to     */
+    const char *meta;           /* allow optimizing compilers like gcc to load these    */
+    char *buf = tokenbuf;       /* values into registers. On a sparc this is a          */
+    YYSTYPE *y = &yylval;       /* win, in code size *and* execution time               */
 
-    /* rc variable-names may contain only alnum, '*' and '_', so use dnw if we are scanning one. */
+    /* set the right set of non-word characters based on the current mode */
     meta = (numeric ? nnw : dollar ? dnw : nw);
     dollar = FALSE;
 
@@ -241,7 +241,7 @@ top:
             es_int_t ival = STR_TO_EI(buf, &end);
             if (*end == '\0') {
                 if (errno == ERANGE) {
-                    scanerror("integer value too large");
+                    scanerror(c, "integer value too large");
                     return ERROR;
                 }
                 y->ival = ival;
@@ -251,14 +251,14 @@ top:
             es_float_t fval = STR_TO_EF(buf, &end);
             if (*end == '\0') {
                 if (errno == ERANGE) {
-                    scanerror("float value too large");
+                    scanerror(c, "float value too large");
                     return ERROR;
                 }
                 y->fval = fval;
                 return FLOAT;
             }
 
-            scanerror("invalid number");
+            scanerror(c, "invalid number");
             return ERROR;
         }
 
@@ -352,7 +352,7 @@ top:
                 print_prompt2();
             if (c == EOF) {
                 w = NW;
-                scanerror("eof in quoted string");
+                scanerror(c, "eof in quoted string");
                 return ERROR;
             }
         }
@@ -414,7 +414,7 @@ top:
         default:
             if (isalnum(c)) {
             badescape:
-                scanerror("bad backslash escape");
+                scanerror(c, "bad backslash escape");
                 return ERROR;
             }
             *buf = c;
@@ -481,7 +481,7 @@ top:
         if (!getfds(p, c, 1, 0))
             return ERROR;
         if (p[1] == CLOSED) {
-            scanerror("expected digit after '='");  /* can't close a pipe */
+            scanerror(c, "expected digit after '='");  /* can't close a pipe */
             return ERROR;
         }
         y->tree = mk(nPipe, p[0], p[1]);
