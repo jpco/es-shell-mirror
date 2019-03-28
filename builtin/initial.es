@@ -57,6 +57,58 @@
 
 
 #
+# es:whatis
+#
+# This function is used by the shell to decide how to execute anything that
+# isn't a primitive or otherwise built-in.  It must be written carefully to
+# avoid infinite loops.
+
+es:whatis = $&keeplexicalbinding @ cmd rest {
+  let (result = ()) {
+    $&if {~ <={result = $(fn-^$cmd)} ()} {
+      if {~ $cmd /* || ~ $cmd ./* || ~ $cmd ../*} {
+        result %run $cmd $cmd
+      } {!~ $fn-%pathsearch ()} {
+        result %run <={%pathsearch $cmd} $cmd
+      } {
+        result ()
+      }
+    } {
+      $&result $result
+    }
+  }
+}
+
+fn-%whatis = $&keeplexicalbinding @ {
+  let (fxn = ()) {
+    if {~ <={fxn = <={$'es:whatis' $*}} ()} {
+      throw error whatis unknown command $*
+    } {
+      $&result $fxn
+    }
+  }
+}
+
+fn-whatis = $&keeplexicalbinding @ {
+  let (result = ()) {
+    for (i = $*) {
+      catch @ e from message {
+        if {!~ $e error} {
+          throw $e $from $message
+        }
+        echo >[1=2] $message
+        result = $result 1
+      } {
+        %whatis $i => echo
+        result = $result 0
+      }
+    }
+    result $result
+  }
+}
+
+
+#
 # Builtin functions
 #
 
@@ -157,31 +209,11 @@ fn-%newfd   = $&newfd
 fn-%run     = $&run
 fn-%split   = $&split
 fn-%var     = $&var
-fn-%whatis  = $&whatis
 
 # These builtins are only around as a matter of convenience, so
 # users don't have to type the infamous <= (nee <>) operator.
-# Whatis also protects the used from exceptions raised by %whatis.
 
 fn var    {for (i = $*) %var $i => echo}
-
-fn whatis {
-  let (result) {
-    for (i = $*) {
-      catch @ e from message {
-        if {!~ $e error} {
-          throw $e $from $message
-        }
-        echo >[1=2] $message
-        result = $result 1
-      } {
-        %whatis $i => echo
-        result = $result 0
-      }
-    }
-    result $result
-  }
-}
 
 # The escaped-by function is a shorthand which allows various
 # defined-in-shell constructs a simple syntax for 'break'-like
@@ -692,4 +724,6 @@ fn-. = $&runinput $&batchloop
 # is printed in the header comment in initial.c;  nobody really
 # wants to look at initial.c anyway.
 
-result es initial state built in `/bin/pwd on `/bin/date for <=$&version
+# result es initial state built in `/bin/pwd on `/bin/date for <=$&version
+
+result es <=$&version initial state.

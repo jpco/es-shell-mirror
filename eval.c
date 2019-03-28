@@ -4,6 +4,8 @@
 
 unsigned long evaldepth = 0, maxevaldepth = MAXmaxevaldepth;
 
+Boolean keeplexicalbinding = FALSE;
+
 static noreturn failexec(char *file, List *args) {
     List *fn;
     assert(gcisblocked());
@@ -409,6 +411,13 @@ restart:
                             mklist(mkterm(funcname,
                                   NULL),
                                NULL));
+                if (keeplexicalbinding) {
+                    Binding *cp = context;
+                    for (; cp->next != NULL; cp = cp->next)
+                        ;
+                    cp->next = binding;
+                    keeplexicalbinding = FALSE;
+                }
                 list = walk(tree->u[1].p, context, flags);
                 if (funcname != NULL)
                     varpop(&p);
@@ -436,33 +445,18 @@ restart:
         goto done;
     }
 
-    /* the logic here is duplicated in $&whatis */
+    Ref(List *, whatis, varlookup("es:whatis", NULL));
+    if (whatis == NULL)
+        panic("eval: es:whatis undefined");
 
-    Ref(char *, name, getstr(list->term));
-    fn = varlookup2("fn-", name, binding);
-    if (fn != NULL) {
-        funcname = name;
-        list = append(fn, list->next);
-        RefPop(name);
-        goto restart;
-    }
-    if (isabsolute(name)) {
-        char *error = checkexecutable(name);
-        if (error != NULL)
-            fail("$&whatis", "%s: %s", name, error);
-        list = forkexec(name, list, flags & eval_inchild);
-        RefPop(name);
-        goto done;
-    }
-    RefEnd(name);
+    Ref(List *, whatterm, mklist(list->term, NULL));
+    Ref(List *, lookup, append(whatis, whatterm));
 
-    fn = pathsearch(list->term);
-    if (fn != NULL && fn->next == NULL
-        && (cp = getclosure(fn->term)) == NULL) {
-        char *name = getstr(fn->term);
-        list = forkexec(name, list, flags & eval_inchild);
-        goto done;
-    }
+    fn = eval(lookup, binding, flags); /* FIXME: passing 'flags' may be incorrect */
+    if (fn == NULL)
+        fail("es:whatis", "unknown command %L", whatterm, " ");
+
+    RefEnd3(lookup, whatterm, whatis);
 
     list = append(fn, list->next);
     goto restart;

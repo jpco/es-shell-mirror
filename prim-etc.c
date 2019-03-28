@@ -70,32 +70,6 @@ PRIM(flatten) {
     RefReturn(lp);
 }
 
-PRIM(whatis) {
-    /* the logic in here is duplicated in eval() */
-    if (list == NULL || list->next != NULL)
-        fail("$&whatis", "usage: $&whatis program");
-    Ref(Term *, term, list->term);
-    if (getclosure(term) == NULL) {
-        List *fn;
-        Ref(char *, prog, getstr(term));
-        assert(prog != NULL);
-        fn = varlookup2("fn-", prog, binding);
-        if (fn != NULL)
-            list = fn;
-        else {
-            if (isabsolute(prog)) {
-                char *error = checkexecutable(prog);
-                if (error != NULL)
-                    fail("$&whatis", "%s: %s", prog, error);
-            } else
-                list = pathsearch(term);
-        }
-        RefEnd(prog);
-    }
-    RefEnd(term);
-    return list;
-}
-
 PRIM(split) {
     char *sep;
     if (list == NULL)
@@ -247,6 +221,17 @@ PRIM(setmaxevaldepth) {
     RefReturn(lp);
 }
 
+PRIM(keeplexicalbinding) {
+    Ref(List *, lp, list);
+    Ref(Binding *, bp, binding);
+
+    keeplexicalbinding = TRUE;
+    lp = eval(lp, bp, evalflags);
+
+    RefEnd(bp);
+    RefReturn(lp);
+}
+
 #if READLINE
 PRIM(sethistory) {
     if (list == NULL) {
@@ -283,7 +268,6 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(setrunflags);
     X(runinput);
     X(flatten);
-    X(whatis);
     X(split);
     X(fsplit);
     X(var);
@@ -298,6 +282,7 @@ extern Dict *initprims_etc(Dict *primdict) {
     X(throwonfalse);
     X(noreturn);
     X(setmaxevaldepth);
+    X(keeplexicalbinding);
 #if READLINE
     X(sethistory);
     X(writehistory);

@@ -273,7 +273,7 @@ static void dumpdef(char *name, Var *var) {
 }
 
 static void dumpfunctions(void *ignore, char *key, void *value) {
-    if (hasprefix(key, "fn-"))
+    if (hasprefix(key, "fn-") || streq(key, "es:whatis"))
         dumpdef(key, value);
 }
 
@@ -283,7 +283,7 @@ static void dumpsettors(void *ignore, char *key, void *value) {
 }
 
 static void dumpvariables(void *ignore, char *key, void *value) {
-    if (!hasprefix(key, "fn-") && !hasprefix(key, "set-"))
+    if (!hasprefix(key, "fn-") && !hasprefix(key, "set-") && !streq(key, "es:whatis"))
         dumpdef(key, value);
 }
 
