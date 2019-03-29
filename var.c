@@ -149,19 +149,16 @@ extern List *varlookup2(char *name1, char *name2, Binding *bp) {
 }
 
 static List *callsettor(char *name, List *defn) {
-    Push p;
-    List *settor;
+    List *settor = varlookup("es:set", NULL);
 
-    if (specialvar(name) || (settor = varlookup2("set-", name, NULL)) == NULL)
+    if (settor == NULL)
         return defn;
 
     Ref(List *, lp, defn);
     Ref(List *, fn, settor);
-    varpush(&p, "0", mklist(mkstr(name), NULL));
 
-    lp = listcopy(eval(append(fn, lp), NULL, 0));
+    lp = listcopy(eval(append(fn, mklist(mkstr(name), lp)), NULL, 0));
 
-    varpop(&p);
     RefEnd(fn);
     RefReturn(lp);
 }

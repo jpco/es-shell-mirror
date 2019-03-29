@@ -59,23 +59,22 @@
 #
 # es:whatis
 #
+
 # This function is used by the shell to decide how to execute anything that
 # isn't a primitive or otherwise built-in.  It must be written carefully to
 # avoid infinite loops.
 
 es:whatis = $&keeplexicalbinding @ cmd rest {
-  let (result = ()) {
-    $&if {~ <={result = $(fn-^$cmd)} ()} {
-      if {~ $cmd /* || ~ $cmd ./* || ~ $cmd ../*} {
-        result %run $cmd $cmd
-      } {!~ $fn-%pathsearch ()} {
-        result %run <={%pathsearch $cmd} $cmd
-      } {
-        result ()
-      }
+  $&if {~ $(fn-^$cmd) ()} {
+    if {~ $cmd /* || ~ $cmd ./* || ~ $cmd ../*} {
+      result %run $cmd $cmd
+    } {~ $fn-%pathsearch ()} {
+      result ()
     } {
-      $&result $result
+      result %run <={%pathsearch $cmd} $cmd
     }
+  } {
+    $&result $(fn-^$cmd)
   }
 }
 
@@ -115,19 +114,19 @@ fn-whatis = $&keeplexicalbinding @ {
 # These builtin functions are straightforward calls to primitives.
 # See the manual page for details on what they do.
 
-fn-access = $&access
-fn-catch  = $&catch
-fn-echo   = $&echo
-fn-exec   = $&exec
+fn-access   = $&access
+fn-catch    = $&catch
+fn-echo     = $&echo
+fn-exec     = $&exec
 fn-forever  = $&forever
-fn-if   = $&if
+fn-if       = $&if
 fn-newpgrp  = $&newpgrp
-fn-result = $&result
-fn-throw  = $&throw
-fn-umask  = $&umask
-fn-wait   = $&wait
+fn-result   = $&result
+fn-throw    = $&throw
+fn-umask    = $&umask
+fn-wait     = $&wait
 
-fn-%read  = $&read
+fn-%read    = $&read
 
 # eval runs its arguments by turning them into a code fragment
 # (in string form) and running that fragment.
@@ -648,6 +647,25 @@ if {~ <=$&primitives execfailure} {fn-%exec-failure = $&execfailure}
 # their arguments, but it is always possible for them to modify the
 # value.)
 
+# es:set is the "root" settor function -- called when any variable is
+# set, it dispatches to the various set-* functions when appropriate.
+#
+# TODO: Make es:set do variable exporting logic as well.
+
+es:set = @ nm value {
+  # This function gets called a lot, especially on startup, so use
+  # primitives and avoid %or to avoid over-calling `whatis'.
+  $&if {~ $(set-^$nm) ()} {
+    $&result $value
+  } {~ $nm ('*' '0')} {
+    $&result $value
+  } {
+    local (0 = $nm)
+      $(set-^$nm) $value
+  }
+}
+
+
 # These functions are used to alias the standard unix environment
 # variables HOME and PATH with their es equivalents, home and path.
 # With path aliasing, colon separated strings are split into lists
@@ -724,6 +742,4 @@ fn-. = $&runinput $&batchloop
 # is printed in the header comment in initial.c;  nobody really
 # wants to look at initial.c anyway.
 
-# result es initial state built in `/bin/pwd on `/bin/date for <=$&version
-
-result es <=$&version initial state.
+result es initial state built in `/bin/pwd on `/bin/date for <=$&version

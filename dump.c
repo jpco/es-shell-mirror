@@ -272,18 +272,13 @@ static void dumpdef(char *name, Var *var) {
     print("\t{ %s, (const List *) %s },\n", dumpstring(name), dumplist(var->defn));
 }
 
-static void dumpfunctions(void *ignore, char *key, void *value) {
-    if (hasprefix(key, "fn-") || streq(key, "es:whatis"))
-        dumpdef(key, value);
-}
-
-static void dumpsettors(void *ignore, char *key, void *value) {
-    if (hasprefix(key, "set-"))
+static void dumpesset(void *ignore, char *key, void *value) {
+    if (streq(key, "es:set"))
         dumpdef(key, value);
 }
 
 static void dumpvariables(void *ignore, char *key, void *value) {
-    if (!hasprefix(key, "fn-") && !hasprefix(key, "set-") && !streq(key, "es:whatis"))
+    if (!streq(key, "es:set"))
         dumpdef(key, value);
 }
 
@@ -323,18 +318,32 @@ extern void runinitial(void) {
     printheader(title);
     dictforall(vars, dumpvar, NULL);
 
-    /* these must be assigned in this order, or things just won't work */
+    /*
+     * Dump all variables, making sure es:set comes last.
+     *
+     * es:set controls the calling of settor functions -- so any functions, etc.
+     * that *it* refers to must be set by the time anything starts calling it.
+     * We keep settors working on startup by setting each variable twice -- once
+     * with no settors, and once after settors have been enabled.
+     */
     print("\nstatic const struct { const char *name; const List *value; } defs[] = {\n");
-    dictforall(vars, dumpfunctions, NULL);
-    dictforall(vars, dumpsettors, NULL);
     dictforall(vars, dumpvariables, NULL);
+    dictforall(vars, dumpesset, NULL);
+
     print("\t{ NULL, NULL }\n");
     print("};\n\n");
 
-    print("\nextern void runinitial(void) {\n");
-    print("\tint i;\n");
-    print("\tfor (i = 0; defs[i].name != NULL; i++)\n");
-    print("\t\tvardef((char *) defs[i].name, NULL, (List *) defs[i].value);\n");
+    print("\n"
+    "extern void runinitial(void) {\n"
+    "	int i;\n"
+    "	for (i = 0; defs[i].name != NULL; i++)\n"
+    "		vardef((char *) defs[i].name, NULL, (List *) defs[i].value);\n");
+    if (dictget(vars, "es:set") != NULL) {
+        print("\n"
+        "	/* Go a second time, now that es:set is defined */\n"
+        "	for (i = 0; defs[i].name != NULL; i++)\n"
+        "		vardef((char *) defs[i].name, NULL, (List *) defs[i].value);\n");
+    }
     print("}\n");
 
     exit(0);
