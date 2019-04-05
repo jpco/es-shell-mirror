@@ -626,7 +626,7 @@ extern void initinput(void) {
     rl_completer_quote_characters="'";
 
 #if HAVE_LIBREADLINE
-    rl_filename_quote_characters = "'";
+    rl_filename_quote_characters = " '";
     rl_filename_quoting_function = quote;
     rl_filename_dequoting_function = unquote;
 #endif
