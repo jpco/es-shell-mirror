@@ -71,7 +71,7 @@ es:whatis = $&keeplexicalbinding @ cmd rest {
     } {~ $fn-%pathsearch ()} {
       result ()
     } {
-      result %run <={%pathsearch $cmd} $cmd
+      %pathsearch $cmd
     }
   } {
     $&result $(fn-^$cmd)
@@ -625,8 +625,14 @@ fn-%home  = $&home
 # Path searching used to be a primitive, but the access function
 # means that it can be written easier in es.  Is is not called for
 # absolute path names or for functions.
+#
+# Spawning a binary in es is done by executing the %run hook command,
+# with the binary's absolute path as its first argument and the $0 of
+# the command as the second.
 
-fn %pathsearch name { access -n $name -1e -xf $path }
+fn %pathsearch name {
+  result %run <={access -n $name -1e -xf $path} $name
+}
 
 # The exec-failure hook is called in the child if an exec() fails.
 # A default version is provided (under conditional compilation) for
