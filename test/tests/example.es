@@ -1,4 +1,4 @@
-#!/usr/local/bin/es --
+#!/usr/local/bin/es
 
 test = @ {
   let (res = ()) for (a = $*) {

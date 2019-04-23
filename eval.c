@@ -452,7 +452,7 @@ restart:
     Ref(List *, whatterm, mklist(list->term, NULL));
     Ref(List *, lookup, append(whatis, whatterm));
 
-    fn = eval(lookup, binding, flags); /* FIXME: passing 'flags' may be incorrect */
+    fn = eval(lookup, binding, 0);
     if (fn == NULL)
         fail("es:whatis", "unknown command %L", whatterm, " ");
 
