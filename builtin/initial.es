@@ -98,7 +98,13 @@ fn-whatis = $&keeplexicalbinding @ {
         echo >[1=2] $message
         result = $result 1
       } {
-        %whatis $i => echo
+        let (wi = <={%whatis $i}) {
+          if {~ $wi(1) %run} {
+            echo $wi(2 4 ...)
+          } {
+            echo $wi
+          }
+        }
         result = $result 0
       }
     }
