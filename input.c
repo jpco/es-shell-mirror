@@ -591,6 +591,68 @@ char *unquote(char *text, int quote_char) {
 	*p = '\0';
 	return r;
 }
+
+static char *complprefix;
+static List *(*wordslistgen)(char *);
+
+static char *list_completion_function(const char *text, int state) {
+    static char **matches = NULL;
+    static int matches_idx;
+    static int matches_len;
+
+    const int pfx_len = strlen(complprefix);
+
+    if (!state) {
+        const char *name = &text[pfx_len];
+
+        Vector *vm = vectorize(wordslistgen((char *)name));
+        matches = vm->vector;
+        matches_len = vm->count;
+        matches_idx = 0;
+    }
+
+    if (!matches || matches_idx >= matches_len)
+        return NULL;
+
+    int rlen = strlen(matches[matches_idx]);
+    char *result = ealloc(rlen + pfx_len + 1);
+    for (int i = 0; i < pfx_len; i++)
+        result[i] = complprefix[i];
+    strcpy(&result[pfx_len], matches[matches_idx]);
+    result[rlen + pfx_len] = '\0';
+
+    matches_idx++;
+    return result;
+}
+
+char **builtin_completion(const char *text, int start, int end) {
+    char **matches = NULL;
+
+    /* TODO: handle more complex things, like `$(a b c)` */
+    if (*text == '$') {
+        wordslistgen = varswithprefix;
+        complprefix = "$";
+        switch (text[1]) {
+        case '&':
+            wordslistgen = primswithprefix;
+            complprefix = "$&";
+            break;
+        case '^': complprefix = "$^"; break;
+        case '#': complprefix = "$#"; break;
+        }
+        matches = rl_completion_matches(text, list_completion_function);
+    }
+
+    /* ~foo => username.  ~foo/bar already gets completed as filename. */
+    /* TODO: should this deglob the dir as well? i.e., ~foo => /home/foo? */
+    if (!matches && *text == '~' && !strchr(text, '/'))
+        matches = rl_completion_matches(text, rl_username_completion_function);
+
+    /* TODO: basic commands????       */
+    /* TODO: globbing filenames?????? */
+
+    return matches;
+}
 #endif
 
 /*
@@ -614,12 +676,25 @@ extern void initinput(void) {
     inithistory();
 
     rl_readline_name = "es";
-    rl_completer_word_break_characters=" \t\n\\`$><=;|&{()}";
-    rl_basic_word_break_characters=" \t\n\\'`$><=;|&{()}";
-    rl_completer_quote_characters="'";
+
+    /* TODO: re-insert '&' in these lists, or fake it in the right spot in
+     * builtin_completion. It's currently absent here to allow for primitive
+     * completion. */
+    rl_completer_word_break_characters = " \t\n\\`$><=;|{()}";
+    rl_basic_word_break_characters = " \t\n\\'`$><=;|{()}";
+    rl_completer_quote_characters = "'";
+    rl_special_prefixes = "$";
+
+    /* rl_instream = stdin;
+    rl_outstream = stderr; */
 
 #if HAVE_LIBREADLINE
-    rl_filename_quote_characters = " '";
+    /* TODO: technically, libedit can handle pretty much everything in
+     * builtin_completion.  but it's just a bit more work to make the code
+     * properly generic. */
+    rl_attempted_completion_function = builtin_completion;
+
+    rl_filename_quote_characters = " \t\n\\`$><=;|&{()}";
     rl_filename_quoting_function = quote;
     rl_filename_dequoting_function = unquote;
 #endif

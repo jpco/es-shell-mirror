@@ -217,6 +217,7 @@ extern Vector *mkenv(void);
 extern void setnoexport(List *list);
 extern void addtolist(void *arg, char *key, void *value);
 extern List *listvars(Boolean internal);
+extern List *varswithprefix(char *prefix);
 
 typedef struct Push Push;
 extern Push *pushlist;
@@ -341,6 +342,7 @@ extern List *esoptend(void);
 /* prim.c */
 
 extern List *prim(char *s, List *list, Binding *binding, int evalflags);
+extern List *primswithprefix(char *prefix);
 extern void initprims(void);
 
 
