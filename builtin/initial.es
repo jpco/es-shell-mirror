@@ -83,7 +83,15 @@ fn-%whatis = $&keeplexicalbinding @ {
     if {~ <={fxn = <={$'es:whatis' $*}} ()} {
       throw error whatis unknown command $*
     } {
-      $&result $fxn
+      $&if {~ $fxn(1) %run} {
+        $&if {~ $fxn(3) ()} {
+          $&result $fxn
+        } {
+          $&result $fxn(2 4 ...)
+        }
+      } {
+        $&result $fxn
+      }
     }
   }
 }
@@ -98,14 +106,7 @@ fn-whatis = $&keeplexicalbinding @ {
         echo >[1=2] $message
         result = $result 1
       } {
-        let (wi = <={%whatis $i}) {
-          if {~ $wi(1) %run} {
-            echo $wi(2 4 ...)
-          } {
-            echo $wi
-          }
-        }
-        result = $result 0
+        result = $result <={echo <={%whatis $i}}
       }
     }
     result $result
@@ -249,7 +250,7 @@ fn-while = escaped-by break @ cond body {
 fn-for-each = $&noreturn @ sep lambda {
   if {~ $lambda ()} {
     lambda = $sep
-    sep = $^ifs
+    sep = ''
   }
   let (line = ())
     while {!~ <={line = <=%read} ()} {
@@ -447,7 +448,7 @@ fn-%or = $&noreturn @ first rest {
 #   cmd &     %background {cmd}
 
 fn %background cmd {
-        let (pid = <={local (ppid = $pid) {$&background $cmd}}) {
+  let (pid = <={local (ppid = $pid) {$&background $cmd}}) {
     if {%is-interactive} {
       echo >[1=2] $pid
     }

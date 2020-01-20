@@ -1985,20 +1985,14 @@ the last command executed.)
 Always returns a false (non-zero) return value.
 .TP
 .Cr "for-each \fR[\fP\fIsep\fP\fR]\fP \fIcmd\fP"
-Reads data from standard input, executing
+Reads data from standard input, executing the lambda
 .Cr cmd
-for each line read, with the line provided as arguments.
-Lines are split on
-.Cr $ ifs
-unless
+for each line read, with the line provided as one argument.
+If
 .Cr sep
-is provided, which will override
-.Cr $ ifs.
-Setting
-.Cr sep
-to
-.Cr ''
-prevents splitting altogether.
+is provided and not set to '', then the line is split and each token
+provided as a separate argument to
+.Cr cmd .
 .TP
 .Cr "forever \fIcmd\fP"
 Runs the command repeatedly, until the shell exits or the
