@@ -8,12 +8,15 @@
 static Boolean Lconv(Format *f) {
     List *lp, *next;
     char *sep;
-    const char *fmt = (f->flags & FMT_altform) ? "%S%s" : "%s%s";
+    int alt = (f->flags & FMT_altform);
 
     lp = va_arg(f->args, List *);
     sep = va_arg(f->args, char *);
     for (; lp != NULL; lp = next) {
         next = lp->next;
+        char *fmt = "%s%s";
+        if (alt && (lp->term->str || lp->term->closure->binding))
+            fmt = "%S%s";
         fmtprint(f, fmt, getstr(lp->term), next == NULL ? "" : sep);
     }
     return FALSE;
