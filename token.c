@@ -64,6 +64,22 @@ const char dnw[] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,		/* 240 - 255 */
 };
 
+/*
+ * Logic for "skipping" equals signs -- that is, ignoring them as special
+ * where they shouldn't be considered special.
+ */
+
+#define SKIP(c,m) ((c) == '=' && (skipeq & (m)))
+
+#define SKIPEQ_NONE	0x0
+#define SKIPEQ_NONFIRST	0x1
+#define SKIPEQ_FIRST	0x2
+
+static int skipeq = SKIPEQ_NONE;
+
+extern void unsetskipeq(void) {
+	skipeq = SKIPEQ_NONE;
+}
 
 /* print_prompt2 -- called before all continuation lines */
 extern void print_prompt2(void) {
@@ -168,7 +184,7 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 		w = NW;
 	if (c == EOF)
 		return ENDFILE;
-	if (!meta[(unsigned char) c]) {	/* it's a word or keyword. */
+	if (!meta[(unsigned char) c] || SKIP(c, SKIPEQ_FIRST)) {	/* it's a word or keyword. */
 		InsertFreeCaret();
 		w = RW;
 		i = 0;
@@ -176,10 +192,13 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 			buf[i++] = c;
 			if (i >= bufsize)
 				buf = tokenbuf = erealloc(buf, bufsize *= 2);
-		} while ((c = GETC()) != EOF && !meta[(unsigned char) c]);
+		} while ((c = GETC()) != EOF && 
+                    (!meta[(unsigned char) c] || SKIP(c, SKIPEQ_NONFIRST)));
 		UNGETC(c);
 		buf[i] = '\0';
 		w = KW;
+		skipeq |= SKIPEQ_NONFIRST;
+
 		if (buf[1] == '\0') {
 			int k = *buf;
 			if (k == '@' || k == '~')
@@ -243,6 +262,7 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 		}
 		UNGETC(c);
 		buf[i] = '\0';
+		skipeq |= SKIPEQ_NONFIRST;
 		y->str = gcdup(buf);
 		return QWORD;
 	case '\\':
@@ -315,21 +335,30 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 	case '\n':
 		input->lineno++;
 		newline = TRUE;
+		unsetskipeq();
 		w = NW;
 		return NL;
 	case '(':
 		if (w == RW)	/* not keywords, so let & friends work */
 			c = SUB;
-		/* FALLTHROUGH */
-	case ';':
-	case '^':
-	case ')':
-	case '=':
-	case '{': case '}':
 		w = NW;
 		return c;
+	case ';':
+	case '{':
+		unsetskipeq();
+		/* FALLTHROUGH */
+	case ')':
+	case '}':
+	case '^':
+		w = NW;
+		return c;
+	case '=':
+		w = NW;
+		skipeq |= SKIPEQ_FIRST | SKIPEQ_NONFIRST;
+		return '=';
 	case '&':
 		w = NW;
+		unsetskipeq();
 		c = GETC();
 		if (c == '&')
 			return ANDAND;
@@ -339,6 +368,7 @@ top:	while ((c = GETC()) == ' ' || c == '\t')
 	case '|': {
 		int p[2];
 		w = NW;
+		unsetskipeq();
 		c = GETC();
 		if (c == '|')
 			return OROR;

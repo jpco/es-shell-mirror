@@ -38,8 +38,8 @@
 es	: line end		{ parsetree = $1; YYACCEPT; }
 	| error end		{ yyerrok; parsetree = NULL; YYABORT; }
 
-end	: NL			{ if (!readheredocs(FALSE)) YYABORT; }
-	| ENDFILE		{ if (!readheredocs(TRUE)) YYABORT; }
+end	: NL			{ unsetskipeq(); if (!readheredocs(FALSE)) YYABORT; }
+	| ENDFILE		{ unsetskipeq(); if (!readheredocs(TRUE)) YYABORT; }
 
 line	: cmd			{ $$ = $1; }
 	| cmdsa line		{ $$ = mkseq("%seq", $1, $2); }
@@ -123,8 +123,8 @@ nlwords :				{ $$ = NULL; }
 	| nlwords word			{ $$ = treeconsend($1, $2); }
 	| nlwords NL			{ $$ = $1; }
 
-nl	:
-	| nl NL
+nl	:				{ unsetskipeq(); }
+	| nl NL				{ unsetskipeq(); }
 
 caret 	:
 	| '^'
