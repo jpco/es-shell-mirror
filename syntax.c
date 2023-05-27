@@ -78,6 +78,38 @@ static Boolean firstis(Tree *t, const char *s) {
     return streq(t->u[0].s, s);
 }
 
+static Boolean isredir(Tree *t) {
+    char *s;
+
+    if (t == NULL || t->kind != nList)
+        return FALSE;
+    t = t->CAR;
+    if (t == NULL || t->kind != nWord)
+        return FALSE;
+
+    s = t->u[0].s;
+    assert(s != NULL);
+
+    if (*s++ != '%') return FALSE;
+
+    if (streq(s, "create")) return TRUE;
+    if (streq(s, "append")) return TRUE;
+    if (streq(s, "here")) return TRUE;
+
+    if (!strneq(s, "open", 4)) return FALSE;
+    s += 4;
+
+    if (*s == '\0' || streq(s, "file")) return TRUE;
+
+    if (*s++ != '-') return FALSE;
+
+    if (streq(s, "write")) return TRUE;
+    if (streq(s, "append")) return TRUE;
+    if (streq(s, "create")) return TRUE;
+
+    return FALSE;
+}
+
 /* prefix -- prefix a tree with a given word */
 extern Tree *prefix(char *s, Tree *t) {
     return treecons(mk(nWord, s), t);
@@ -151,48 +183,42 @@ extern Tree *mkpipe(Tree *t1, int outfd, int infd, Tree *t2) {
     return prefix("%pipe", treecons(t1, tail));
 }
 
-static Tree *injectpass(Tree *tree) {
+static Tree *injectpassvar(Tree *tree) {
     Tree *nv = mk(nVar, mk(nWord, "-"));
     switch (tree->kind) {
-    case nLet: case nLocal: case nClosure:
-    case nAssign:
+    case nLet: case nLocal: case nClosure: case nAssign:
         tree->CDR = treeconsend2(tree->CDR, nv);
         break;
-    default:
-        // FIXME: This is heinous garbage
-        if (firstis(tree, "%open") || firstis(tree, "%create")
-                || firstis(tree, "%append") || firstis(tree, "%open-write")
-                || firstis(tree, "%open-append") || firstis(tree, "%open-create")
-                || firstis(tree, "%openfile")) {
-            Tree *body = tree;
+    default: {
+        Tree *body = tree;
+        while (isredir(body)) {
             int i;
             for (i = 0; i < 5; i++) {
                 assert(body != NULL && (body->kind == nList || IS_THUNK(body)));
                 // Artisinally crafted for the peculiar syntax of redirections
-                body = body->u[i < 3].p;
+                if (body->kind == nList)
+                    body = body->u[i < 3].p;
+                else
+                    body = body->u[1].p;
             }
-            if (IS_THUNK(body))
-                body = treecons(body, treecons(nv, NULL));
-            else body = treeconsend2(body, nv);
-        } else {
-            return treeconsend2(tree, nv);
         }
-    }
+        if (IS_THUNK(body))
+            body = treecons(body, treecons(nv, NULL));
+        else
+            body = treeconsend2(body, nv);
+    }}
     return tree;
 }
 
 /* mkpass -- assemble a pass from the commands that make it up (destructive) */
 extern Tree *mkpass(Tree *t1, Tree *t2) {
     Tree *tail = NULL;
-    Boolean passtail;
-
-    passtail = firstis(t2, "%pass");
+    Boolean passtail = firstis(t2, "%pass");
 
     if (passtail) {
         tail = t2->CDR;
     } else if (t2 != NULL) {
-        t2 = injectpass(t2);
-
+        t2 = injectpassvar(t2);
         if (IS_THUNK(t2->CAR) && t2->CDR == NULL) {
             tail = t2;
         } else {
