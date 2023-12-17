@@ -64,14 +64,16 @@
 # isn't a primitive or otherwise built-in.  It must be written carefully to
 # avoid infinite loops.
 
-es:whatis = $&keeplexicalbinding @ cmd rest {
+es:whatis = $&keeplexicalbinding @ cmd {
   $&if {~ $(fn-^$cmd) ()} {
     if {~ $cmd /* || ~ $cmd ./* || ~ $cmd ../*} {
       result %run $cmd $cmd
     } {~ $fn-%pathsearch ()} {
       result ()
     } {
-      %pathsearch $cmd
+      # %pathsearch throws an exception if it doesn't find anything, so we can
+      # assume that it returns a real value here.
+      result %run <={%pathsearch $cmd} $cmd
     }
   } {
     $&result $(fn-^$cmd)
